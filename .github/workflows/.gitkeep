@@ -1,0 +1,3 @@
+# Placeholder — los pipelines de GitHub Actions (lint, type-check, tests, EAS Build)
+# se definen al configurar CI/CD del repo mobile. Ver Sprint 0 §2.2 y §6.
+# La configuración concreta del workflow es un TODO de equipo (sin ADR cerrado aún).

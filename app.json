@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "MediConnect",
+    "slug": "mediconnect-mobile",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "mediconnect",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ar.mediconnect.app"
+    },
+    "android": {
+      "package": "ar.mediconnect.app"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "TODO-set-on-eas-init"
+      }
+    },
+    "plugins": ["expo-secure-store"]
+  }
+}

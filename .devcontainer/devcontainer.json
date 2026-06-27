@@ -1,0 +1,33 @@
+{
+  "name": "mediconnect-mobile",
+  // Node 22 LTS: Expo SDK 56 / React Native 0.85 requieren Node >= 20.
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  // Puertos de Metro / Expo dev server.
+  "forwardPorts": [8081, 19000, 19001, 19006],
+  "postCreateCommand": "npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "expo.vscode-expo-tools",
+        "msjsdiag.vscode-react-native"
+      ],
+      "settings": {
+        // 3.4.2: correr Prettier + ESLint --fix al guardar.
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "eslint.validate": ["typescript", "typescriptreact"]
+      }
+    }
+  }
+  // NOTA (limitaciones): no hay emuladores/simuladores ni acceso USB dentro del
+  // contenedor. Para probar en dispositivo físico usar Expo Go contra el dev
+  // server (`npm start`). Los builds nativos de stores se hacen con EAS Build.
+}

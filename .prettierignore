@@ -1,0 +1,9 @@
+node_modules/
+.expo/
+dist/
+web-build/
+coverage/
+package-lock.json
+
+# Debe conservar el contenido EXACTO del Sprint 0 §2.5.2 (incl. bullets `*`).
+.github/PULL_REQUEST_TEMPLATE.md
