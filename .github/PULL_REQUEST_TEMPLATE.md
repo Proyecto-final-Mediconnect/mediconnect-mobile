@@ -7,7 +7,6 @@
 * [ ] El código está comentado y documentado donde corresponde (JSDoc)
 * [ ] Agregué pruebas que verifican que los cambios funcionan correctamente
 * [ ] Agregué la documentación asociada al repositorio mediconnect-docs o a Confluence (si corresponde)
-* [ ] Este PR contiene código generado mayoritariamente por IA (en ese caso, agregar label `ai-assisted`)
 
 ## Pasos para reproducirlo
 
