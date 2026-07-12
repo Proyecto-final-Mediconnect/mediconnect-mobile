@@ -1,0 +1,45 @@
+name: CI
+
+# Calidad de la app mobile (React Native + Expo), alineado a la matriz 3.5.4.
+# El build y la distribución de la app van por EAS Build (spike aparte, no ENG-38),
+# así que el CI acá es lint + type-check + unit. Sin integración, sin build de
+# producción y sin deploy (el mobile no despliega a Render/Vercel).
+#
+# Nota: este repo usa npm (package-lock.json), no pnpm como backend/web.
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'bugfix/**'
+      - 'release/**'
+      - 'main'
+  pull_request:
+    branches:
+      - 'release/**'
+      - 'main'
+
+jobs:
+  quality:
+    name: Lint · Type-check · Unit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
