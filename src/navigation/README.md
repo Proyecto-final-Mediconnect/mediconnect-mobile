@@ -27,34 +27,48 @@ razonamiento completo está en el ADR—:
 
 ## Estructura
 
-El navegador raíz se expone desde esta carpeta y `src/App.tsx` lo monta. La
-estructura concreta la implementa **ENG-113** (shell mobile):
-
 ```
 navigation/
-├── RootNavigator.tsx     navegador raíz; decide entre el stack público y el privado
-├── types.ts              RootStackParamList — los tipos de rutas se mantienen a mano
-└── linking.ts            configuración de deep links (scheme `mediconnect`, ver app.json)
+├── RootNavigator.tsx     navegador raíz (stack): las tabs y, encima, la historia clínica
+├── PatientTabs.tsx       tabs del paciente: Inicio, Turnos, MediPass y Perfil
+├── TabBar.tsx            la barra de tabs, dibujada a mano según el canvas
+└── types.ts              RootStackParamList y PatientTabParamList, a mano
 ```
 
-El patrón de guarda por rol es el mismo que el `RequireAuth` de `mediconnect-web`:
-navegadores condicionales según la sesión, no un check dentro de cada pantalla.
+`src/App.tsx` carga las fuentes y monta `RootNavigator`. Las tabs son las de la
+sección "App paciente" del canvas de diseño. La historia clínica no es una tab:
+se abre desde su tarjeta en el inicio y tapa la barra, como pantalla de detalle.
 
-`linking.ts` hace falta para **ENG-71** (abrir la pantalla correcta al tocar una
-notificación push). No lo necesita el MediPass.
+**Ningún navegador dibuja header.** Lo pone cada pantalla con `ScreenHeader`
+(`shared/ui/Screen.tsx`), porque en el canvas cambia de una a otra: el inicio
+es la franja oscura con el saludo; turnos, blanco con el título. `ScreenHeader`
+también pone la barra de estado del sistema en claro u oscuro según el fondo.
 
-## Antes de escribir el primer test de navegación
+La raíz es un stack porque tiene que poder elegir entre el lado público y el
+privado: **ENG-114** suma el login y esa elección según la sesión, con el mismo
+patrón que el `RequireAuth` de `mediconnect-web` —navegadores condicionales, no
+un check dentro de cada pantalla—.
 
-El `vitest.config.ts` actual **no puede montar un navegador**. Son tres ajustes, y
-el ADR-016 los documenta con el detalle de por qué:
+Para agregar una pantalla: sumarla al `ParamList` de `types.ts` y al navegador
+que la contiene.
+
+`linking.ts` (deep links, scheme `mediconnect` de `app.json`) no existe todavía:
+lo necesita **ENG-71** para abrir la pantalla correcta al tocar una notificación
+push, y se agrega ahí. No lo necesita el MediPass.
+
+## Tests de navegación
+
+Los tests montan el navegador real, no uno mockeado (ver
+`RootNavigator.spec.tsx`). Para que eso ande bajo Vitest + `react-native-web`,
+`vitest.config.ts` tiene los tres ajustes que documentó el ADR-016:
 
 1. `test.server.deps.inline: [/@react-navigation/]` — su build ESM importa sin
    extensión y Node no lo resuelve.
-2. Alias a stubs de `react-native-screens` y `react-native-safe-area-context`, **a
-   nivel de config** (`vi.mock` corre demasiado tarde): publican fuente Flow sin
-   transpilar y Vite falla con `SyntaxError: Unexpected token 'typeof'`.
+2. Alias a los stubs de `test-stubs/` para `react-native-screens` y
+   `react-native-safe-area-context`, **a nivel de config** (`vi.mock` corre
+   demasiado tarde): publican fuente Flow sin transpilar. También
+   `@expo/vector-icons`, que carga la fuente con un módulo nativo.
 3. Polyfill de `ResizeObserver` en `vitest.setup.ts`: jsdom no lo implementa y
    `@react-navigation/elements` lo usa en su camino web.
 
-Con eso, un `NavigationContainer` + `createNativeStackNavigator` renderiza y
-navega en la suite. Verificado en ENG-110.
+Un paquete nuevo con código nativo probablemente necesite su propio stub.

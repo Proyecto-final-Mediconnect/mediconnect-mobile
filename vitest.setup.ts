@@ -7,3 +7,11 @@ import { afterEach } from 'vitest';
 afterEach(() => {
   cleanup();
 });
+
+// jsdom no implementa `ResizeObserver` y `@react-navigation/elements` lo usa en
+// su camino web para medir el header. ADR-016.
+globalThis.ResizeObserver ??= class {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+};
