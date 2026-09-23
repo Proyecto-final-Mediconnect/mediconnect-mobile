@@ -21,6 +21,6 @@
         "projectId": "TODO-set-on-eas-init"
       }
     },
-    "plugins": ["expo-secure-store"]
+    "plugins": ["expo-secure-store", "expo-status-bar"]
   }
 }
