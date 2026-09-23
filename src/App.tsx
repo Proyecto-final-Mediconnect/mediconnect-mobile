@@ -5,9 +5,10 @@ import { HomeScreen } from './screens/HomeScreen';
 /**
  * Componente raíz de la app.
  *
- * TODO(ADR-016): cuando se defina la tecnología de navegación (Expo Router vs
- * React Navigation) en el Sprint 1, reemplazar el render directo de la pantalla
- * por el navegador raíz expuesto desde `src/navigation/`.
+ * TODO(ENG-113): el ADR-016 ya definió la tecnología de navegación
+ * (React Navigation 7 — ver `src/navigation/README.md`). Falta reemplazar este
+ * render directo de la pantalla por el navegador raíz que ENG-113 expone desde
+ * `src/navigation/`.
  */
 export function App(): React.JSX.Element {
   return (
