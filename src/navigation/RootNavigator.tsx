@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider, useSession } from '../features/auth/session';
 import { ClinicalRecordScreen } from '../screens/ClinicalRecordScreen';
+import { EntryDetailScreen } from '../screens/EntryDetailScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors } from '../shared/ui/theme';
@@ -88,6 +89,7 @@ function RootStack(): React.JSX.Element {
           <Stack.Group>
             <Stack.Screen name="Paciente" component={PatientTabs} />
             <Stack.Screen name="HistoriaClinica" component={ClinicalRecordScreen} />
+            <Stack.Screen name="EntradaHC" component={EntryDetailScreen} />
           </Stack.Group>
         ) : (
           <Stack.Screen

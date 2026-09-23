@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -39,7 +40,13 @@ function loginQueResponde(user: SessionUser = PACIENTE): void {
 }
 
 async function abrirApp(): Promise<void> {
-  render(<RootNavigator />);
+  // Las pantallas de la app piden sus datos con TanStack Query.
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <RootNavigator />
+    </QueryClientProvider>,
+  );
   await waitFor(() => expect(screen.queryByLabelText(/^Abriendo/)).not.toBeInTheDocument());
 }
 

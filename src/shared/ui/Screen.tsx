@@ -33,6 +33,11 @@ interface ScreenProps {
    * centran un único estado —carga, error, vacío— en el alto disponible.
    */
   scroll?: boolean;
+  /**
+   * `false` para que el contenido llegue a los bordes: una `FlatList` que pone
+   * sus propios márgenes para que el pull-to-refresh no quede recortado.
+   */
+  padded?: boolean;
 }
 
 /**
@@ -46,6 +51,7 @@ export function Screen({
   hero,
   tone = 'light',
   scroll = true,
+  padded = true,
 }: ScreenProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const fondo = tone === 'dark' ? styles.dark : styles.light;
@@ -53,6 +59,7 @@ export function Screen({
     <View
       style={[
         styles.contenido,
+        !padded && styles.sinMargen,
         !!hero && styles.sobreHero,
         !header && !hero && { paddingTop: insets.top + spacing.lg },
       ]}
@@ -163,6 +170,7 @@ const styles = StyleSheet.create({
   crece: { flexGrow: 1 },
   contenido: { flexGrow: 1, padding: spacing.lg, gap: spacing.md },
   sobreHero: { marginTop: -HERO_OVERLAP },
+  sinMargen: { padding: 0 },
   header: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xl },
   headerLight: {
     backgroundColor: colors.white,

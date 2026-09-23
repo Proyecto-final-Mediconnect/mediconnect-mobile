@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { Appointment } from '../types';
 import {
+  canCancel,
+  formatPrice,
   formatShortDay,
   nextAppointment,
   professionalName,
+  splitByTime,
   statusLabel,
   statusTone,
 } from './appointments';
@@ -56,7 +59,7 @@ describe('nextAppointment', () => {
 
 describe('formatShortDay', () => {
   it('arma día de la semana, número y hora', () => {
-    expect(formatShortDay('2026-09-03', '09:30')).toBe('jue 3 · 09:30');
+    expect(formatShortDay('2026-09-03', '09:30')).toBe('jue 3 sep · 09:30');
   });
 });
 
@@ -77,5 +80,47 @@ describe('statusLabel y statusTone', () => {
 describe('professionalName', () => {
   it('sin perfil cargado no deja la tarjeta sin nombre', () => {
     expect(professionalName(turno({ professional: null }))).toMatch(/sin nombre/i);
+  });
+});
+
+describe('splitByTime', () => {
+  it('separa por instante y deja lo último primero en pasados', () => {
+    const viejo = turno({
+      id: 'viejo',
+      scheduledAt: '2026-08-01T12:00:00.000Z',
+      status: 'COMPLETADO',
+    });
+    const reciente = turno({
+      id: 'reciente',
+      scheduledAt: '2026-08-20T12:00:00.000Z',
+      status: 'COMPLETADO',
+    });
+    const futuro = turno({ id: 'futuro' });
+    const canceladoFuturo = turno({
+      id: 'cancelado',
+      status: 'CANCELADO',
+      scheduledAt: '2026-09-10T12:00:00.000Z',
+    });
+
+    const { upcoming, past } = splitByTime([viejo, canceladoFuturo, futuro, reciente], NOW);
+
+    // El cancelado de la semana que viene sigue en Próximos, con su etiqueta.
+    expect(upcoming.map((a) => a.id)).toEqual(['futuro', 'cancelado']);
+    expect(past.map((a) => a.id)).toEqual(['reciente', 'viejo']);
+  });
+});
+
+describe('canCancel', () => {
+  it('solo un turno vigente que todavía no empezó', () => {
+    expect(canCancel(turno(), NOW)).toBe(true);
+    expect(canCancel(turno({ status: 'CANCELADO' }), NOW)).toBe(false);
+    expect(canCancel(turno({ scheduledAt: '2026-09-02T11:50:00.000Z' }), NOW)).toBe(false);
+  });
+});
+
+describe('formatPrice', () => {
+  it('separa los miles con punto', () => {
+    expect(formatPrice(18500)).toBe('$18.500');
+    expect(formatPrice(950)).toBe('$950');
   });
 });
