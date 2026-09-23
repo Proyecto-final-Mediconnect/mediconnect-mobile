@@ -27,7 +27,7 @@ describe('NextAppointmentCard', () => {
       />,
     );
 
-    expect(screen.getByText('JUE 3 · 09:30')).toBeInTheDocument();
+    expect(screen.getByText('JUE 3 SEP · 09:30')).toBeInTheDocument();
     expect(screen.getByText('Valeria Ocampo')).toBeInTheDocument();
     expect(screen.getByText('CONFIRMADO')).toBeInTheDocument();
   });

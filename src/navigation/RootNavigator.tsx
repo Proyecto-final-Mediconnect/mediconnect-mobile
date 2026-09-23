@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ClinicalRecordScreen } from '../screens/ClinicalRecordScreen';
+import { EntryDetailScreen } from '../screens/EntryDetailScreen';
 import { colors } from '../shared/ui/theme';
 import { PatientTabs } from './PatientTabs';
 import type { RootStackParamList } from './types';
@@ -43,6 +44,7 @@ export function RootNavigator(): React.JSX.Element {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Paciente" component={PatientTabs} />
           <Stack.Screen name="HistoriaClinica" component={ClinicalRecordScreen} />
+          <Stack.Screen name="EntradaHC" component={EntryDetailScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

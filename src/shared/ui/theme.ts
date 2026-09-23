@@ -36,6 +36,17 @@ export const colors = {
   warm: '#fbf1e6',
   warmInk: '#a86524',
   white: '#ffffff',
+  /**
+   * Etiquetas de tipo de entrada de la historia clínica, las de la web: un color
+   * por tipo para barrer la cadena de un vistazo.
+   */
+  tagConsulta: '#e9f2f6',
+  tagConsultaInk: '#0b4f6c',
+  tagCorreccion: '#eef3f9',
+  tagCorreccionInk: '#3f6b8f',
+  tagEstudio: '#f2f0fa',
+  tagEstudioInk: '#5b53a3',
+  warmDot: '#e0913f',
 } as const;
 
 /**

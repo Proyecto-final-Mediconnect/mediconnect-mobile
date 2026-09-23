@@ -58,14 +58,44 @@ export function nextAppointment(
   return vigentes[0] ?? null;
 }
 
+/**
+ * "Próximos" y "Pasados", con el corte en el instante y no en el estado —igual
+ * que la web—: un turno cancelado de la semana que viene sigue en Próximos con
+ * su etiqueta, que es donde el paciente lo va a buscar. Los próximos del más
+ * cercano al más lejano; los pasados al revés, lo último primero.
+ */
+export function splitByTime(
+  appointments: Appointment[],
+  now: Date = new Date(),
+): { upcoming: Appointment[]; past: Appointment[] } {
+  const ordenados = [...appointments].sort(
+    (a, b) => Date.parse(a.scheduledAt) - Date.parse(b.scheduledAt),
+  );
+  const upcoming = ordenados.filter((a) => finDe(a) > now.getTime());
+  const past = ordenados.filter((a) => finDe(a) <= now.getTime()).reverse();
+  return { upcoming, past };
+}
+
+/**
+ * Si se ofrece cancelar. Las mismas condiciones que revalida el backend —vigente
+ * y todavía no empezó—; la autoridad es el servidor, esto solo decide el botón.
+ * No hace falta mirar de quién es: la app mobile es solo para pacientes y
+ * `/appointments/me` devuelve solo los suyos.
+ */
+export function canCancel(appointment: Appointment, now: Date = new Date()): boolean {
+  return isActive(appointment) && Date.parse(appointment.scheduledAt) > now.getTime();
+}
+
 function finDe(appointment: Appointment): number {
   return Date.parse(appointment.scheduledAt) + appointment.durationMinutes * 60_000;
 }
 
 const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 /**
- * `2026-09-03` + `09:30` → `jue 3 · 09:30`.
+ * `2026-09-03` + `09:30` → `jue 3 sep · 09:30`. Con el mes: en una lista que
+ * cruza meses, "jue 3" no dice cuál.
  *
  * Sale de `date`/`startTime`, que ya son la hora local del turno, y el día de la
  * semana se calcula en UTC sobre esa fecha: calcularlo con la zona del teléfono
@@ -74,7 +104,14 @@ const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 export function formatShortDay(date: string, startTime: string): string {
   const [y, m, d] = date.split('-').map(Number);
   const dia = DIAS[new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1)).getUTCDay()];
-  return `${dia} ${d} · ${startTime}`;
+  return `${dia} ${d} ${MESES[(m ?? 1) - 1]} · ${startTime}`;
+}
+
+/** `18500` → `$18.500`. A mano y no con `Intl`, por lo mismo que la hora. */
+export function formatPrice(amount: number): string {
+  return `$${Math.round(amount)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 }
 
 export function professionalName(appointment: Appointment): string {

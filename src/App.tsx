@@ -3,9 +3,12 @@ import { Manrope_500Medium } from '@expo-google-fonts/manrope/500Medium';
 import { Manrope_600SemiBold } from '@expo-google-fonts/manrope/600SemiBold';
 import { Manrope_700Bold } from '@expo-google-fonts/manrope/700Bold';
 import { Newsreader_400Regular } from '@expo-google-fonts/newsreader/400Regular';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
+import { useState } from 'react';
 
 import { RootNavigator } from './navigation/RootNavigator';
+import { createQueryClient } from './shared/lib/query-client';
 
 /**
  * Componente raíz de la app: carga las fuentes y monta el navegador raíz
@@ -20,6 +23,7 @@ import { RootNavigator } from './navigation/RootNavigator';
  * color entre el azul noche del inicio y el blanco de las demás.
  */
 export function App(): React.JSX.Element | null {
+  const [queryClient] = useState(createQueryClient);
   const [cargadas, error] = useFonts({
     Manrope_400Regular,
     Manrope_500Medium,
@@ -30,5 +34,9 @@ export function App(): React.JSX.Element | null {
 
   if (!cargadas && !error) return null;
 
-  return <RootNavigator />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RootNavigator />
+    </QueryClientProvider>
+  );
 }

@@ -5,7 +5,7 @@ import { colors, fonts, fontSize, radius, spacing } from './theme';
 interface ButtonProps {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'accent' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'accent' | 'danger' | 'secondary' | 'ghost';
   disabled?: boolean;
   /** Muestra un indicador en lugar del texto y bloquea el botón. */
   loading?: boolean;
@@ -62,6 +62,7 @@ const styles = StyleSheet.create({
   },
   primary: { backgroundColor: colors.brandDeep },
   accent: { backgroundColor: colors.brand },
+  danger: { backgroundColor: colors.danger },
   secondary: {
     backgroundColor: colors.white,
     borderWidth: 1,
@@ -76,6 +77,7 @@ const styles = StyleSheet.create({
 const pressedStyles = StyleSheet.create({
   primary: { backgroundColor: colors.night },
   accent: { backgroundColor: colors.brandBright },
+  danger: { backgroundColor: '#b93a54' },
   secondary: { borderColor: colors.brand },
   ghost: { backgroundColor: colors.surfaceTeal },
 });
@@ -83,6 +85,7 @@ const pressedStyles = StyleSheet.create({
 const labelStyles = StyleSheet.create({
   primary: { color: colors.white },
   accent: { color: colors.inkDeep },
+  danger: { color: colors.white },
   secondary: { color: colors.brandDeep },
   ghost: { color: colors.brandDeep },
 });

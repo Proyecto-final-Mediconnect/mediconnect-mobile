@@ -21,6 +21,7 @@ export type PatientTabParamList = {
 export type RootStackParamList = {
   Paciente: NavigatorScreenParams<PatientTabParamList>;
   HistoriaClinica: undefined;
+  EntradaHC: { id: string };
 };
 
 // Tipa `useNavigation()` en toda la app sin pasarle el genérico cada vez.

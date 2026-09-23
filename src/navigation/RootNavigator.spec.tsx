@@ -1,16 +1,11 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { RootNavigator } from './RootNavigator';
+import { renderApp } from '../test/render-app';
 
 // ENG-113: el esqueleto navegable. Monta el navegador real —no uno mockeado—
 // sobre el runner del Sprint 0, que es lo que el ADR-016 dejó verificado.
 describe('RootNavigator', () => {
-  async function renderApp(): Promise<void> {
-    render(<RootNavigator />);
-    await screen.findByRole('heading', { name: 'Hola' });
-  }
-
   it('arranca en el inicio, con esa tab marcada', async () => {
     await renderApp();
 
@@ -57,6 +52,6 @@ describe('RootNavigator', () => {
     expect(await screen.findByRole('heading', { name: 'Mi historia clínica' })).toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
-    expect(await screen.findByRole('heading', { name: 'Hola' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'Hola, Marina' })).toBeVisible();
   });
 });
