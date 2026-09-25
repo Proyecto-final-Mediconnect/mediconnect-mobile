@@ -1,6 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useSessionUser } from '../features/auth/session';
 import { QuickTile } from '../shared/ui/QuickTile';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
@@ -12,8 +13,7 @@ import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
  * consulta —con el botón para entrar a la sala cuando está abierta— y debajo
  * los accesos rápidos.
  *
- * Lo que falta necesita la sesión (ENG-114):
- * - El nombre en el saludo.
+ * El saludo lleva el nombre del paciente de la sesión (ENG-114). Lo que falta:
  * - La próxima consulta: ENG-115 cambia la tarjeta de abajo por
  *   `<NextAppointmentCard appointment={nextAppointment(turnos)} …/>`, que ya
  *   tiene sus estados y sus tests.
@@ -24,6 +24,7 @@ import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
  */
 export function HomeScreen(): React.JSX.Element {
   const navigation = useNavigation();
+  const { firstName } = useSessionUser();
 
   return (
     <Screen
@@ -31,7 +32,7 @@ export function HomeScreen(): React.JSX.Element {
         <ScreenHeader
           hero
           tone="dark"
-          title="Hola"
+          title={firstName ? `Hola, ${firstName}` : 'Hola'}
           subtitle="Tus turnos, tu historia clínica y tu MediPass, en un solo lugar."
         />
       }

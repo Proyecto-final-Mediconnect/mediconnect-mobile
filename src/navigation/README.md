@@ -44,10 +44,23 @@ se abre desde su tarjeta en el inicio y tapa la barra, como pantalla de detalle.
 es la franja oscura con el saludo; turnos, blanco con el título. `ScreenHeader`
 también pone la barra de estado del sistema en claro u oscuro según el fondo.
 
-La raíz es un stack porque tiene que poder elegir entre el lado público y el
-privado: **ENG-114** suma el login y esa elección según la sesión, con el mismo
-patrón que el `RequireAuth` de `mediconnect-web` —navegadores condicionales, no
-un check dentro de cada pantalla—.
+La raíz es un stack que elige entre el lado público y el privado según la
+sesión (**ENG-114**), con el mismo patrón que el `RequireAuth` de
+`mediconnect-web`: navegadores condicionales, no un chequeo dentro de cada
+pantalla. `RootNavigator` monta `SessionProvider` (`features/auth/session.tsx`) y,
+según su estado, muestra:
+
+| Estado        | Qué se ve                                                      |
+| ------------- | -------------------------------------------------------------- |
+| `restoring`   | "Abriendo MediConnect…" mientras se lee el secure store        |
+| `signedOut`   | la pantalla `Ingresar`                                         |
+| `signedIn`    | las tabs y las pantallas que se abren encima                   |
+| `unreachable` | hay sesión guardada pero no hay conexión: se ofrece reintentar |
+
+Sin sesión las pantallas privadas no existen en el navegador, así que no hay
+forma de llegar a ellas. Una pantalla privada nueva va dentro del
+`<Stack.Group>` del lado con sesión, y puede leer al paciente con
+`useSessionUser()`.
 
 Para agregar una pantalla: sumarla al `ParamList` de `types.ts` y al navegador
 que la contiene.
@@ -72,3 +85,9 @@ Los tests montan el navegador real, no uno mockeado (ver
    `@react-navigation/elements` lo usa en su camino web.
 
 Un paquete nuevo con código nativo probablemente necesite su propio stub.
+
+Las pantallas privadas solo se montan con sesión. En un test,
+`iniciarSesionGuardada()` (`src/test/session.ts`) deja los tokens en el secure
+store —que en Vitest es un stub en memoria— y hace que `GET /me` responda con la
+paciente de ejemplo por MSW. MSW corre en todos los tests (`vitest.setup.ts`) y
+hace fallar el que pida algo sin un handler declarado.

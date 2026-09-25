@@ -14,11 +14,12 @@ export type PatientTabParamList = {
 };
 
 /**
- * Raíz. Las tabs, y encima las pantallas que se abren desde ellas —la historia
- * clínica se abre desde el inicio—. El lado público (login) lo suma ENG-114, y
- * `RootNavigator` elige entre los dos según la sesión.
+ * Raíz. Con sesión, las tabs y encima las pantallas que se abren desde ellas
+ * —la historia clínica se abre desde el inicio—. Sin sesión, el ingreso
+ * (ENG-114). `RootNavigator` monta solo uno de los dos lados.
  */
 export type RootStackParamList = {
+  Ingresar: undefined;
   Paciente: NavigatorScreenParams<PatientTabParamList>;
   HistoriaClinica: undefined;
 };

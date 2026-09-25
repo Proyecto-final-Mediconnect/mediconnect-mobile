@@ -17,6 +17,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
   rápido y estados de carga, error y vacío). Las reglas de turnos y la ventana
   para entrar a la sala, portadas de la web, con la tarjeta de la próxima
   consulta lista para conectar en ENG-115.
+- Inicio de sesión del paciente con la sesión persistida (ENG-114): pantalla de
+  ingreso, tokens guardados solo en `expo-secure-store` (Keychain / Keystore),
+  sesión restaurada al volver a abrir la app, renovación automática y única del
+  access token cuando vence, y "Cerrar sesión" en el perfil. Solo entran
+  pacientes: a un profesional se le indica que su panel está en la web, sin
+  guardar su sesión. Cliente HTTP compartido (`shared/lib/api-client.ts`) con
+  `Authorization: Bearer`, listo para que cada `api.ts` pase a la API real.
+  Tests de integración con MSW.
 - Inicialización del repositorio `mediconnect-mobile`: proyecto Expo (managed
   workflow) + React Native + TypeScript estricto, estructura de carpetas por
   features (Sprint 0 §3.4.6), tooling de ESLint + Prettier (§3.4.2), testing con
