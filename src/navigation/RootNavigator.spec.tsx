@@ -1,14 +1,17 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { iniciarSesionGuardada } from '../test/session';
 import { RootNavigator } from './RootNavigator';
 
 // ENG-113: el esqueleto navegable. Monta el navegador real —no uno mockeado—
-// sobre el runner del Sprint 0, que es lo que el ADR-016 dejó verificado.
+// sobre el runner del Sprint 0, que es lo que el ADR-016 dejó verificado. Con
+// una sesión guardada, que es lo que muestra el lado privado (ENG-114).
 describe('RootNavigator', () => {
   async function renderApp(): Promise<void> {
+    await iniciarSesionGuardada();
     render(<RootNavigator />);
-    await screen.findByRole('heading', { name: 'Hola' });
+    await screen.findByRole('heading', { name: /^Hola/ });
   }
 
   it('arranca en el inicio, con esa tab marcada', async () => {
@@ -57,6 +60,6 @@ describe('RootNavigator', () => {
     expect(await screen.findByRole('heading', { name: 'Mi historia clínica' })).toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
-    expect(await screen.findByRole('heading', { name: 'Hola' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: /^Hola/ })).toBeVisible();
   });
 });
