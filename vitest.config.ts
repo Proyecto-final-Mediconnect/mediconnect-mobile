@@ -28,6 +28,7 @@ export default defineConfig({
       { find: /^react-native-qrcode-svg$/, replacement: stub('react-native-qrcode-svg.tsx') },
       { find: /^expo-brightness$/, replacement: stub('expo-brightness.ts') },
       { find: /^react-native-svg$/, replacement: stub('react-native-svg.tsx') },
+      { find: /^expo-web-browser$/, replacement: stub('expo-web-browser.ts') },
     ],
   },
   test: {

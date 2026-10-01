@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button } from '../../../shared/ui/Button';
 import { Chip } from '../../../shared/ui/Chip';
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
+import { JoinConsultationButton } from '../../video/components/JoinConsultationButton';
 import { formatShortDay, professionalName, statusLabel, statusTone } from '../lib/appointments';
 import { joinStateOf, timeUntilOpen } from '../lib/join-window';
 import type { Appointment } from '../types';
@@ -11,7 +11,6 @@ import type { Appointment } from '../types';
 interface NextAppointmentCardProps {
   /** `null`: el paciente no tiene turnos próximos. */
   appointment: Appointment | null;
-  onJoin: () => void;
   now?: Date;
 }
 
@@ -26,7 +25,6 @@ interface NextAppointmentCardProps {
  */
 export function NextAppointmentCard({
   appointment,
-  onJoin,
   now = new Date(),
 }: NextAppointmentCardProps): React.JSX.Element {
   if (!appointment) {
@@ -56,7 +54,7 @@ export function NextAppointmentCard({
 
       {sala.kind === 'OPEN' ? (
         <View style={styles.accion}>
-          <Button label="Ingresar a la sala" variant="accent" onPress={onJoin} fullWidth />
+          <JoinConsultationButton appointmentId={appointment.id} />
         </View>
       ) : sala.kind === 'TOO_EARLY' ? (
         <View style={[styles.accion, styles.aviso]}>

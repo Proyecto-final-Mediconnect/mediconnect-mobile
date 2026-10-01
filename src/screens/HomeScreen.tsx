@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { useSessionUser } from '../features/auth/session';
 import { NextAppointmentCard } from '../features/appointments/components/NextAppointmentCard';
@@ -68,16 +68,7 @@ export function HomeScreen(): React.JSX.Element {
         // sería mentir justo cuando puede estar por empezar una.
         <ErrorState message={turnos.error.message} onRetry={() => void turnos.refetch()} />
       ) : (
-        <NextAppointmentCard
-          appointment={proxima}
-          now={ahora}
-          onJoin={() =>
-            Alert.alert(
-              'Videoconsulta',
-              'En la versión conectada, este botón abre la sala de la consulta con tu profesional.',
-            )
-          }
-        />
+        <NextAppointmentCard appointment={proxima} now={ahora} />
       )}
 
       {sinPagar ? (

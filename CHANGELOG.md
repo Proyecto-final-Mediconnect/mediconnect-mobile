@@ -9,6 +9,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- Entrar a la videoconsulta desde la app (ENG-131): "Ingresar a la sala" en el
+  inicio y en la tarjeta del turno en "Mis turnos", solo con la sala abierta.
+  Pide la sala a `POST /appointments/:id/video` y la abre en el navegador del
+  sistema dentro de la app (`expo-web-browser`), con Daily Prebuilt, la misma
+  sala que la web; el navegador pide cámara y micrófono. Si la consulta se
+  graba, avisa antes de entrar. La URL de la sala no se guarda en la caché.
 - Pantallas del paciente (ENG-115, ENG-116, ENG-117): inicio con la próxima
   consulta y el botón para entrar a la sala; mis turnos con próximos y pasados,
   pull-to-refresh y cancelar con confirmación; historia clínica en línea de

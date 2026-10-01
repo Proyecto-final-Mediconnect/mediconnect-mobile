@@ -77,6 +77,7 @@ export function AppointmentsScreen(): React.JSX.Element {
   return (
     <Screen scroll={false} padded={false} header={header}>
       <FlatList
+        testID="lista-turnos"
         data={lista}
         keyExtractor={(turno) => turno.id}
         renderItem={({ item }) => (

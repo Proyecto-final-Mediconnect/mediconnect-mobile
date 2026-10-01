@@ -66,4 +66,16 @@ describe('Mis turnos (ENG-115)', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('SIN PAGAR')).toBeInTheDocument();
   });
+
+  // La consulta de los datos de ejemplo empieza en 8 minutos: la sala está
+  // abierta y su tarjeta ofrece entrar; las demás, no.
+  it('el turno con la sala abierta ofrece entrar (ENG-131)', async () => {
+    await abrirTurnos();
+
+    const lista = screen.getByText('Tomás Aliaga').closest('[data-testid="lista-turnos"]');
+    expect(lista).not.toBeNull();
+    expect(
+      within(lista as HTMLElement).getAllByRole('button', { name: 'Ingresar a la sala' }),
+    ).toHaveLength(1);
+  });
 });

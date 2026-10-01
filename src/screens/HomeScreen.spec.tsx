@@ -1,7 +1,8 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
+import { __abiertas } from '../../test-stubs/expo-web-browser';
 import { API_URL } from '../test/msw-server';
 import { renderApp } from '../test/render-app';
 
@@ -47,5 +48,26 @@ describe('Inicio', () => {
     expect(await screen.findByText('No se pudieron cargar tus turnos.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Probá de nuevo' })).toBeInTheDocument();
     expect(screen.queryByText('No tenés turnos próximos')).not.toBeInTheDocument();
+  });
+
+  it('"Ingresar a la sala" abre la sala de la próxima consulta (ENG-131)', async () => {
+    await renderApp(
+      http.post(`${API_URL}/appointments/turno-sala/video`, () =>
+        HttpResponse.json({
+          appointmentId: 'turno-sala',
+          role: 'PACIENTE',
+          roomUrl: 'https://mediconnect.daily.co/turno-sala?t=token',
+          expiresAt: new Date(Date.now() + 60 * 60_000).toISOString(),
+          counterpart: { firstName: 'Valeria', lastName: 'Ocampo' },
+          recording: { enabled: false, mode: 'off' },
+        }),
+      ),
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ingresar a la sala' }));
+
+    await waitFor(() =>
+      expect(__abiertas).toEqual(['https://mediconnect.daily.co/turno-sala?t=token']),
+    );
   });
 });
