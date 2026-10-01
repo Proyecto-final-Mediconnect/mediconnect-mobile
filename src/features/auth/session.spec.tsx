@@ -64,7 +64,7 @@ describe('sesión del paciente', () => {
     it('sin sesión guardada, la app abre en el ingreso', async () => {
       await abrirApp();
 
-      expect(screen.getByRole('heading', { name: 'Ingresá a MediConnect' })).toBeVisible();
+      expect(screen.getByRole('heading', { name: 'Ingresá a tu cuenta' })).toBeVisible();
       expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     });
 
@@ -203,7 +203,7 @@ describe('sesión del paciente', () => {
 
       await abrirApp();
 
-      expect(screen.getByRole('heading', { name: 'Ingresá a MediConnect' })).toBeVisible();
+      expect(screen.getByRole('heading', { name: 'Ingresá a tu cuenta' })).toBeVisible();
       expect(__secureStore.items.size).toBe(0);
     });
   });
@@ -218,7 +218,7 @@ describe('sesión del paciente', () => {
       expect(await screen.findByText(PACIENTE.email)).toBeVisible();
       fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
 
-      expect(await screen.findByRole('heading', { name: 'Ingresá a MediConnect' })).toBeVisible();
+      expect(await screen.findByRole('heading', { name: 'Ingresá a tu cuenta' })).toBeVisible();
       expect(__secureStore.items.size).toBe(0);
       expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     });
@@ -232,7 +232,7 @@ describe('sesión del paciente', () => {
 
       fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
       fireEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
-      await screen.findByRole('heading', { name: 'Ingresá a MediConnect' });
+      await screen.findByRole('heading', { name: 'Ingresá a tu cuenta' });
 
       const otro: SessionUser = { ...PACIENTE, id: 'otro', firstName: 'Tomás' };
       loginQueResponde(otro);
