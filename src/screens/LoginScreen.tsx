@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useRef, useState, type ComponentProps } from 'react';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
 import {
+  Animated,
   Image,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   ScrollView,
   StyleSheet,
@@ -17,6 +18,7 @@ import Svg, { Polyline } from 'react-native-svg';
 import logo from '../../assets/brand/logo-horizontal-light.png';
 import { NotPatientError, useSession } from '../features/auth/session';
 import { validateLogin, type LoginErrors } from '../features/auth/validation';
+import { useKeyboardHeight } from '../shared/hooks/use-keyboard-height';
 import { ApiError } from '../shared/lib/api-client';
 import { Button } from '../shared/ui/Button';
 import { Desborde } from '../shared/ui/Screen';
@@ -42,8 +44,8 @@ const LO_QUE_HAY: { icono: ComponentProps<typeof Ionicons>['name']; texto: strin
  * oscura arriba y el formulario en una tarjeta montada encima.
  *
  * La franja crece hasta ocupar lo que el formulario no usa, así el ingreso no
- * deja media pantalla vacía en un teléfono alto; con el teclado abierto se
- * achica y el formulario queda a la vista. Lleva el logo real —el mismo archivo
+ * deja media pantalla vacía en un teléfono alto. Con el teclado abierto queda
+ * solo el logo y el formulario sube entero, encima del teclado. Lleva el logo real —el mismo archivo
  * que la web, no una recreación con tipografía— y lo que hay adentro de la app.
  *
  * Los errores del backend se muestran tal cual llegan: ya son genéricos a
@@ -59,6 +61,19 @@ export function LoginScreen(): React.JSX.Element {
   const [enviando, setEnviando] = useState(false);
   const passwordRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  const { abierto: teclado, margen: margenTeclado } = useKeyboardHeight();
+
+  // Con el teclado arriba la franja queda solo con el logo y el formulario sube
+  // entero, a la par del teclado. Recién cuando el teclado terminó de subir, y
+  // solo si en un teléfono chico igual no entra, se baja hasta "Ingresar": antes
+  // se movía todo en dos tiempos.
+  useEffect(() => {
+    const listo = Keyboard.addListener('keyboardDidShow', () =>
+      scrollRef.current?.scrollToEnd({ animated: true }),
+    );
+    return () => listo.remove();
+  }, []);
 
   const aviso = state.status === 'signedOut' ? state.notice : undefined;
 
@@ -82,11 +97,13 @@ export function LoginScreen(): React.JSX.Element {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.fill}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    // En iOS el margen de abajo es el teclado, animado a la par de él: la
+    // pantalla se achica a lo que queda visible y el formulario sube junto con
+    // el teclado. En Android queda como estaba (sin margen): lo resuelve el modo
+    // de teclado de la ventana, y se confirma en el emulador (ENG-121).
+    <Animated.View style={[styles.fill, Platform.OS === 'ios' && { paddingBottom: margenTeclado }]}>
       <ScrollView
+        ref={scrollRef}
         style={styles.fill}
         contentContainerStyle={styles.crece}
         // Sin esto, con el teclado abierto el primer toque en "Ingresar" solo
@@ -105,41 +122,45 @@ export function LoginScreen(): React.JSX.Element {
 
           {/* El trazo del corazón del logo, estirado: llena el aire entre el logo y
               el título sin competir con ninguno de los dos. */}
-          <View
-            style={styles.pulso}
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-          >
-            <Svg width="100%" height={56} viewBox="0 0 320 56" preserveAspectRatio="none">
-              <Polyline
-                points="0,30 120,30 132,30 142,8 156,50 166,22 174,30 320,30"
-                fill="none"
-                stroke={colors.brandBright}
-                strokeOpacity={0.35}
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
-          </View>
-
-          <View style={styles.bienvenida}>
-            <Text accessibilityRole="header" style={styles.titulo}>
-              Ingresá a tu cuenta
-            </Text>
-            <Text style={styles.subtitulo}>Todo lo de tu salud, en un solo lugar.</Text>
-
-            <View style={styles.lista}>
-              {LO_QUE_HAY.map(({ icono, texto }) => (
-                <View key={texto} style={styles.item}>
-                  <View style={styles.itemIcono}>
-                    <Ionicons name={icono} size={16} color={colors.brandBright} />
-                  </View>
-                  <Text style={styles.itemTexto}>{texto}</Text>
-                </View>
-              ))}
+          {teclado ? null : (
+            <View
+              style={styles.pulso}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              <Svg width="100%" height={56} viewBox="0 0 320 56" preserveAspectRatio="none">
+                <Polyline
+                  points="0,30 120,30 132,30 142,8 156,50 166,22 174,30 320,30"
+                  fill="none"
+                  stroke={colors.brandBright}
+                  strokeOpacity={0.35}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
             </View>
-          </View>
+          )}
+
+          {teclado ? null : (
+            <View style={styles.bienvenida}>
+              <Text accessibilityRole="header" style={styles.titulo}>
+                Ingresá a tu cuenta
+              </Text>
+              <Text style={styles.subtitulo}>Todo lo de tu salud, en un solo lugar.</Text>
+
+              <View style={styles.lista}>
+                {LO_QUE_HAY.map(({ icono, texto }) => (
+                  <View key={texto} style={styles.item}>
+                    <View style={styles.itemIcono}>
+                      <Ionicons name={icono} size={16} color={colors.brandBright} />
+                    </View>
+                    <Text style={styles.itemTexto}>{texto}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={styles.contenido}>
@@ -192,12 +213,15 @@ export function LoginScreen(): React.JSX.Element {
             <Button label="Ingresar" onPress={() => void ingresar()} loading={enviando} fullWidth />
           </View>
 
-          <Text style={[styles.pie, { paddingBottom: insets.bottom }]}>
-            ¿Todavía no tenés cuenta? Registrate desde la web de MediConnect y volvé a ingresar acá.
-          </Text>
+          {teclado ? null : (
+            <Text style={[styles.pie, { paddingBottom: insets.bottom }]}>
+              ¿Todavía no tenés cuenta? Registrate desde la web de MediConnect y volvé a ingresar
+              acá.
+            </Text>
+          )}
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </Animated.View>
   );
 }
 
