@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -6,6 +7,7 @@ import { __secureStore } from '../../../test-stubs/expo-secure-store';
 import { readSessionTokens } from '../../infrastructure/secure-store/session-tokens';
 import { RootNavigator } from '../../navigation/RootNavigator';
 import { API_URL, server } from '../../test/msw-server';
+import { servirDatosDelPaciente } from '../../test/patient-api';
 import { iniciarSesionGuardada, PACIENTE, TOKENS } from '../../test/session';
 import type { SessionUser } from './types';
 
@@ -39,7 +41,15 @@ function loginQueResponde(user: SessionUser = PACIENTE): void {
 }
 
 async function abrirApp(): Promise<void> {
-  render(<RootNavigator />);
+  // Lo que piden las pantallas de la app una vez adentro.
+  servirDatosDelPaciente();
+  // Las pantallas de la app piden sus datos con TanStack Query.
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <RootNavigator />
+    </QueryClientProvider>,
+  );
   await waitFor(() => expect(screen.queryByLabelText(/^Abriendo/)).not.toBeInTheDocument());
 }
 
@@ -54,7 +64,7 @@ describe('sesión del paciente', () => {
     it('sin sesión guardada, la app abre en el ingreso', async () => {
       await abrirApp();
 
-      expect(screen.getByRole('heading', { name: 'Ingresá a MediConnect' })).toBeVisible();
+      expect(screen.getByRole('heading', { name: 'Ingresá a tu cuenta' })).toBeVisible();
       expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     });
 
@@ -193,7 +203,7 @@ describe('sesión del paciente', () => {
 
       await abrirApp();
 
-      expect(screen.getByRole('heading', { name: 'Ingresá a MediConnect' })).toBeVisible();
+      expect(screen.getByRole('heading', { name: 'Ingresá a tu cuenta' })).toBeVisible();
       expect(__secureStore.items.size).toBe(0);
     });
   });
@@ -207,10 +217,55 @@ describe('sesión del paciente', () => {
       fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
       expect(await screen.findByText(PACIENTE.email)).toBeVisible();
       fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Sí, cerrar sesión' }));
 
-      expect(await screen.findByRole('heading', { name: 'Ingresá a MediConnect' })).toBeVisible();
+      expect(await screen.findByRole('heading', { name: 'Ingresá a tu cuenta' })).toBeVisible();
       expect(__secureStore.items.size).toBe(0);
       expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    });
+
+    it('pide confirmación y "Seguir en la app" no la cierra', async () => {
+      await iniciarSesionGuardada();
+      await abrirApp();
+      await screen.findByRole('heading', { name: 'Hola, Marina' });
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
+      expect(await screen.findByText('¿Cerrar sesión?')).toBeVisible();
+      fireEvent.click(screen.getByRole('button', { name: 'Seguir en la app' }));
+      // La salida del modal es una animación que jsdom no termina: se verifica
+      // el efecto, no que el modal desaparezca.
+      expect(await readSessionTokens()).toEqual(TOKENS);
+      expect(screen.getByRole('tab', { name: 'Perfil' })).toBeInTheDocument();
+    });
+
+    // Un celular compartido: el que entra después no puede ver, ni por un
+    // instante, los turnos del anterior que quedaron en la caché.
+    it('no deja los datos del paciente anterior para el siguiente', async () => {
+      await iniciarSesionGuardada();
+      await abrirApp();
+      expect(await screen.findByRole('button', { name: 'Ingresar a la sala' })).toBeVisible();
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Sí, cerrar sesión' }));
+      await screen.findByRole('heading', { name: 'Ingresá a tu cuenta' });
+
+      const otro: SessionUser = { ...PACIENTE, id: 'otro', firstName: 'Tomás' };
+      loginQueResponde(otro);
+      server.use(
+        http.get(
+          `${API_URL}/appointments/me`,
+          // Una respuesta que no llega: si la pantalla muestra un turno, salió
+          // de la caché.
+          () => new Promise<never>(() => undefined),
+        ),
+      );
+      completarYEnviar(otro.email, 'Password1');
+
+      expect(await screen.findByRole('heading', { name: 'Hola, Tomás' })).toBeVisible();
+      expect(screen.queryByRole('button', { name: 'Ingresar a la sala' })).not.toBeInTheDocument();
+      expect(screen.getByText('Buscando tu próxima consulta…')).toBeInTheDocument();
     });
   });
 });

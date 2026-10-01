@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRef, useState } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
 import {
-  KeyboardAvoidingView,
+  Animated,
+  Image,
+  Keyboard,
   Platform,
   ScrollView,
   StyleSheet,
@@ -9,21 +12,41 @@ import {
   View,
   type TextInput,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Polyline } from 'react-native-svg';
 
+import logo from '../../assets/brand/logo-horizontal-light.png';
 import { NotPatientError, useSession } from '../features/auth/session';
 import { validateLogin, type LoginErrors } from '../features/auth/validation';
+import { useKeyboardHeight } from '../shared/hooks/use-keyboard-height';
 import { ApiError } from '../shared/lib/api-client';
 import { Button } from '../shared/ui/Button';
-import { ScreenHeader } from '../shared/ui/Screen';
+import { Desborde } from '../shared/ui/Screen';
 import { TextField } from '../shared/ui/TextField';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 
 /** Cuánto se monta la tarjeta sobre la franja oscura: lo mismo que en el inicio. */
 const SOLAPE = 44;
 
+/** Proporción del logo horizontal (1884 × 240): se fija el alto y el ancho sale solo. */
+const LOGO_ALTO = 28;
+const LOGO_ANCHO = (LOGO_ALTO * 1884) / 240;
+
+/** Lo que el paciente encuentra adentro: es lo que hace que valga la pena ingresar. */
+const LO_QUE_HAY: { icono: ComponentProps<typeof Ionicons>['name']; texto: string }[] = [
+  { icono: 'videocam-outline', texto: 'Tus turnos y la sala de cada consulta' },
+  { icono: 'document-text-outline', texto: 'Tu historia clínica, completa' },
+  { icono: 'qr-code-outline', texto: 'Tu MediPass para una emergencia' },
+];
+
 /**
  * Ingreso del paciente (ENG-114). Misma composición que el inicio: la franja
  * oscura arriba y el formulario en una tarjeta montada encima.
+ *
+ * La franja crece hasta ocupar lo que el formulario no usa, así el ingreso no
+ * deja media pantalla vacía en un teléfono alto. Con el teclado abierto queda
+ * solo el logo y el formulario sube entero, encima del teclado. Lleva el logo real —el mismo archivo
+ * que la web, no una recreación con tipografía— y lo que hay adentro de la app.
  *
  * Los errores del backend se muestran tal cual llegan: ya son genéricos a
  * propósito —"Email o contraseña incorrectos." tanto si la cuenta no existe
@@ -37,6 +60,20 @@ export function LoginScreen(): React.JSX.Element {
   const [falla, setFalla] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const passwordRef = useRef<TextInput>(null);
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  const { abierto: teclado, margen: margenTeclado } = useKeyboardHeight();
+
+  // Con el teclado arriba la franja queda solo con el logo y el formulario sube
+  // entero, a la par del teclado. Recién cuando el teclado terminó de subir, y
+  // solo si en un teléfono chico igual no entra, se baja hasta "Ingresar": antes
+  // se movía todo en dos tiempos.
+  useEffect(() => {
+    const listo = Keyboard.addListener('keyboardDidShow', () =>
+      scrollRef.current?.scrollToEnd({ animated: true }),
+    );
+    return () => listo.remove();
+  }, []);
 
   const aviso = state.status === 'signedOut' ? state.notice : undefined;
 
@@ -60,23 +97,71 @@ export function LoginScreen(): React.JSX.Element {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.fill}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    // En iOS el margen de abajo es el teclado, animado a la par de él: la
+    // pantalla se achica a lo que queda visible y el formulario sube junto con
+    // el teclado. En Android queda como estaba (sin margen): lo resuelve el modo
+    // de teclado de la ventana, y se confirma en el emulador (ENG-121).
+    <Animated.View style={[styles.fill, Platform.OS === 'ios' && { paddingBottom: margenTeclado }]}>
       <ScrollView
+        ref={scrollRef}
         style={styles.fill}
         contentContainerStyle={styles.crece}
         // Sin esto, con el teclado abierto el primer toque en "Ingresar" solo
         // cierra el teclado y hay que tocar dos veces.
         keyboardShouldPersistTaps="handled"
       >
-        <ScreenHeader
-          hero
-          tone="dark"
-          title="Ingresá a MediConnect"
-          subtitle="Tus turnos, tu historia clínica y tu MediPass, en un solo lugar."
-        />
+        <StatusBar style="light" />
+        <Desborde color={colors.night} />
+        <View style={[styles.franja, { paddingTop: insets.top + spacing.lg }]}>
+          <Image
+            source={logo}
+            style={styles.logo}
+            accessibilityLabel="MediConnect"
+            resizeMode="contain"
+          />
+
+          {/* El trazo del corazón del logo, estirado: llena el aire entre el logo y
+              el título sin competir con ninguno de los dos. */}
+          {teclado ? null : (
+            <View
+              style={styles.pulso}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              <Svg width="100%" height={56} viewBox="0 0 320 56" preserveAspectRatio="none">
+                <Polyline
+                  points="0,30 120,30 132,30 142,8 156,50 166,22 174,30 320,30"
+                  fill="none"
+                  stroke={colors.brandBright}
+                  strokeOpacity={0.35}
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </View>
+          )}
+
+          {teclado ? null : (
+            <View style={styles.bienvenida}>
+              <Text accessibilityRole="header" style={styles.titulo}>
+                Ingresá a tu cuenta
+              </Text>
+              <Text style={styles.subtitulo}>Todo lo de tu salud, en un solo lugar.</Text>
+
+              <View style={styles.lista}>
+                {LO_QUE_HAY.map(({ icono, texto }) => (
+                  <View key={texto} style={styles.item}>
+                    <View style={styles.itemIcono}>
+                      <Ionicons name={icono} size={16} color={colors.brandBright} />
+                    </View>
+                    <Text style={styles.itemTexto}>{texto}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
 
         <View style={styles.contenido}>
           <View style={styles.card}>
@@ -128,12 +213,15 @@ export function LoginScreen(): React.JSX.Element {
             <Button label="Ingresar" onPress={() => void ingresar()} loading={enviando} fullWidth />
           </View>
 
-          <Text style={styles.pie}>
-            ¿Todavía no tenés cuenta? Registrate desde la web de MediConnect y volvé a ingresar acá.
-          </Text>
+          {teclado ? null : (
+            <Text style={[styles.pie, { paddingBottom: insets.bottom }]}>
+              ¿Todavía no tenés cuenta? Registrate desde la web de MediConnect y volvé a ingresar
+              acá.
+            </Text>
+          )}
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </Animated.View>
   );
 }
 
@@ -145,6 +233,42 @@ function mensajeDe(err: unknown): string {
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.surface },
   crece: { flexGrow: 1 },
+  // `flex: 1` dentro de un contenido con `flexGrow: 1`: se queda con el alto que
+  // sobra y el formulario baja hasta el pie de la pantalla.
+  franja: {
+    flex: 1,
+    backgroundColor: colors.night,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: SOLAPE + spacing.xl,
+    justifyContent: 'space-between',
+    gap: spacing.xl,
+  },
+  logo: { width: LOGO_ANCHO, height: LOGO_ALTO, maxWidth: '70%' },
+  pulso: { flexGrow: 1, justifyContent: 'center', minHeight: 56 },
+  bienvenida: { gap: spacing.sm },
+  titulo: {
+    fontFamily: fonts.display,
+    fontSize: 34,
+    lineHeight: 40,
+    color: colors.white,
+  },
+  subtitulo: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.md,
+    lineHeight: 21,
+    color: colors.onNightSoft,
+  },
+  lista: { marginTop: spacing.lg, gap: spacing.md },
+  item: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  itemIcono: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(46, 196, 182, 0.14)',
+  },
+  itemTexto: { flex: 1, fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.onNight },
   contenido: { padding: spacing.lg, gap: spacing.lg, marginTop: -SOLAPE },
   card: {
     backgroundColor: colors.white,
