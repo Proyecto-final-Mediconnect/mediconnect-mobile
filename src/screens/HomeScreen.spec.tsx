@@ -7,10 +7,35 @@ import { API_URL } from '../test/msw-server';
 import { renderApp } from '../test/render-app';
 
 describe('Inicio', () => {
-  it('saluda por nombre', async () => {
+  it('saluda por nombre, según la hora', async () => {
     await renderApp();
 
-    expect(screen.getByRole('heading', { name: 'Hola, Marina' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /^(Buen día|Buenas tardes|Buenas noches), Marina$/ }),
+    ).toBeInTheDocument();
+  });
+
+  // Los datos de ejemplo traen, después de la próxima consulta, el turno sin
+  // pagar con Aliaga y el de la noche con Olivares; el cancelado no va.
+  it('lista los turnos que siguen y lleva a "Mis turnos"', async () => {
+    await renderApp();
+
+    expect(await screen.findByText('DESPUÉS')).toBeInTheDocument();
+    expect(screen.getAllByText('Martín Olivares').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver todos' }));
+    expect(await screen.findByRole('heading', { name: 'Mis turnos' })).toBeVisible();
+  });
+
+  it('ofrece volver a consultar con quien ya lo atendió', async () => {
+    await renderApp();
+
+    expect(
+      await screen.findByRole('button', { name: 'Volver a consultar con Ana García' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Volver a consultar con Valeria Ocampo' }),
+    ).toBeInTheDocument();
   });
 
   // Los datos de ejemplo traen una consulta a los 8 minutos: la sala abre 10

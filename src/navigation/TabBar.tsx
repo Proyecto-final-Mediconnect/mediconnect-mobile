@@ -12,6 +12,7 @@ type IconName = ComponentProps<typeof Ionicons>['name'];
 const TABS: Record<keyof PatientTabParamList, { label: string; icon: [IconName, IconName] }> = {
   Inicio: { label: 'Inicio', icon: ['home', 'home-outline'] },
   Turnos: { label: 'Turnos', icon: ['calendar', 'calendar-outline'] },
+  Reservar: { label: 'Reservar', icon: ['add', 'add'] },
   MediPass: { label: 'MediPass', icon: ['qr-code', 'qr-code-outline'] },
   Perfil: { label: 'Perfil', icon: ['person', 'person-outline'] },
 };
@@ -24,8 +25,13 @@ const TABS: Record<keyof PatientTabParamList, { label: string; icon: [IconName, 
  *   leer, que es como se usa una barra de tabs.
  * - El rótulo inactivo es `muted` y no `mutedSoft`: el gris del canvas da 2.6:1
  *   sobre blanco, y a 11px no se lee.
- * - Cada tab ocupa su cuarto de ancho y 48pt de alto, el mínimo cómodo para el
+ * - Cada tab ocupa su quinto de ancho y 48pt de alto, el mínimo cómodo para el
  *   dedo; en el canvas el área tocable era solo la palabra.
+ *
+ * Y suma "Reservar" en el centro, con el ícono en un círculo teal: es la acción
+ * principal del paciente y tiene que distinguirse de las secciones. No flota
+ * por encima de la barra; un botón que se sale de la barra tapa contenido y en
+ * pantallas chicas queda incómodo.
  */
 export function TabBar({ state, navigation }: BottomTabBarProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
@@ -58,7 +64,13 @@ export function TabBar({ state, navigation }: BottomTabBarProps): React.JSX.Elem
             onPress={alTocar}
             style={styles.tab}
           >
-            <Ionicons name={tab.icon[activa ? 0 : 1]} size={22} color={color} />
+            {route.name === 'Reservar' ? (
+              <View style={[styles.reservar, activa && styles.reservarActiva]}>
+                <Ionicons name="add" size={24} color={colors.white} />
+              </View>
+            ) : (
+              <Ionicons name={tab.icon[activa ? 0 : 1]} size={22} color={color} />
+            )}
             <Text style={[styles.rotulo, { color }]}>{tab.label}</Text>
           </Pressable>
         );
@@ -77,4 +89,13 @@ const styles = StyleSheet.create({
   },
   tab: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 3 },
   rotulo: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 0.3 },
+  reservar: {
+    width: 34,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brandHover,
+  },
+  reservarActiva: { backgroundColor: colors.brandDeep },
 });

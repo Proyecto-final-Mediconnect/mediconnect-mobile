@@ -1,18 +1,19 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '../features/auth/session';
+import { CompactAppointmentRow } from '../features/appointments/components/CompactAppointmentRow';
 import { NextAppointmentCard } from '../features/appointments/components/NextAppointmentCard';
 import { useMyAppointments } from '../features/appointments/hooks/use-appointments';
 import {
   formatShortDay,
   nextAppointment,
   professionalName,
-  splitByTime,
 } from '../features/appointments/lib/appointments';
+import { greeting, laterAppointments, pastProfessionals } from '../features/appointments/lib/home';
 import { joinStateOf, timeUntilOpen } from '../features/appointments/lib/join-window';
 import type { Appointment } from '../features/appointments/types';
+import { PastProfessionalCard } from '../features/catalog/components/PastProfessionalCard';
 import { useNow } from '../shared/hooks/use-now';
 import { Notice } from '../shared/ui/Notice';
 import { QuickTile } from '../shared/ui/QuickTile';
@@ -23,9 +24,16 @@ import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 /**
  * Inicio: responde "¿qué tengo que hacer ahora?" antes que "¿adónde voy?".
  *
- * La franja oscura del canvas con el saludo y, montada encima, la próxima
- * consulta —con el botón para entrar a la sala cuando está abierta—. Debajo, lo
- * pendiente y los accesos rápidos.
+ * De arriba abajo, de lo urgente a lo útil:
+ * 1. La franja con el saludo y, montada encima, la próxima consulta —con el
+ *    botón para entrar a la sala cuando está abierta—.
+ * 2. Lo pendiente: el turno que falta pagar.
+ * 3. Los turnos que siguen, en una línea cada uno.
+ * 4. Los profesionales con los que ya se atendió, para volver a reservar.
+ * 5. Su historia clínica y su MediPass.
+ *
+ * Reservar no está acá como botón: es la tab central, a un toque desde
+ * cualquier pantalla.
  *
  * La historia clínica queda como acceso, sin su última entrada ni cuántas tiene:
  * cada lectura de la HC deja un registro de acceso en la auditoría (Ley 26.529),
@@ -43,11 +51,11 @@ export function HomeScreen(): React.JSX.Element {
   const sinPagar = turnos.data?.find(
     (t) => t.status === 'RESERVADO_SIN_PAGAR' && Date.parse(t.scheduledAt) > ahora.getTime(),
   );
-  const cantidadProximos = turnos.data
-    ? splitByTime(turnos.data, ahora).upcoming.filter((t) => t.status !== 'CANCELADO').length
-    : null;
+  const siguientes = turnos.data ? laterAppointments(turnos.data, proxima, ahora) : [];
+  const profesionales = turnos.data ? pastProfessionals(turnos.data, ahora) : [];
 
   const irATurnos = (): void => navigation.navigate('Paciente', { screen: 'Turnos' });
+  const irAReservar = (): void => navigation.navigate('Paciente', { screen: 'Reservar' });
 
   return (
     <Screen
@@ -55,7 +63,7 @@ export function HomeScreen(): React.JSX.Element {
         <ScreenHeader
           hero
           tone="dark"
-          title={firstName ? `Hola, ${firstName}` : 'Hola'}
+          title={firstName ? `${greeting(ahora)}, ${firstName}` : greeting(ahora)}
           subtitle={turnos.data ? subtitulo(proxima, ahora) : ' '}
         />
       }
@@ -69,7 +77,7 @@ export function HomeScreen(): React.JSX.Element {
         // sería mentir justo cuando puede estar por empezar una.
         <ErrorState message={turnos.error.message} onRetry={() => void turnos.refetch()} />
       ) : (
-        <NextAppointmentCard appointment={proxima} now={ahora} />
+        <NextAppointmentCard appointment={proxima} now={ahora} onBook={irAReservar} />
       )}
 
       {sinPagar ? (
@@ -80,47 +88,63 @@ export function HomeScreen(): React.JSX.Element {
         />
       ) : null}
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Sacar un turno"
-        onPress={() => navigation.navigate('Profesionales')}
-        style={({ pressed }) => [styles.reservar, pressed && styles.reservarPresionado]}
-      >
-        <View style={styles.reservarIcono}>
-          <Ionicons name="add" size={22} color={colors.white} />
+      {siguientes.length > 0 ? (
+        <View style={styles.seccion}>
+          <View style={styles.seccionCabecera}>
+            <Text style={styles.seccionTitulo}>DESPUÉS</Text>
+            <Pressable accessibilityRole="button" hitSlop={spacing.sm} onPress={irATurnos}>
+              <Text style={styles.link}>Ver todos</Text>
+            </Pressable>
+          </View>
+          <View style={styles.grupo}>
+            {siguientes.map((t, i) => (
+              <CompactAppointmentRow
+                key={t.id}
+                appointment={t}
+                last={i === siguientes.length - 1}
+              />
+            ))}
+          </View>
         </View>
-        <View style={styles.reservarTextos}>
-          <Text style={styles.reservarTitulo}>Sacar un turno</Text>
-          <Text style={styles.reservarTexto}>Buscá un profesional y elegí el horario.</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={colors.mutedSoft} />
-      </Pressable>
+      ) : null}
 
-      <View style={styles.accesos}>
-        <QuickTile
-          icon="calendar-outline"
-          title="Turnos"
-          caption={
-            cantidadProximos === null
-              ? 'Próximos y pasados'
-              : cantidadProximos === 1
-                ? '1 próximo'
-                : `${cantidadProximos} próximos`
-          }
-          onPress={irATurnos}
-        />
-        <QuickTile
-          icon="document-text-outline"
-          title="Historia"
-          caption="Tu historia clínica"
-          onPress={() => navigation.navigate('HistoriaClinica')}
-        />
-        <QuickTile
-          icon="qr-code-outline"
-          title="MediPass"
-          caption="Tu código de emergencia"
-          onPress={() => navigation.navigate('Paciente', { screen: 'MediPass' })}
-        />
+      {profesionales.length > 0 ? (
+        <View style={styles.seccion}>
+          <Text style={styles.seccionTitulo}>VOLVER A CONSULTAR</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.carrusel}
+            // Llega hasta el borde de la pantalla: se nota que hay más para el costado.
+            style={styles.carruselFuera}
+          >
+            {profesionales.map((p) => (
+              <PastProfessionalCard
+                key={p.id}
+                professional={p}
+                onPress={() => navigation.navigate('Profesional', { id: p.id })}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
+
+      <View style={styles.seccion}>
+        <Text style={styles.seccionTitulo}>TU SALUD</Text>
+        <View style={styles.accesos}>
+          <QuickTile
+            icon="document-text-outline"
+            title="Historia clínica"
+            caption="Tus consultas, estudios y recetas"
+            onPress={() => navigation.navigate('HistoriaClinica')}
+          />
+          <QuickTile
+            icon="qr-code-outline"
+            title="MediPass"
+            caption="Tu código para una emergencia"
+            onPress={() => navigation.navigate('Paciente', { screen: 'MediPass' })}
+          />
+        </View>
       </View>
     </Screen>
   );
@@ -145,27 +169,24 @@ function subtitulo(proxima: Appointment | null, ahora: Date): string {
 
 const styles = StyleSheet.create({
   cargando: { minHeight: 160 },
-  accesos: { flexDirection: 'row', gap: spacing.sm },
-  reservar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+  seccion: { gap: spacing.sm, marginTop: spacing.sm },
+  seccionCabecera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  seccionTitulo: {
+    marginLeft: spacing.xs,
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    letterSpacing: 1,
+    color: colors.mutedSoft,
+  },
+  link: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.brandHover },
+  grupo: {
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.card,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
   },
-  reservarPresionado: { borderColor: colors.brand },
-  reservarIcono: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.brandHover,
-  },
-  reservarTextos: { flex: 1, gap: 2 },
-  reservarTitulo: { fontFamily: fonts.bold, fontSize: fontSize.md, color: colors.brandDeep },
-  reservarTexto: { fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.muted },
+  carruselFuera: { marginHorizontal: -spacing.lg },
+  carrusel: { gap: spacing.sm, paddingHorizontal: spacing.lg },
+  accesos: { flexDirection: 'row', gap: spacing.sm },
 });

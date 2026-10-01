@@ -12,12 +12,12 @@ function lista(): ReturnType<typeof within> {
 
 async function abrirBusqueda(): Promise<void> {
   await renderApp();
-  fireEvent.click(screen.getByRole('button', { name: 'Sacar un turno' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Reservar' }));
   await screen.findByText('Martín Olivares');
 }
 
 describe('Buscar profesionales (ENG-132)', () => {
-  it('se llega desde el inicio y lista nombre, especialidad y precio', async () => {
+  it('es la tab central y lista nombre, especialidad y precio', async () => {
     await abrirBusqueda();
 
     const olivares = within(
@@ -75,7 +75,7 @@ describe('Buscar profesionales (ENG-132)', () => {
         HttpResponse.json({ message: 'No pudimos cargar los profesionales.' }, { status: 500 }),
       ),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Sacar un turno' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Reservar' }));
 
     expect(await screen.findByText('No pudimos cargar los profesionales.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Probá de nuevo' })).toBeInTheDocument();

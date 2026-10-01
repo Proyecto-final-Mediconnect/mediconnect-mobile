@@ -70,7 +70,7 @@ export function AppointmentsScreen(): React.JSX.Element {
   }
 
   const { upcoming, past } = splitByTime(turnos.data, ahora);
-  const irAReservar = (): void => navigation.navigate('Profesionales');
+  const irAReservar = (): void => navigation.navigate('Paciente', { screen: 'Reservar' });
   const lista = vista === 'proximos' ? upcoming : past;
 
   const cerrarConfirmacion = (): void => {

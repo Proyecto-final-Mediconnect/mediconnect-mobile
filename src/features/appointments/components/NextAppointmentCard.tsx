@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { Button } from '../../../shared/ui/Button';
 import { Chip } from '../../../shared/ui/Chip';
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
 import { JoinConsultationButton } from '../../video/components/JoinConsultationButton';
@@ -12,6 +13,8 @@ interface NextAppointmentCardProps {
   /** `null`: el paciente no tiene turnos próximos. */
   appointment: Appointment | null;
   now?: Date;
+  /** Sin turnos próximos, ofrece reservar uno. */
+  onBook?: () => void;
 }
 
 /**
@@ -26,6 +29,7 @@ interface NextAppointmentCardProps {
 export function NextAppointmentCard({
   appointment,
   now = new Date(),
+  onBook,
 }: NextAppointmentCardProps): React.JSX.Element {
   if (!appointment) {
     return (
@@ -35,6 +39,11 @@ export function NextAppointmentCard({
         <Text style={styles.detalle}>
           Cuando reserves con un profesional, tu próxima consulta va a aparecer acá.
         </Text>
+        {onBook ? (
+          <View style={styles.accion}>
+            <Button label="Sacar un turno" onPress={onBook} fullWidth />
+          </View>
+        ) : null}
       </View>
     );
   }

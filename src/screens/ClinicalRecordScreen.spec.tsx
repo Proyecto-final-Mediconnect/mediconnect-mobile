@@ -5,7 +5,7 @@ import { renderApp } from '../test/render-app';
 
 async function abrirHistoria(): Promise<void> {
   await renderApp();
-  fireEvent.click(screen.getByRole('button', { name: 'Historia' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Historia clínica' }));
   await screen.findByText('Enalapril 10 mg');
 }
 

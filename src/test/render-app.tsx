@@ -31,5 +31,5 @@ export async function renderApp(...respuestas: RequestHandler[]): Promise<void> 
     </QueryClientProvider>,
   );
 
-  await screen.findByRole('heading', { name: /^Hola/ });
+  await screen.findByRole('heading', { name: /^Buen/ });
 }

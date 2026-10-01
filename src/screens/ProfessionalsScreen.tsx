@@ -23,7 +23,7 @@ import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 
 /**
  * Sacar un turno, paso 1: buscar al profesional (ENG-132). Equivalente mobile
- * del catálogo de la web (ENG-49).
+ * del catálogo de la web (ENG-49). Es la tab central, "Reservar".
  *
  * La especialidad y el tope de precio los filtra el backend; el buscador filtra
  * lo ya cargado por nombre o especialidad, como en la web, porque el backend
@@ -55,11 +55,7 @@ export function ProfessionalsScreen(): React.JSX.Element {
   }
 
   const header = (
-    <ScreenHeader
-      title="Sacar un turno"
-      subtitle="Elegí con quién atenderte."
-      onBack={() => navigation.goBack()}
-    >
+    <ScreenHeader title="Sacar un turno" subtitle="Elegí con quién atenderte.">
       <View style={styles.buscador}>
         <Ionicons name="search" size={18} color={colors.muted} />
         <TextInput

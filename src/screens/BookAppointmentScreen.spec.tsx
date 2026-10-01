@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
@@ -7,7 +7,7 @@ import { renderApp } from '../test/render-app';
 
 async function abrirReserva(...respuestas: Parameters<typeof renderApp>): Promise<void> {
   await renderApp(...respuestas);
-  fireEvent.click(screen.getByRole('button', { name: 'Sacar un turno' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Reservar' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Ver el perfil de Martín Olivares' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Ver turnos disponibles' }));
   await screen.findByText('HORARIOS LIBRES');
@@ -34,7 +34,9 @@ describe('Reservar un turno (ENG-133)', () => {
     expect(await screen.findByText('¡Listo, reservaste tu turno!')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ver mis turnos' }));
-    await waitFor(() => expect(screen.getAllByText('SIN PAGAR')).toHaveLength(2));
+    await waitFor(() =>
+      expect(within(screen.getByTestId('lista-turnos')).getAllByText('SIN PAGAR')).toHaveLength(2),
+    );
   });
 
   // Dos personas eligiendo el mismo horario: gana una y la otra se entera.

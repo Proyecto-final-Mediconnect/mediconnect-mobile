@@ -9,6 +9,8 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 export type PatientTabParamList = {
   Inicio: undefined;
   Turnos: undefined;
+  /** Sacar un turno: la búsqueda de profesionales (ENG-132). */
+  Reservar: undefined;
   MediPass: undefined;
   Perfil: undefined;
 };
@@ -23,8 +25,6 @@ export type RootStackParamList = {
   Paciente: NavigatorScreenParams<PatientTabParamList>;
   HistoriaClinica: undefined;
   EntradaHC: { id: string };
-  /** Búsqueda de profesionales (ENG-132). */
-  Profesionales: undefined;
   /** Perfil público de un profesional (ENG-132). */
   Profesional: { id: string };
   /** Disponibilidad y reserva con un profesional (ENG-133). */

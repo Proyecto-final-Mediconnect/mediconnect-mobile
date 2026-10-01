@@ -9,6 +9,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- Inicio renovado y "Reservar" como tab central. El inicio saluda según la hora
+  de Argentina y, debajo de la próxima consulta, muestra los turnos que siguen,
+  los profesionales con los que ya se atendió el paciente para volver a
+  reservar, y los accesos a la historia clínica y al MediPass. Sacar un turno
+  pasa a la barra de tabs, destacado en el centro.
 - Sacar un turno desde la app (ENG-132, ENG-133). Buscar profesionales
   (`GET /catalog/professionals`, `GET /specialties`) con filtro por especialidad
   y por tope de precio, buscador local por nombre y scroll infinito; perfil
