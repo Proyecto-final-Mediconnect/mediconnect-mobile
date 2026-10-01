@@ -19,6 +19,7 @@ import { NotPatientError, useSession } from '../features/auth/session';
 import { validateLogin, type LoginErrors } from '../features/auth/validation';
 import { ApiError } from '../shared/lib/api-client';
 import { Button } from '../shared/ui/Button';
+import { Desborde } from '../shared/ui/Screen';
 import { TextField } from '../shared/ui/TextField';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 
@@ -93,6 +94,7 @@ export function LoginScreen(): React.JSX.Element {
         keyboardShouldPersistTaps="handled"
       >
         <StatusBar style="light" />
+        <Desborde color={colors.night} />
         <View style={[styles.franja, { paddingTop: insets.top + spacing.lg }]}>
           <Image
             source={logo}
