@@ -33,7 +33,7 @@ export function NextAppointmentCard({
         <Text style={styles.eyebrow}>PRÓXIMA CONSULTA</Text>
         <Text style={styles.nombre}>No tenés turnos próximos</Text>
         <Text style={styles.detalle}>
-          Reservá con un profesional desde MediConnect en la web y lo vas a ver acá.
+          Cuando reserves con un profesional, tu próxima consulta va a aparecer acá.
         </Text>
       </View>
     );

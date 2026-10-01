@@ -17,6 +17,8 @@ interface ConfirmSheetProps {
   /** Mientras se confirma no se puede cerrar ni volver a tocar. */
   pending?: boolean;
   error?: string | null;
+  /** `danger` para lo que no se deshace (cancelar); `primary` para confirmar algo nuevo (reservar). */
+  confirmVariant?: 'danger' | 'primary';
 }
 
 /**
@@ -43,10 +45,24 @@ export function ConfirmSheet({
   onDismiss,
   pending = false,
   error,
+  confirmVariant = 'danger',
 }: ConfirmSheetProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const cerrar = (): void => {
     if (!pending) onDismiss();
+  };
+
+  // Un doble toque confirmaría dos veces: `pending` recién llega en el render
+  // siguiente, y los dos toques entran antes. Se traba al primer toque y se
+  // destraba cuando la acción termina (o falla y se puede reintentar).
+  const confirmado = useRef(false);
+  useEffect(() => {
+    if (!pending) confirmado.current = false;
+  }, [pending, visible]);
+  const confirmar = (): void => {
+    if (confirmado.current) return;
+    confirmado.current = true;
+    onConfirm();
   };
 
   // El `Modal` sigue montado mientras la hoja baja: si se desmontara apenas
@@ -109,9 +125,9 @@ export function ConfirmSheet({
           <View style={styles.botones}>
             <Button
               label={confirmLabel}
-              variant="danger"
+              variant={confirmVariant}
               loading={pending}
-              onPress={onConfirm}
+              onPress={confirmar}
               fullWidth
             />
             <Button label={dismissLabel} variant="secondary" onPress={cerrar} fullWidth />

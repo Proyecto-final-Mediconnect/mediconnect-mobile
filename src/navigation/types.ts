@@ -23,6 +23,12 @@ export type RootStackParamList = {
   Paciente: NavigatorScreenParams<PatientTabParamList>;
   HistoriaClinica: undefined;
   EntradaHC: { id: string };
+  /** Búsqueda de profesionales (ENG-132). */
+  Profesionales: undefined;
+  /** Perfil público de un profesional (ENG-132). */
+  Profesional: { id: string };
+  /** Disponibilidad y reserva con un profesional (ENG-133). */
+  Reservar: { professionalId: string };
 };
 
 // Tipa `useNavigation()` en toda la app sin pasarle el genérico cada vez.

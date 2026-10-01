@@ -49,6 +49,8 @@ interface EmptyStateProps {
   description: string;
   /** `dark` sobre el azul noche del MediPass. */
   tone?: 'light' | 'dark';
+  /** Qué hacer a partir de acá: "Sacar un turno" en una lista vacía de turnos. */
+  action?: { label: string; onPress: () => void };
 }
 
 export function EmptyState({
@@ -56,6 +58,7 @@ export function EmptyState({
   title,
   description,
   tone = 'light',
+  action,
 }: EmptyStateProps): React.JSX.Element {
   const oscuro = tone === 'dark';
 
@@ -70,6 +73,7 @@ export function EmptyState({
         </Text>
         <Text style={[styles.texto, oscuro && styles.textoDark]}>{description}</Text>
       </View>
+      {action ? <Button label={action.label} onPress={action.onPress} /> : null}
     </View>
   );
 }

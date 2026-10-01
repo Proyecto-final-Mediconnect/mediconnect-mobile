@@ -9,6 +9,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- Sacar un turno desde la app (ENG-132, ENG-133). Buscar profesionales
+  (`GET /catalog/professionals`, `GET /specialties`) con filtro por especialidad
+  y por tope de precio, buscador local por nombre y scroll infinito; perfil
+  público (`GET /professionals/:id`); y elegir día y horario de las próximas dos
+  semanas (`GET /professionals/:id/availability`) y reservar con confirmación
+  (`POST /appointments`). El turno queda sin pagar y la app avisa que hay 15
+  minutos para pagarlo desde la web. Accesos desde el inicio y desde "Mis
+  turnos". La hoja de confirmación ya no confirma dos veces con un doble toque.
 - Entrar a la videoconsulta desde la app (ENG-131): "Ingresar a la sala" en el
   inicio y en la tarjeta del turno en "Mis turnos", solo con la sala abierta.
   Pide la sala a `POST /appointments/:id/video` y la abre en el navegador del

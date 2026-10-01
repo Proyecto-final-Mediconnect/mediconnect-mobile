@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '../features/auth/session';
 import { NextAppointmentCard } from '../features/appointments/components/NextAppointmentCard';
@@ -17,7 +18,7 @@ import { Notice } from '../shared/ui/Notice';
 import { QuickTile } from '../shared/ui/QuickTile';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
-import { spacing } from '../shared/ui/theme';
+import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 
 /**
  * Inicio: responde "¿qué tengo que hacer ahora?" antes que "¿adónde voy?".
@@ -79,6 +80,22 @@ export function HomeScreen(): React.JSX.Element {
         />
       ) : null}
 
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Sacar un turno"
+        onPress={() => navigation.navigate('Profesionales')}
+        style={({ pressed }) => [styles.reservar, pressed && styles.reservarPresionado]}
+      >
+        <View style={styles.reservarIcono}>
+          <Ionicons name="add" size={22} color={colors.white} />
+        </View>
+        <View style={styles.reservarTextos}>
+          <Text style={styles.reservarTitulo}>Sacar un turno</Text>
+          <Text style={styles.reservarTexto}>Buscá un profesional y elegí el horario.</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.mutedSoft} />
+      </Pressable>
+
       <View style={styles.accesos}>
         <QuickTile
           icon="calendar-outline"
@@ -129,4 +146,26 @@ function subtitulo(proxima: Appointment | null, ahora: Date): string {
 const styles = StyleSheet.create({
   cargando: { minHeight: 160 },
   accesos: { flexDirection: 'row', gap: spacing.sm },
+  reservar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.card,
+    padding: spacing.md,
+  },
+  reservarPresionado: { borderColor: colors.brand },
+  reservarIcono: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brandHover,
+  },
+  reservarTextos: { flex: 1, gap: 2 },
+  reservarTitulo: { fontFamily: fonts.bold, fontSize: fontSize.md, color: colors.brandDeep },
+  reservarTexto: { fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.muted },
 });

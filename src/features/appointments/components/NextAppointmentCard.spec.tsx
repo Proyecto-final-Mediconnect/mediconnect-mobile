@@ -48,10 +48,10 @@ describe('NextAppointmentCard', () => {
     expect(screen.getByRole('button', { name: 'Ingresar a la sala' })).toBeInTheDocument();
   });
 
-  it('sin turnos lo dice y explica dónde reservar', () => {
+  it('sin turnos lo dice', () => {
     render(<NextAppointmentCard appointment={null} />);
 
     expect(screen.getByText('No tenés turnos próximos')).toBeInTheDocument();
-    expect(screen.getByText(/desde MediConnect en la web/)).toBeInTheDocument();
+    expect(screen.getByText(/va a aparecer acá/)).toBeInTheDocument();
   });
 });
