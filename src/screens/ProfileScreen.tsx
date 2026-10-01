@@ -6,6 +6,7 @@ import { useSession, useSessionUser } from '../features/auth/session';
 import { displayNameOf, initialsOf } from '../features/auth/types';
 import { useMyProfile } from '../features/patient-profile/hooks/use-my-profile';
 import { Button } from '../shared/ui/Button';
+import { ConfirmSheet } from '../shared/ui/ConfirmSheet';
 import { Notice } from '../shared/ui/Notice';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
@@ -16,13 +17,14 @@ import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
  *
  * El canvas nombra esta tab pero no la dibuja. Quién es sale de la sesión; sus
  * datos, de la ficha (`GET /patients/me`), que se carga y se edita en la web.
- * Cerrar sesión borra los tokens del dispositivo y la app vuelve al ingreso
- * (ENG-114).
+ * Cerrar sesión, después de confirmarlo, borra los tokens del dispositivo y la
+ * app vuelve al ingreso (ENG-114).
  */
 export function ProfileScreen(): React.JSX.Element {
   const user = useSessionUser();
   const ficha = useMyProfile();
   const { signOut } = useSession();
+  const [confirmando, setConfirmando] = useState(false);
   const [cerrando, setCerrando] = useState(false);
 
   async function cerrarSesion(): Promise<void> {
@@ -91,12 +93,24 @@ export function ProfileScreen(): React.JSX.Element {
         />
       </View>
 
+      {/* Con confirmación: un toque de más en el perfil no puede obligar a
+          volver a escribir la contraseña. */}
       <Button
         label="Cerrar sesión"
         variant="secondary"
-        onPress={() => void cerrarSesion()}
-        loading={cerrando}
+        onPress={() => setConfirmando(true)}
         fullWidth
+      />
+
+      <ConfirmSheet
+        visible={confirmando}
+        title="¿Cerrar sesión?"
+        message="Para volver a ver tus turnos y tu historia clínica vas a tener que ingresar de nuevo con tu email y contraseña."
+        confirmLabel="Sí, cerrar sesión"
+        dismissLabel="Seguir en la app"
+        pending={cerrando}
+        onDismiss={() => setConfirmando(false)}
+        onConfirm={() => void cerrarSesion()}
       />
     </Screen>
   );

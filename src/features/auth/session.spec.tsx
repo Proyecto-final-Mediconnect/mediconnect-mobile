@@ -217,10 +217,26 @@ describe('sesión del paciente', () => {
       fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
       expect(await screen.findByText(PACIENTE.email)).toBeVisible();
       fireEvent.click(screen.getByRole('button', { name: 'Cerrar sesión' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Sí, cerrar sesión' }));
 
       expect(await screen.findByRole('heading', { name: 'Ingresá a tu cuenta' })).toBeVisible();
       expect(__secureStore.items.size).toBe(0);
       expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    });
+
+    it('pide confirmación y "Seguir en la app" no la cierra', async () => {
+      await iniciarSesionGuardada();
+      await abrirApp();
+      await screen.findByRole('heading', { name: 'Hola, Marina' });
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
+      expect(await screen.findByText('¿Cerrar sesión?')).toBeVisible();
+      fireEvent.click(screen.getByRole('button', { name: 'Seguir en la app' }));
+      // La salida del modal es una animación que jsdom no termina: se verifica
+      // el efecto, no que el modal desaparezca.
+      expect(await readSessionTokens()).toEqual(TOKENS);
+      expect(screen.getByRole('tab', { name: 'Perfil' })).toBeInTheDocument();
     });
 
     // Un celular compartido: el que entra después no puede ver, ni por un
@@ -232,6 +248,7 @@ describe('sesión del paciente', () => {
 
       fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
       fireEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Sí, cerrar sesión' }));
       await screen.findByRole('heading', { name: 'Ingresá a tu cuenta' });
 
       const otro: SessionUser = { ...PACIENTE, id: 'otro', firstName: 'Tomás' };
