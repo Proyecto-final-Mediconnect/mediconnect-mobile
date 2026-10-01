@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { fetchMyClinicalRecord } from '../api';
+import { useSessionUser } from '../../auth/session';
+import { fetchClinicalRecord } from '../api';
 
 /**
  * La HC del paciente de la sesión.
@@ -10,9 +11,11 @@ import { fetchMyClinicalRecord } from '../api';
  * una entrada, no es volver a consultar la historia; el pull-to-refresh sí.
  */
 export function useMyClinicalRecord() {
+  const { id } = useSessionUser();
+
   return useQuery({
-    queryKey: ['clinical-record', 'me'],
-    queryFn: fetchMyClinicalRecord,
+    queryKey: ['clinical-record', id],
+    queryFn: () => fetchClinicalRecord(id),
     staleTime: 10 * 60_000,
   });
 }

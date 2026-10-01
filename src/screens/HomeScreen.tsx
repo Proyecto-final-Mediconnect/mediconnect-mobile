@@ -1,6 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { Alert, StyleSheet, View } from 'react-native';
 
+import { useSessionUser } from '../features/auth/session';
 import { NextAppointmentCard } from '../features/appointments/components/NextAppointmentCard';
 import { useMyAppointments } from '../features/appointments/hooks/use-appointments';
 import {
@@ -11,12 +12,11 @@ import {
 } from '../features/appointments/lib/appointments';
 import { joinStateOf, timeUntilOpen } from '../features/appointments/lib/join-window';
 import type { Appointment } from '../features/appointments/types';
-import { PACIENTE_DEMO } from '../mocks/patient';
 import { useNow } from '../shared/hooks/use-now';
 import { Notice } from '../shared/ui/Notice';
 import { QuickTile } from '../shared/ui/QuickTile';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
-import { LoadingState } from '../shared/ui/StatusViews';
+import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { spacing } from '../shared/ui/theme';
 
 /**
@@ -29,11 +29,10 @@ import { spacing } from '../shared/ui/theme';
  * La historia clínica queda como acceso, sin su última entrada ni cuántas tiene:
  * cada lectura de la HC deja un registro de acceso en la auditoría (Ley 26.529),
  * y abrir la app no es consultar la historia.
- *
- * El nombre sale de la paciente de ejemplo hasta que exista la sesión (ENG-114).
  */
 export function HomeScreen(): React.JSX.Element {
   const navigation = useNavigation();
+  const { firstName } = useSessionUser();
   const turnos = useMyAppointments();
   // Cada 15 segundos: alcanza para que el botón de la sala aparezca a tiempo
   // sin redibujar la pantalla a cada segundo.
@@ -55,7 +54,7 @@ export function HomeScreen(): React.JSX.Element {
         <ScreenHeader
           hero
           tone="dark"
-          title={`Hola, ${PACIENTE_DEMO.firstName}`}
+          title={firstName ? `Hola, ${firstName}` : 'Hola'}
           subtitle={turnos.data ? subtitulo(proxima, ahora) : ' '}
         />
       }
@@ -64,6 +63,10 @@ export function HomeScreen(): React.JSX.Element {
         <View style={styles.cargando}>
           <LoadingState label="Buscando tu próxima consulta…" />
         </View>
+      ) : turnos.isError ? (
+        // Sin los turnos no se sabe si hay una consulta: decir "no tenés turnos"
+        // sería mentir justo cuando puede estar por empezar una.
+        <ErrorState message={turnos.error.message} onRetry={() => void turnos.refetch()} />
       ) : (
         <NextAppointmentCard
           appointment={proxima}

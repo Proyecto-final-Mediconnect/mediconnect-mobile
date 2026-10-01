@@ -9,13 +9,17 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
-- Pantallas del paciente con datos de ejemplo (ENG-115, ENG-116, ENG-117): inicio
-  con la próxima consulta y el botón para entrar a la sala; mis turnos con
-  próximos y pasados, pull-to-refresh y cancelar con confirmación; historia
-  clínica en línea de tiempo, con filtro por tipo, correcciones vinculadas y el
-  registro completo; MediPass con el código rotatorio, el bloque vital y los
-  accesos en curso con opción de revocar; y el perfil. Los datos salen de
-  `src/mocks/` hasta que exista la sesión (ENG-114).
+- Pantallas del paciente (ENG-115, ENG-116, ENG-117): inicio con la próxima
+  consulta y el botón para entrar a la sala; mis turnos con próximos y pasados,
+  pull-to-refresh y cancelar con confirmación; historia clínica en línea de
+  tiempo, con filtro por tipo, correcciones vinculadas y el registro completo;
+  MediPass con el código rotatorio, el bloque vital y los accesos en curso con
+  opción de revocar; y el perfil con la ficha del paciente. Turnos
+  (`GET /appointments/me`, `PATCH /appointments/:id/cancel`), historia clínica
+  (`GET /patients/:id/clinical-record`, siempre con el id de la sesión) y ficha
+  (`GET /patients/me`) salen del backend; el MediPass, de datos de ejemplo hasta
+  que el backend tenga sus rutas. Al cerrar sesión se descarta la caché, para que
+  el siguiente paciente no vea los datos del anterior.
 - Shell navegable de la app (ENG-113), según la sección "App paciente" del canvas
   de diseño: navegador raíz con React Navigation 7 (ADR-016), tabs Inicio,
   Turnos, MediPass y Perfil, la historia clínica abierta desde el inicio, las

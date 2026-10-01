@@ -7,6 +7,7 @@ import { __secureStore } from '../../../test-stubs/expo-secure-store';
 import { readSessionTokens } from '../../infrastructure/secure-store/session-tokens';
 import { RootNavigator } from '../../navigation/RootNavigator';
 import { API_URL, server } from '../../test/msw-server';
+import { servirDatosDelPaciente } from '../../test/patient-api';
 import { iniciarSesionGuardada, PACIENTE, TOKENS } from '../../test/session';
 import type { SessionUser } from './types';
 
@@ -40,6 +41,8 @@ function loginQueResponde(user: SessionUser = PACIENTE): void {
 }
 
 async function abrirApp(): Promise<void> {
+  // Lo que piden las pantallas de la app una vez adentro.
+  servirDatosDelPaciente();
   // Las pantallas de la app piden sus datos con TanStack Query.
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -218,6 +221,34 @@ describe('sesión del paciente', () => {
       expect(await screen.findByRole('heading', { name: 'Ingresá a MediConnect' })).toBeVisible();
       expect(__secureStore.items.size).toBe(0);
       expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    });
+
+    // Un celular compartido: el que entra después no puede ver, ni por un
+    // instante, los turnos del anterior que quedaron en la caché.
+    it('no deja los datos del paciente anterior para el siguiente', async () => {
+      await iniciarSesionGuardada();
+      await abrirApp();
+      expect(await screen.findByRole('button', { name: 'Ingresar a la sala' })).toBeVisible();
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
+      await screen.findByRole('heading', { name: 'Ingresá a MediConnect' });
+
+      const otro: SessionUser = { ...PACIENTE, id: 'otro', firstName: 'Tomás' };
+      loginQueResponde(otro);
+      server.use(
+        http.get(
+          `${API_URL}/appointments/me`,
+          // Una respuesta que no llega: si la pantalla muestra un turno, salió
+          // de la caché.
+          () => new Promise<never>(() => undefined),
+        ),
+      );
+      completarYEnviar(otro.email, 'Password1');
+
+      expect(await screen.findByRole('heading', { name: 'Hola, Tomás' })).toBeVisible();
+      expect(screen.queryByRole('button', { name: 'Ingresar a la sala' })).not.toBeInTheDocument();
+      expect(screen.getByText('Buscando tu próxima consulta…')).toBeInTheDocument();
     });
   });
 });

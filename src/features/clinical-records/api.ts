@@ -1,17 +1,15 @@
-import { crearHistoriaDemo } from '../../mocks/clinical-record';
-import { conDemora } from '../../mocks/demo';
+import { apiRequest } from '../../shared/lib/api-client';
 import type { ClinicalEntry } from './types';
 
-/*
- * API de la historia clínica. Hoy sale de los datos de ejemplo (ver
- * `src/mocks/demo.ts`).
+/**
+ * `GET /patients/:id/clinical-record`, de la más vieja a la más nueva.
  *
- * Con la sesión de ENG-114 pasa a `GET /patients/:id/clinical-record` con el id
- * del paciente de la sesión, nunca uno que venga de otro lado: es lo que
- * garantiza que la app no ofrezca un camino para pedir la HC de otra persona
- * (ENG-116). El backend además lo impide con RLS.
+ * El id es siempre el del paciente de la sesión (`useSessionUser()`), nunca uno
+ * que venga de otro lado: la app no ofrece un camino para pedir la HC de otra
+ * persona (ENG-116). El backend además lo impide con RLS.
  */
-
-export function fetchMyClinicalRecord(): Promise<ClinicalEntry[]> {
-  return conDemora(crearHistoriaDemo());
+export function fetchClinicalRecord(patientId: string): Promise<ClinicalEntry[]> {
+  return apiRequest<ClinicalEntry[]>(`/patients/${patientId}/clinical-record`, {
+    fallbackMessage: 'No se pudo cargar tu historia clínica.',
+  });
 }

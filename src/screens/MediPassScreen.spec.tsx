@@ -11,6 +11,13 @@ async function abrirMediPass(): Promise<void> {
 }
 
 describe('Mi MediPass (ENG-117)', () => {
+  // Hasta ENG-117 los datos no son del paciente: no pueden pasar por suyos.
+  it('avisa que es una vista previa con datos de ejemplo', async () => {
+    await abrirMediPass();
+
+    expect(screen.getByText(/Vista previa con datos de ejemplo/)).toBeInTheDocument();
+  });
+
   it('muestra el código rotatorio con su cuenta regresiva', async () => {
     await abrirMediPass();
 

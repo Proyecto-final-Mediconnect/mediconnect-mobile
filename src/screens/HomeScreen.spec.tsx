@@ -1,6 +1,8 @@
 import { screen } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
+import { API_URL } from '../test/msw-server';
 import { renderApp } from '../test/render-app';
 
 describe('Inicio', () => {
@@ -32,5 +34,18 @@ describe('Inicio', () => {
     await screen.findByRole('button', { name: 'Ingresar a la sala' });
 
     expect(screen.queryByText(/Enalapril/)).not.toBeInTheDocument();
+  });
+
+  // Sin los turnos no se sabe si hay una consulta por empezar.
+  it('si no se pudieron cargar los turnos lo dice, en vez de decir que no hay', async () => {
+    await renderApp(
+      http.get(`${API_URL}/appointments/me`, () =>
+        HttpResponse.json({ message: 'No se pudieron cargar tus turnos.' }, { status: 500 }),
+      ),
+    );
+
+    expect(await screen.findByText('No se pudieron cargar tus turnos.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Probá de nuevo' })).toBeInTheDocument();
+    expect(screen.queryByText('No tenés turnos próximos')).not.toBeInTheDocument();
   });
 });

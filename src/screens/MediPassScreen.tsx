@@ -13,6 +13,7 @@ import {
 import type { MediPassAccess } from '../features/medipass/types';
 import { useNow } from '../shared/hooks/use-now';
 import { ConfirmSheet } from '../shared/ui/ConfirmSheet';
+import { Notice } from '../shared/ui/Notice';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, spacing } from '../shared/ui/theme';
@@ -49,6 +50,12 @@ export function MediPassScreen(): React.JSX.Element {
         />
       }
     >
+      {/* El backend todavía no tiene rutas de MediPass (ENG-117): todo lo de esta
+          pantalla es de ejemplo, y en una app de salud no puede pasar por propio. */}
+      <Notice
+        icon="flask-outline"
+        message="Vista previa con datos de ejemplo: tu MediPass todavía no está disponible."
+      />
       <MediPassCode />
 
       <Text style={styles.seccion}>Accediendo ahora</Text>

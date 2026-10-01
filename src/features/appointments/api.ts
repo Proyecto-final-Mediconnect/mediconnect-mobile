@@ -1,20 +1,22 @@
-import { conDemora } from '../../mocks/demo';
-import { turnosDemo } from '../../mocks/appointments';
+import { apiRequest } from '../../shared/lib/api-client';
 import type { Appointment } from './types';
 
-/*
- * API de turnos. Hoy sale de los datos de ejemplo (ver `src/mocks/demo.ts`).
- *
- * Con la sesión de ENG-114 cada función pasa a su endpoint, los mismos que usa
- * la web:
- *   fetchMyAppointments  → GET   /appointments/me
- *   cancelAppointment    → PATCH /appointments/:id/cancel
- */
+/* API de turnos: los mismos endpoints que usa la web. */
 
+/** `GET /appointments/me`: los turnos del paciente de la sesión. */
 export function fetchMyAppointments(): Promise<Appointment[]> {
-  return conDemora(turnosDemo.listar());
+  return apiRequest<Appointment[]>('/appointments/me', {
+    fallbackMessage: 'No se pudieron cargar tus turnos.',
+  });
 }
 
+/**
+ * `PATCH /appointments/:id/cancel`: devuelve el turno ya en `CANCELADO`. Sin
+ * body: el backend corre con `forbidNonWhitelisted` y mandar uno daría 400.
+ */
 export function cancelAppointment(id: string): Promise<Appointment> {
-  return conDemora(turnosDemo.cancelar(id));
+  return apiRequest<Appointment>(`/appointments/${id}/cancel`, {
+    method: 'PATCH',
+    fallbackMessage: 'No se pudo cancelar el turno.',
+  });
 }

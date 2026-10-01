@@ -2,22 +2,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState, type ComponentProps } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { useSession } from '../features/auth/session';
-import { MODO_DEMO } from '../mocks/demo';
-import { PACIENTE_DEMO } from '../mocks/patient';
+import { useSession, useSessionUser } from '../features/auth/session';
+import { displayNameOf, initialsOf } from '../features/auth/types';
+import { useMyProfile } from '../features/patient-profile/hooks/use-my-profile';
 import { Button } from '../shared/ui/Button';
+import { Notice } from '../shared/ui/Notice';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
+import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 
 /**
  * Mi perfil: quién es, sus datos y qué pasa con su información.
  *
- * El canvas nombra esta tab pero no la dibuja. Cerrar sesión borra los tokens
- * del dispositivo y la app vuelve al ingreso (ENG-114).
+ * El canvas nombra esta tab pero no la dibuja. Quién es sale de la sesión; sus
+ * datos, de la ficha (`GET /patients/me`), que se carga y se edita en la web.
+ * Cerrar sesión borra los tokens del dispositivo y la app vuelve al ingreso
+ * (ENG-114).
  */
 export function ProfileScreen(): React.JSX.Element {
-  const p = PACIENTE_DEMO;
-  const iniciales = `${p.firstName[0] ?? ''}${p.lastName[0] ?? ''}`;
+  const user = useSessionUser();
+  const ficha = useMyProfile();
   const { signOut } = useSession();
   const [cerrando, setCerrando] = useState(false);
 
@@ -32,26 +36,45 @@ export function ProfileScreen(): React.JSX.Element {
     <Screen header={<ScreenHeader title="Mi perfil" />}>
       <View style={styles.identidad}>
         <View style={styles.avatar}>
-          <Text style={styles.iniciales}>{iniciales}</Text>
+          <Text style={styles.iniciales}>{initialsOf(user)}</Text>
         </View>
         <View style={styles.identidadTextos}>
-          <Text style={styles.nombre}>
-            {p.firstName} {p.lastName}
-          </Text>
-          <Text style={styles.email}>{p.email}</Text>
+          <Text style={styles.nombre}>{displayNameOf(user)}</Text>
+          <Text style={styles.email}>{user.email}</Text>
         </View>
       </View>
 
       <Text style={styles.seccion}>MIS DATOS</Text>
-      <View style={styles.grupo}>
-        <Fila icono="card-outline" rotulo="DNI" valor={p.dni} />
-        <Fila
-          icono="calendar-clear-outline"
-          rotulo="Fecha de nacimiento"
-          valor={fechaLarga(p.birthDate)}
-        />
-        <Fila icono="call-outline" rotulo="Teléfono" valor={p.phone} ultima />
-      </View>
+      {ficha.isPending ? (
+        <View style={styles.cargando}>
+          <LoadingState label="Cargando tus datos…" />
+        </View>
+      ) : ficha.isError ? (
+        <ErrorState message={ficha.error.message} onRetry={() => void ficha.refetch()} />
+      ) : (
+        <>
+          {ficha.data.completed ? null : (
+            <Notice
+              icon="create-outline"
+              message="Todavía no completaste tus datos. Podés cargarlos desde MediConnect en la web."
+            />
+          )}
+          <View style={styles.grupo}>
+            <Fila icono="card-outline" rotulo="DNI" valor={ficha.data.dni ?? SIN_CARGAR} />
+            <Fila
+              icono="calendar-clear-outline"
+              rotulo="Fecha de nacimiento"
+              valor={ficha.data.birthDate ? fechaLarga(ficha.data.birthDate) : SIN_CARGAR}
+            />
+            <Fila
+              icono="call-outline"
+              rotulo="Teléfono"
+              valor={ficha.data.phone ?? SIN_CARGAR}
+              ultima
+            />
+          </View>
+        </>
+      )}
 
       <Text style={styles.seccion}>PRIVACIDAD</Text>
       <View style={styles.grupo}>
@@ -67,15 +90,6 @@ export function ProfileScreen(): React.JSX.Element {
           ultima
         />
       </View>
-
-      {MODO_DEMO ? (
-        <View style={styles.demo}>
-          <Ionicons name="flask-outline" size={18} color={colors.brandHover} />
-          <Text style={styles.demoTexto}>
-            Estás viendo datos de ejemplo. Cuando inicies sesión, vas a ver los tuyos.
-          </Text>
-        </View>
-      ) : null}
 
       <Button
         label="Cerrar sesión"
@@ -110,6 +124,8 @@ function Fila({
   );
 }
 
+const SIN_CARGAR = 'Sin cargar';
+
 const MESES = [
   'enero',
   'febrero',
@@ -132,6 +148,7 @@ function fechaLarga(fecha: string): string {
 }
 
 const styles = StyleSheet.create({
+  cargando: { minHeight: 120 },
   identidad: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -179,20 +196,4 @@ const styles = StyleSheet.create({
   filaTextos: { flex: 1, gap: 2 },
   rotulo: { fontFamily: fonts.medium, fontSize: fontSize.xs, color: colors.muted },
   valor: { fontFamily: fonts.semibold, fontSize: fontSize.md, color: colors.ink },
-  demo: {
-    marginTop: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surfaceTeal,
-    borderRadius: radius.card,
-    padding: spacing.lg,
-  },
-  demoTexto: {
-    flex: 1,
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    lineHeight: 19,
-    color: colors.brandDeep,
-  },
 });

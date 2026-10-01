@@ -1,5 +1,7 @@
 import { DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -55,6 +57,14 @@ export function RootNavigator(): React.JSX.Element {
 
 function RootStack(): React.JSX.Element {
   const { state, retry } = useSession();
+  const queryClient = useQueryClient();
+
+  // Al cerrar sesión —o cuando vence— se tira la caché: el próximo que ingrese
+  // en este celular no puede ver ni por un instante los turnos o la historia
+  // del anterior.
+  useEffect(() => {
+    if (state.status === 'signedOut') queryClient.clear();
+  }, [state.status, queryClient]);
 
   // Mientras se lee el secure store y se verifica la sesión, al abrir la app:
   // mostrar el ingreso un instante y después saltar al inicio sería peor que
