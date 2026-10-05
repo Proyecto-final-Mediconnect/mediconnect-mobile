@@ -85,7 +85,7 @@ guardar (§3.4.2). El Dev Container ya viene con esto configurado.
 
 ```
 src/
-├── navigation/      # config de navegación — PENDIENTE ADR-016 (Sprint 1)
+├── navigation/      # navegación — React Navigation 7 (ADR-016)
 ├── screens/         # una pantalla por ruta
 ├── features/        # lógica de negocio por dominio (auth/, ...)
 ├── infrastructure/  # capacidades nativas del dispositivo
