@@ -13,6 +13,9 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: /^react-native$/, replacement: 'react-native-web' },
+      // Keychain / Keystore: en jsdom no hay módulo nativo. El stub es un `Map`
+      // en memoria que los tests pueden inspeccionar. ENG-114.
+      { find: /^expo-secure-store$/, replacement: stub('expo-secure-store.ts') },
       // Paquetes con código nativo que publican fuente sin transpilar (Flow) o
       // que cargan módulos nativos. El alias va acá y no en un `vi.mock`, que
       // corre demasiado tarde: el import ya falló al parsear. ADR-016.
@@ -26,7 +29,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'jsdom',
+    environment: './test-stubs/jsdom-native-abort.ts',
     setupFiles: ['./vitest.setup.ts'],
     // §3.4.10 (decisión de equipo): nombre de archivos de test `.spec.ts(x)`.
     include: ['src/**/*.spec.{ts,tsx}'],
