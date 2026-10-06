@@ -25,6 +25,9 @@ export default defineConfig({
         replacement: stub('react-native-safe-area-context.tsx'),
       },
       { find: /^@expo\/vector-icons$/, replacement: stub('expo-vector-icons.tsx') },
+      { find: /^react-native-qrcode-svg$/, replacement: stub('react-native-qrcode-svg.tsx') },
+      { find: /^expo-brightness$/, replacement: stub('expo-brightness.ts') },
+      { find: /^react-native-svg$/, replacement: stub('react-native-svg.tsx') },
     ],
   },
   test: {

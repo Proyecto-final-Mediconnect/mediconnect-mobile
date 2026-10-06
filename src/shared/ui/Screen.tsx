@@ -17,6 +17,28 @@ type Tone = 'light' | 'dark';
 /** Cuánto se monta el contenido sobre un `hero`. */
 const HERO_OVERLAP = 44;
 
+/** Más alto que cualquier tirón: el rebote nunca llega a ver el borde. */
+const ALTO_DESBORDE = 1000;
+
+/**
+ * Pinta lo que asoma arriba del contenido cuando en iOS se tira la pantalla
+ * para abajo (el rebote). Sin esto, arriba de una franja oscura aparece el fondo
+ * claro del scroll. Va como primer hijo del contenido del `ScrollView`.
+ *
+ * No se desactiva el rebote (`bounces={false}`): es como se siente un scroll en
+ * iOS, y una pantalla que no rebota parece trabada.
+ */
+export function Desborde({ color }: { color: string }): React.JSX.Element {
+  return (
+    <View
+      pointerEvents="none"
+      style={[styles.desborde, { backgroundColor: color }]}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    />
+  );
+}
+
 interface ScreenProps {
   children: ReactNode;
   /** Va arriba, fuera del scroll. Sin header, la pantalla respeta sola el área segura. */
@@ -33,6 +55,11 @@ interface ScreenProps {
    * centran un único estado —carga, error, vacío— en el alto disponible.
    */
   scroll?: boolean;
+  /**
+   * `false` para que el contenido llegue a los bordes: una `FlatList` que pone
+   * sus propios márgenes para que el pull-to-refresh no quede recortado.
+   */
+  padded?: boolean;
 }
 
 /**
@@ -46,6 +73,7 @@ export function Screen({
   hero,
   tone = 'light',
   scroll = true,
+  padded = true,
 }: ScreenProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const fondo = tone === 'dark' ? styles.dark : styles.light;
@@ -53,6 +81,7 @@ export function Screen({
     <View
       style={[
         styles.contenido,
+        !padded && styles.sinMargen,
         !!hero && styles.sobreHero,
         !header && !hero && { paddingTop: insets.top + spacing.lg },
       ]}
@@ -66,6 +95,8 @@ export function Screen({
       {header ?? (hero ? null : <BarraDeEstado tone={tone} />)}
       {scroll ? (
         <ScrollView style={styles.fill} contentContainerStyle={styles.crece}>
+          {/* El hero es siempre la franja oscura (`ScreenHeader hero tone="dark"`). */}
+          {hero ? <Desborde color={colors.night} /> : null}
           {hero}
           {cuerpo}
         </ScrollView>
@@ -157,12 +188,20 @@ function BarraDeEstado({ tone }: { tone: Tone }): React.JSX.Element | null {
 }
 
 const styles = StyleSheet.create({
+  desborde: {
+    position: 'absolute',
+    top: -ALTO_DESBORDE,
+    left: 0,
+    right: 0,
+    height: ALTO_DESBORDE,
+  },
   fill: { flex: 1 },
   light: { backgroundColor: colors.surface },
   dark: { backgroundColor: colors.night },
   crece: { flexGrow: 1 },
   contenido: { flexGrow: 1, padding: spacing.lg, gap: spacing.md },
   sobreHero: { marginTop: -HERO_OVERLAP },
+  sinMargen: { padding: 0 },
   header: { paddingHorizontal: spacing.xl, paddingBottom: spacing.xl },
   headerLight: {
     backgroundColor: colors.white,
