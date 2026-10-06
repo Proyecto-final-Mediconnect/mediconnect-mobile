@@ -29,7 +29,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: 'jsdom',
+    environment: './test-stubs/jsdom-native-abort.ts',
     setupFiles: ['./vitest.setup.ts'],
     // §3.4.10 (decisión de equipo): nombre de archivos de test `.spec.ts(x)`.
     include: ['src/**/*.spec.{ts,tsx}'],
