@@ -13,6 +13,7 @@ import {
 } from '../features/appointments/lib/appointments';
 import type { Appointment } from '../features/appointments/types';
 import { useNow } from '../shared/hooks/use-now';
+import { usePullToRefresh } from '../shared/hooks/use-pull-to-refresh';
 import { ConfirmSheet } from '../shared/ui/ConfirmSheet';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { SegmentedControl } from '../shared/ui/SegmentedControl';
@@ -32,6 +33,7 @@ type Vista = 'proximos' | 'pasados';
  */
 export function AppointmentsScreen(): React.JSX.Element {
   const turnos = useMyAppointments();
+  const tirar = usePullToRefresh(turnos.refetch);
   const cancelar = useCancelAppointment();
   const ahora = useNow(60_000);
   const [vista, setVista] = useState<Vista>('proximos');
@@ -85,8 +87,8 @@ export function AppointmentsScreen(): React.JSX.Element {
         contentContainerStyle={styles.lista}
         refreshControl={
           <RefreshControl
-            refreshing={turnos.isRefetching}
-            onRefresh={() => void turnos.refetch()}
+            refreshing={tirar.refreshing}
+            onRefresh={tirar.onRefresh}
             tintColor={colors.brand}
             colors={[colors.brand]}
           />

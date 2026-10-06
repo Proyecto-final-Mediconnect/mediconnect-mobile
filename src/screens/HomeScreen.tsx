@@ -39,11 +39,13 @@ export function HomeScreen(): React.JSX.Element {
   const ahora = useNow(15_000);
 
   const proxima = turnos.data ? nextAppointment(turnos.data, ahora) : null;
-  const sinPagar = turnos.data?.find(
+  const proximos = turnos.data ? splitByTime(turnos.data, ahora).upcoming : null;
+  // `upcoming` viene ordenado: con más de un turno impago, se avisa del más cercano.
+  const sinPagar = proximos?.find(
     (t) => t.status === 'RESERVADO_SIN_PAGAR' && Date.parse(t.scheduledAt) > ahora.getTime(),
   );
-  const cantidadProximos = turnos.data
-    ? splitByTime(turnos.data, ahora).upcoming.filter((t) => t.status !== 'CANCELADO').length
+  const cantidadProximos = proximos
+    ? proximos.filter((t) => t.status !== 'CANCELADO').length
     : null;
 
   const irATurnos = (): void => navigation.navigate('Paciente', { screen: 'Turnos' });

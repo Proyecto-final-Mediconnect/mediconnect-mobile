@@ -17,5 +17,8 @@ export function useMyClinicalRecord() {
     queryKey: ['clinical-record', id],
     queryFn: () => fetchClinicalRecord(id),
     staleTime: 10 * 60_000,
+    // Si no, la caché se descarta a los 5 minutos sin pantallas que la usen y la
+    // próxima lectura vuelve al servidor (y a la auditoría) aunque no esté vencida.
+    gcTime: 15 * 60_000,
   });
 }

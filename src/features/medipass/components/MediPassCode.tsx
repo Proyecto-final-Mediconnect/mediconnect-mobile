@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
@@ -34,19 +34,27 @@ export function MediPassCode(): React.JSX.Element {
 
   const codigo = codigoDeVentana(ahora);
   const restante = msHastaRotacion(ahora);
+  // La cuenta regresiva re-renderiza cada segundo, pero el código cambia cada
+  // cinco minutos: el QR (recalcular la matriz y el SVG) solo cuando cambia.
+  const qr = useMemo(
+    () => (
+      <QRCode
+        value={codigo}
+        size={208}
+        color={colors.night}
+        backgroundColor={colors.white}
+        quietZone={8}
+      />
+    ),
+    [codigo],
+  );
 
   return (
     <View style={styles.card}>
       {visible ? (
         <>
           <View accessibilityRole="image" accessibilityLabel={`Código QR del MediPass ${codigo}`}>
-            <QRCode
-              value={codigo}
-              size={208}
-              color={colors.night}
-              backgroundColor={colors.white}
-              quietZone={8}
-            />
+            {qr}
           </View>
           <Text selectable style={styles.codigo}>
             {codigo}

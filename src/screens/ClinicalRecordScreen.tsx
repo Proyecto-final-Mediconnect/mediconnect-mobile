@@ -9,6 +9,7 @@ import {
   newestFirst,
   typesPresent,
 } from '../features/clinical-records/lib/record-view';
+import { usePullToRefresh } from '../shared/hooks/use-pull-to-refresh';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { SegmentedControl } from '../shared/ui/SegmentedControl';
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
@@ -37,6 +38,7 @@ const FILTRO_LABELS: Record<string, string> = {
 export function ClinicalRecordScreen(): React.JSX.Element {
   const navigation = useNavigation();
   const historia = useMyClinicalRecord();
+  const tirar = usePullToRefresh(historia.refetch);
   const [filtro, setFiltro] = useState('TODAS');
   const [visibles, setVisibles] = useState(TANDA);
 
@@ -103,8 +105,8 @@ export function ClinicalRecordScreen(): React.JSX.Element {
         }}
         refreshControl={
           <RefreshControl
-            refreshing={historia.isRefetching}
-            onRefresh={() => void historia.refetch()}
+            refreshing={tirar.refreshing}
+            onRefresh={tirar.onRefresh}
             tintColor={colors.brand}
             colors={[colors.brand]}
           />

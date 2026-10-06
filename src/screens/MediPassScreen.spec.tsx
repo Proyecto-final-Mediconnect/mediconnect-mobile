@@ -39,6 +39,25 @@ describe('Mi MediPass (ENG-117)', () => {
     await waitFor(async () => expect(await Brightness.getBrightnessAsync()).toBe(1));
   });
 
+  // En iOS el brillo es el del sistema: minimizar la app no puede dejarlo al máximo.
+  it('devuelve el brillo al pasar a segundo plano y lo vuelve a subir al volver', async () => {
+    await Brightness.setBrightnessAsync(0.4);
+    await abrirMediPass();
+    await waitFor(async () => expect(await Brightness.getBrightnessAsync()).toBe(1));
+
+    act(() => {
+      Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await waitFor(async () => expect(await Brightness.getBrightnessAsync()).toBe(0.4));
+
+    act(() => {
+      Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await waitFor(async () => expect(await Brightness.getBrightnessAsync()).toBe(1));
+  });
+
   it('revocar pide confirmación y saca el acceso de la lista', async () => {
     await abrirMediPass();
 
