@@ -9,6 +9,7 @@ import {
   formatShortDay,
   nextAppointment,
   professionalName,
+  splitByTime,
 } from '../features/appointments/lib/appointments';
 import { greeting, laterAppointments, pastProfessionals } from '../features/appointments/lib/home';
 import { joinStateOf, timeUntilOpen } from '../features/appointments/lib/join-window';
@@ -48,7 +49,9 @@ export function HomeScreen(): React.JSX.Element {
   const ahora = useNow(15_000);
 
   const proxima = turnos.data ? nextAppointment(turnos.data, ahora) : null;
-  const sinPagar = turnos.data?.find(
+  const proximos = turnos.data ? splitByTime(turnos.data, ahora).upcoming : null;
+  // `upcoming` viene ordenado: con más de un turno impago, se avisa del más cercano.
+  const sinPagar = proximos?.find(
     (t) => t.status === 'RESERVADO_SIN_PAGAR' && Date.parse(t.scheduledAt) > ahora.getTime(),
   );
   const siguientes = turnos.data ? laterAppointments(turnos.data, proxima, ahora) : [];

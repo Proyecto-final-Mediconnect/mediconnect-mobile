@@ -44,6 +44,14 @@ export function EntryDetailScreen(): React.JSX.Element {
     );
   }
 
+  if (historia.isError) {
+    return (
+      <Screen scroll={false} header={header}>
+        <ErrorState message={historia.error.message} onRetry={() => void historia.refetch()} />
+      </Screen>
+    );
+  }
+
   if (!entrada) {
     return (
       <Screen scroll={false} header={header}>
