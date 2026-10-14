@@ -6,17 +6,24 @@ name: CI
 # producción y sin deploy (el mobile no despliega a Render/Vercel).
 #
 # Nota: este repo usa npm (package-lock.json), no pnpm como backend/web.
+#
+# Disparadores iguales a los de backend y web (ENG-128):
+# - `pull_request` corre para CUALQUIER base, no solo release/main: un PR
+#   apilado sobre otra rama también tiene que pasar CI. Antes, mobile#9 (ENG-114)
+#   se abrió sobre la rama de ENG-113 y nunca corrió.
+# - `edited` hace que cambiarle la base a un PR vuelva a correr los checks contra
+#   la base nueva. Sin él, el #9 pasó a release/2.0.0 y el check requerido quedó
+#   "Waiting for status to be reported" para siempre.
+# - `push` solo en release/main. Las ramas de trabajo ya corren por su PR, sin
+#   importar cómo se llamen (las que genera Linear no son `feature/**`), y correr
+#   también por push duplicaría cada corrida.
 on:
   push:
     branches:
-      - 'feature/**'
-      - 'bugfix/**'
       - 'release/**'
       - 'main'
   pull_request:
-    branches:
-      - 'release/**'
-      - 'main'
+    types: [opened, synchronize, reopened, edited]
 
 # Cancela runs obsoletos del mismo ref: si pusheás dos veces seguidas, el primero
 # se descarta en vez de encolarse. Ahorra minutos de runner.
