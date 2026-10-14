@@ -21,7 +21,7 @@
         "projectId": "447d197b-7e79-456c-9db8-fef1757b4afd"
       }
     },
-    "plugins": ["expo-secure-store", "expo-status-bar", "expo-font"],
+    "plugins": ["expo-secure-store", "expo-status-bar", "expo-font", "@sentry/react-native"],
     "owner": "mediconnecttesis"
   }
 }

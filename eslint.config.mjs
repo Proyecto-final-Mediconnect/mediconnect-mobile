@@ -37,6 +37,18 @@ export default tseslint.config(
     },
   },
   {
+    // Configuración de Metro: la lee Node directamente, así que es CommonJS y no
+    // puede usar `import`. Se lintea igual en vez de ignorarla. ENG-99.
+    files: ['metro.config.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { ...globals.node },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
     // Tests: relajamos algunas reglas propias del entorno de testing.
     files: ['**/*.spec.{ts,tsx}', 'vitest.setup.ts'],
     languageOptions: {

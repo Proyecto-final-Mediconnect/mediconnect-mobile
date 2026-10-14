@@ -27,6 +27,8 @@ export default defineConfig({
       { find: /^@expo\/vector-icons$/, replacement: stub('expo-vector-icons.tsx') },
       { find: /^react-native-qrcode-svg$/, replacement: stub('react-native-qrcode-svg.tsx') },
       { find: /^expo-brightness$/, replacement: stub('expo-brightness.ts') },
+      // Carga módulos nativos al importarse. ENG-99.
+      { find: /^@sentry\/react-native$/, replacement: stub('sentry-react-native.ts') },
       { find: /^react-native-svg$/, replacement: stub('react-native-svg.tsx') },
     ],
   },
