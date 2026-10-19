@@ -32,6 +32,16 @@ export function LegalConsentScreen(): React.JSX.Element {
   const [enviando, setEnviando] = useState(false);
   const [falla, setFalla] = useState<string | null>(null);
 
+  async function leerTextos(): Promise<void> {
+    try {
+      await Linking.openURL(LEGAL_URL);
+    } catch {
+      // Sin navegador o con la URL mal configurada: que no sea un toque que no
+      // hace nada, justo en el consentimiento informado.
+      setFalla(`No pudimos abrir los textos. Podés leerlos en ${LEGAL_URL}`);
+    }
+  }
+
   async function aceptar(): Promise<void> {
     if (!tildado || enviando) return;
     setEnviando(true);
@@ -72,7 +82,7 @@ export function LegalConsentScreen(): React.JSX.Element {
         <Pressable
           accessibilityRole="link"
           accessibilityLabel="Leer los textos completos"
-          onPress={() => void Linking.openURL(LEGAL_URL)}
+          onPress={() => void leerTextos()}
           hitSlop={spacing.sm}
           style={styles.enlace}
         >
