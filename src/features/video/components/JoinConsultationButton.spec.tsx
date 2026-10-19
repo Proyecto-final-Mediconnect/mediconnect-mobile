@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { Linking } from 'react-native';
+import { describe, expect, it, vi } from 'vitest';
 
-import { __abiertas } from '../../../../test-stubs/expo-web-browser';
+import { __abiertas, __control } from '../../../../test-stubs/expo-web-browser';
 import { API_URL, server } from '../../../test/msw-server';
 import { iniciarSesionGuardada } from '../../../test/session';
 import type { VideoConsultationAccess } from '../types';
@@ -47,6 +48,31 @@ describe('Ingresar a la sala (ENG-131)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ingresar a la sala' }));
 
     await waitFor(() => expect(__abiertas).toEqual([SALA]));
+  });
+
+  it('si no hay navegador in-app, la abre con el del sistema', async () => {
+    salaQueResponde(() => HttpResponse.json(acceso()));
+    const sistema = vi.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    __control.fallarProxima = true;
+    await montar();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ingresar a la sala' }));
+
+    await waitFor(() => expect(sistema).toHaveBeenCalledWith(SALA));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    sistema.mockRestore();
+  });
+
+  it('si no se puede abrir de ninguna forma, lo dice', async () => {
+    salaQueResponde(() => HttpResponse.json(acceso()));
+    const sistema = vi.spyOn(Linking, 'openURL').mockRejectedValue(new Error('sin navegador'));
+    __control.fallarProxima = true;
+    await montar();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ingresar a la sala' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos abrir el navegador');
+    sistema.mockRestore();
   });
 
   // El backend tiene la última palabra sobre la ventana de la sala.

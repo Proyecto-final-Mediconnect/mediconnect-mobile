@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
+import { perfilDe, PROFESIONALES } from '../mocks/catalog';
 import { API_URL, server } from '../test/msw-server';
 import { renderApp } from '../test/render-app';
 
@@ -89,5 +90,59 @@ describe('Buscar profesionales (ENG-132)', () => {
     expect(await screen.findByText('Sobre mí')).toBeInTheDocument();
     expect(screen.getByText('$42.000')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ver turnos disponibles' })).toBeInTheDocument();
+  });
+
+  // El backend no busca por nombre: el filtro es local y tiene que ver todo el
+  // catálogo, no solo la primera página.
+  it('el buscador encuentra a alguien que está en otra página', async () => {
+    const primero = PROFESIONALES[0]!;
+    const resto = PROFESIONALES.slice(1);
+    await renderApp(
+      http.get(`${API_URL}/catalog/professionals`, ({ request }) => {
+        const page = Number(new URL(request.url).searchParams.get('page') ?? '1');
+        const data = page === 1 ? [primero] : resto;
+        return HttpResponse.json({
+          data,
+          meta: {
+            page,
+            limit: 1,
+            total: PROFESIONALES.length,
+            totalPages: 2,
+            hasNextPage: page === 1,
+          },
+        });
+      }),
+    );
+    fireEvent.click(screen.getByRole('tab', { name: 'Reservar' }));
+    await waitFor(() => screen.getByTestId('lista-profesionales'));
+    await lista().findByText(`${primero.firstName} ${primero.lastName}`);
+    const buscado = resto[resto.length - 1]!;
+
+    fireEvent.change(screen.getByLabelText('Buscar profesional'), {
+      target: { value: buscado.lastName },
+    });
+
+    expect(
+      await lista().findByText(`${buscado.firstName} ${buscado.lastName}`),
+    ).toBeInTheDocument();
+  });
+
+  it('sin precio publicado, el perfil no ofrece reservar', async () => {
+    const conPrecio = PROFESIONALES[0]!;
+    const perfil = perfilDe(conPrecio.id)!;
+    await renderApp(
+      http.get(`${API_URL}/professionals/:id`, () => HttpResponse.json({ ...perfil, price: null })),
+    );
+    fireEvent.click(screen.getByRole('tab', { name: 'Reservar' }));
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: `Ver el perfil de ${conPrecio.firstName} ${conPrecio.lastName}`,
+      }),
+    );
+
+    expect(await screen.findByText(/todavía no publicó el precio/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Ver turnos disponibles' }),
+    ).not.toBeInTheDocument();
   });
 });

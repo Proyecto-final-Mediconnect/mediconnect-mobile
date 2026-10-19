@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -26,8 +26,10 @@ import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
  * del catálogo de la web (ENG-49). Es la tab central, "Reservar".
  *
  * La especialidad y el tope de precio los filtra el backend; el buscador filtra
- * lo ya cargado por nombre o especialidad, como en la web, porque el backend
- * todavía no busca por nombre.
+ * por nombre o especialidad del lado de la app, como en la web, porque el backend
+ * todavía no busca por nombre. Para que encuentre a alguien de la página 3, con
+ * texto en el buscador se traen todas las páginas: si no, el filtro solo veía
+ * las cargadas, la lista quedaba corta y el scroll infinito no pedía más.
  */
 export function ProfessionalsScreen(): React.JSX.Element {
   const navigation = useNavigation();
@@ -36,7 +38,16 @@ export function ProfessionalsScreen(): React.JSX.Element {
   const catalogo = useProfessionalsCatalog(filtros);
   const especialidades = useSpecialties();
 
+  const buscando = busqueda.trim() !== '';
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = catalogo;
+
+  useEffect(() => {
+    if (buscando && hasNextPage && !isFetchingNextPage) void fetchNextPage();
+  }, [buscando, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const visibles = catalogo.professionals.filter((p) => matchesSearch(p, busqueda));
+  // Mientras se traen las páginas que faltan, "no hay resultados" todavía no es cierto.
+  const completandoBusqueda = buscando && (hasNextPage ?? false);
   const hayFiltros =
     busqueda.trim() !== '' || filtros.specialtyIds.length > 0 || filtros.maxPrice !== null;
 
@@ -149,7 +160,7 @@ export function ProfessionalsScreen(): React.JSX.Element {
           if (catalogo.hasNextPage && !catalogo.isFetchingNextPage) void catalogo.fetchNextPage();
         }}
         ListFooterComponent={
-          catalogo.isFetchingNextPage ? (
+          catalogo.isFetchingNextPage || completandoBusqueda ? (
             <ActivityIndicator color={colors.brand} style={styles.masCarga} />
           ) : null
         }
@@ -162,12 +173,14 @@ export function ProfessionalsScreen(): React.JSX.Element {
           />
         }
         ListEmptyComponent={
-          <EmptyState
-            icon="search-outline"
-            title="No hay profesionales con esos filtros"
-            description="Probá con otra especialidad u otro precio."
-            action={hayFiltros ? { label: 'Limpiar filtros', onPress: limpiar } : undefined}
-          />
+          completandoBusqueda ? null : (
+            <EmptyState
+              icon="search-outline"
+              title="No hay profesionales con esos filtros"
+              description="Probá con otra especialidad u otro precio."
+              action={hayFiltros ? { label: 'Limpiar filtros', onPress: limpiar } : undefined}
+            />
+          )
         }
       />
     </Screen>

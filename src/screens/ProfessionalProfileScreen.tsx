@@ -59,11 +59,21 @@ export function ProfessionalProfileScreen(): React.JSX.Element {
             </Text>
           </View>
         </View>
-        <Button
-          label="Ver turnos disponibles"
-          onPress={() => navigation.navigate('Reservar', { professionalId: p.id })}
-          fullWidth
-        />
+        {/* Sin precio el backend no deja reservar (`appointments.price` es NOT
+            NULL): ofrecer los turnos llevaría al paciente hasta la confirmación
+            para recién ahí recibir un 409. */}
+        {p.price === null ? (
+          <Text style={styles.sinPrecio}>
+            Este profesional todavía no publicó el precio de la consulta, así que por ahora no
+            recibe reservas.
+          </Text>
+        ) : (
+          <Button
+            label="Ver turnos disponibles"
+            onPress={() => navigation.navigate('Reservar', { professionalId: p.id })}
+            fullWidth
+          />
+        )}
       </View>
 
       {p.bio ? (
@@ -92,6 +102,12 @@ export function ProfessionalProfileScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
+  sinPrecio: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.sm,
+    lineHeight: 19,
+    color: colors.muted,
+  },
   card: {
     gap: spacing.lg,
     backgroundColor: colors.white,

@@ -29,13 +29,23 @@ export function JoinConsultationButton({
   // La sala que espera que el paciente acepte la grabación. Vive solo en
   // memoria, mientras se muestra el aviso.
   const [conGrabacion, setConGrabacion] = useState<VideoConsultationAccess | null>(null);
+  const [errorApertura, setErrorApertura] = useState<string | null>(null);
+
+  async function abrir(acceso: VideoConsultationAccess): Promise<void> {
+    try {
+      await openRoom(acceso);
+    } catch {
+      setErrorApertura('No pudimos abrir el navegador. Probá de nuevo.');
+    }
+  }
 
   function entrar(): void {
     setConGrabacion(null);
+    setErrorApertura(null);
     unirse.mutate(appointmentId, {
       onSuccess: (acceso) => {
         if (acceso.recording.enabled) setConGrabacion(acceso);
-        else void openRoom(acceso);
+        else void abrir(acceso);
       },
     });
   }
@@ -56,7 +66,7 @@ export function JoinConsultationButton({
           onPress={() => {
             const acceso = conGrabacion;
             setConGrabacion(null);
-            void openRoom(acceso);
+            void abrir(acceso);
           }}
         />
         <Button label="Ahora no" variant="ghost" fullWidth onPress={() => setConGrabacion(null)} />
@@ -73,10 +83,10 @@ export function JoinConsultationButton({
         loading={unirse.isPending}
         fullWidth
       />
-      {unirse.isError ? (
+      {unirse.isError || errorApertura ? (
         <View accessibilityRole="alert" style={styles.error}>
           <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
-          <Text style={styles.errorTexto}>{unirse.error.message}</Text>
+          <Text style={styles.errorTexto}>{errorApertura ?? unirse.error?.message}</Text>
         </View>
       ) : (
         <Text style={styles.ayuda}>

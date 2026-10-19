@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as WebBrowser from 'expo-web-browser';
+import { Linking } from 'react-native';
 
 import { MY_APPOINTMENTS_KEY } from '../../appointments/hooks/use-appointments';
 import { joinVideoConsultation } from '../api';
@@ -13,15 +14,26 @@ import type { VideoConsultationAccess } from '../types';
  * navegador pide los permisos de cámara y micrófono y, si se rechazan, Daily
  * explica cómo habilitarlos: la app no necesita permisos propios ni un SDK
  * nativo, y funciona en Expo Go.
+ *
+ * Si no se puede abrir de ninguna forma, tira: el botón lo muestra en vez de
+ * dejar un toque que no hace nada a minutos de la consulta.
  */
 export async function openRoom(access: VideoConsultationAccess): Promise<void> {
-  await WebBrowser.openBrowserAsync(access.roomUrl, {
-    // Pantalla completa y sin barra de lectura: es una llamada, no un artículo.
-    presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-    readerMode: false,
-    enableBarCollapsing: false,
-    dismissButtonStyle: 'close',
-  });
+  try {
+    await WebBrowser.openBrowserAsync(access.roomUrl, {
+      // Pantalla completa y sin barra de lectura: es una llamada, no un artículo.
+      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+      readerMode: false,
+      enableBarCollapsing: false,
+      dismissButtonStyle: 'close',
+    });
+  } catch {
+    // En Android falla si no hay Custom Tabs (Chrome deshabilitado, por
+    // ejemplo) o si ya hay otro navegador in-app abierto. Se prueba con el
+    // navegador del sistema; si eso también falla, el error le llega a quien
+    // llamó y se lo muestra al paciente.
+    await Linking.openURL(access.roomUrl);
+  }
 }
 
 /**
