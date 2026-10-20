@@ -31,6 +31,25 @@ describe('session-tokens', () => {
     expect(__secureStore.items.size).toBe(0);
   });
 
+  // Un logout que no puede limpiar el dispositivo no es un logout: si esto no
+  // tirara, la app mostraría el ingreso con los tokens todavía en el Keystore y
+  // la sesión volvería al abrirla.
+  it('si el borrado falla, tira: la sesión no se puede dar por cerrada', async () => {
+    await saveSessionTokens({ accessToken: 'a', refreshToken: 'r' });
+    __secureStore.failDeletesOf('mediconnect.session.refreshToken');
+
+    await expect(clearSessionTokens()).rejects.toThrow(/no se pudieron borrar/i);
+    expect(__secureStore.items.has('mediconnect.session.refreshToken')).toBe(true);
+  });
+
+  it('un borrado que falla una sola vez se resuelve en el reintento', async () => {
+    await saveSessionTokens({ accessToken: 'a', refreshToken: 'r' });
+    __secureStore.failNextDeleteOf('mediconnect.session.refreshToken');
+
+    await expect(clearSessionTokens()).resolves.toBeUndefined();
+    expect(__secureStore.items.size).toBe(0);
+  });
+
   // Un par mezclado —access nuevo, refresh viejo ya rotado— se caería al primer
   // refresh sin explicar por qué.
   it('si falla guardar el segundo token, no deja el primero suelto', async () => {

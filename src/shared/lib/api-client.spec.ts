@@ -205,6 +205,33 @@ describe('apiRequest', () => {
       expect(await readSessionTokens()).toBeNull();
     });
 
+    // El caso que faltaba: cerró sesión y volvió a entrar antes de que
+    // respondiera el refresh. Los tokens guardados ya no son de este request, y
+    // borrarlos se llevaría la sesión nueva.
+    it('un logout y un login nuevo durante la renovación no borran la sesión nueva', async () => {
+      await saveSessionTokens(TOKENS);
+      const vencida = vi.fn();
+      const dejar = onSessionExpired(vencida);
+      recursoProtegido('access-2');
+      server.use(
+        http.post(`${API_URL}/auth/mobile/refresh`, async () => {
+          await clearSessionTokens(); // "Cerrar sesión"
+          await saveSessionTokens({ accessToken: 'nuevo-a', refreshToken: 'nuevo-r' }); // y volvió a entrar
+          return HttpResponse.json({ accessToken: 'access-2', refreshToken: 'refresh-2' });
+        }),
+      );
+
+      await expect(apiRequest('/recurso')).rejects.toMatchObject({ status: 401 });
+
+      expect(await readSessionTokens()).toEqual({
+        accessToken: 'nuevo-a',
+        refreshToken: 'nuevo-r',
+      });
+      // Y no se lo mandó al login con "Tu sesión terminó".
+      expect(vencida).not.toHaveBeenCalled();
+      dejar();
+    });
+
     it('sin sesión guardada, una ruta privada no llega a pedirse', async () => {
       const vencida = vi.fn();
       const dejar = onSessionExpired(vencida);

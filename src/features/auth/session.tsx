@@ -131,11 +131,14 @@ export function SessionProvider({ children }: { children: ReactNode }): React.JS
   }, []);
 
   const signOut = useCallback(async (): Promise<void> => {
-    try {
-      await clearSessionTokens();
-    } finally {
-      setState({ status: 'signedOut' });
-    }
+    // Sin `finally` a propósito: si el borrado falla, los tokens siguen en el
+    // Keystore y pasar a `signedOut` le haría creer al paciente que cerró
+    // sesión. Al volver a abrir la app, `SessionProvider` la restauraría y
+    // mostraría sus turnos y su historia clínica. En un celular compartido eso
+    // es exposición de datos de salud, así que el error sube a la pantalla y
+    // la sesión sigue abierta hasta que el borrado funcione.
+    await clearSessionTokens();
+    setState({ status: 'signedOut' });
   }, []);
 
   const retry = useCallback(() => {

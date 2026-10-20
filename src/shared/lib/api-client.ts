@@ -157,7 +157,20 @@ function renewSession(): Promise<RefreshResult> {
   return refreshInFlight;
 }
 
-async function endSession(): Promise<void> {
+/**
+ * Cierra la sesión porque dejó de servir, y avisa para que la app vuelva al
+ * login.
+ *
+ * `generacion` es la que había cuando arrancó el request que trajo el 401. Si
+ * cambió en el medio, el paciente cerró sesión —o cerró y volvió a entrar—
+ * mientras este request viajaba: lo que está guardado ahora no es lo que este
+ * request usaba. Borrarlo se llevaría los tokens del login nuevo y lo mandaría
+ * de vuelta al login con un aviso que no le corresponde. Con el backend de
+ * Render despertando, un refresh puede tardar hasta un minuto, así que la
+ * ventana es real.
+ */
+async function endSession(generacion: number): Promise<void> {
+  if (sessionGeneration() !== generacion) return;
   await clearSessionTokens();
   sessionExpiredHandler?.();
 }
@@ -195,9 +208,13 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     return parse<T>(response);
   }
 
+  // La generación al arrancar: si cambia mientras este request viaja, lo que
+  // haya guardado al final ya no es de este request y no hay que tocarlo.
+  const generacion = sessionGeneration();
+
   const tokens = await readSessionTokens();
   if (!tokens) {
-    await endSession();
+    await endSession(generacion);
     throw new ApiError(401, 'Tu sesión terminó. Iniciá sesión de nuevo.');
   }
 
@@ -211,7 +228,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     const resultado = yaRenovado ? 'renewed' : await renewSession();
 
     if (resultado === 'invalid') {
-      await endSession();
+      await endSession(generacion);
       throw new ApiError(401, 'Tu sesión terminó. Iniciá sesión de nuevo.');
     }
     if (resultado === 'unavailable') {
@@ -223,7 +240,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
     // Recién renovado y otra vez 401: el problema no es el vencimiento.
     if (response.status === 401) {
-      await endSession();
+      await endSession(generacion);
       throw new ApiError(401, 'Tu sesión terminó. Iniciá sesión de nuevo.');
     }
   }

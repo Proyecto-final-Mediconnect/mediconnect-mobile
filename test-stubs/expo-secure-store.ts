@@ -24,6 +24,8 @@ export interface SecureStoreOptions {
 
 const items = new Map<string, string>();
 let claveQueFalla: string | null = null;
+let claveQueFallaAlBorrarUnaVez: string | null = null;
+const clavesQueNoSeBorran = new Set<string>();
 
 export const __secureStore = {
   items,
@@ -31,9 +33,21 @@ export const __secureStore = {
   failNextWriteOf(key: string): void {
     claveQueFalla = key;
   },
+  /** Hace fallar el próximo borrado de esa clave y después deja borrarla: un
+   *  fallo pasajero, que el reintento tiene que resolver. */
+  failNextDeleteOf(key: string): void {
+    claveQueFallaAlBorrarUnaVez = key;
+  },
+  /** Hace fallar todos los borrados de esa clave: un Keychain que no deja
+   *  limpiar el dispositivo. */
+  failDeletesOf(key: string): void {
+    clavesQueNoSeBorran.add(key);
+  },
   reset(): void {
     items.clear();
     claveQueFalla = null;
+    claveQueFallaAlBorrarUnaVez = null;
+    clavesQueNoSeBorran.clear();
   },
 };
 
@@ -54,5 +68,10 @@ export async function setItemAsync(key: string, value: string): Promise<void> {
 }
 
 export async function deleteItemAsync(key: string): Promise<void> {
+  if (clavesQueNoSeBorran.has(key)) throw new Error('Keychain no disponible');
+  if (key === claveQueFallaAlBorrarUnaVez) {
+    claveQueFallaAlBorrarUnaVez = null;
+    throw new Error('Keychain no disponible');
+  }
   items.delete(key);
 }

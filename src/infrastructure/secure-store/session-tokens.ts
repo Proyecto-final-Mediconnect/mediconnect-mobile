@@ -61,15 +61,43 @@ export async function saveSessionTokens(tokens: SessionTokens): Promise<void> {
     await SecureStore.setItemAsync(ACCESS_KEY, tokens.accessToken, OPTIONS);
     await SecureStore.setItemAsync(REFRESH_KEY, tokens.refreshToken, OPTIONS);
   } catch (err) {
-    await clearSessionTokens();
+    // El error que importa acá es el de la escritura. Si además falla el
+    // borrado no hay nada mejor que hacer: no quedó una sesión usable igual,
+    // porque `readSessionTokens` exige las dos claves.
+    await clearSessionTokens().catch(() => undefined);
     throw err;
   }
 }
 
+/**
+ * Borra el par.
+ *
+ * Reintenta una vez las claves que fallaron y **tira** si alguna queda: quien
+ * llama tiene que poder distinguir "la sesión se cerró" de "los tokens siguen
+ * en el dispositivo". Una clave sola no deja una sesión usable —
+ * `readSessionTokens` exige las dos— pero sí deja material en el Keystore, y en
+ * un celular compartido eso es lo que importa.
+ *
+ * `generacion` sube igual, antes de intentar: una renovación en vuelo no tiene
+ * que guardar su par nuevo ni aunque el borrado falle.
+ */
 export async function clearSessionTokens(): Promise<void> {
   generacion += 1;
-  await Promise.all([
-    SecureStore.deleteItemAsync(ACCESS_KEY, OPTIONS),
-    SecureStore.deleteItemAsync(REFRESH_KEY, OPTIONS),
-  ]);
+  const pendientes = await borrarClaves([ACCESS_KEY, REFRESH_KEY]);
+  if (pendientes.length === 0) return;
+
+  const fallidas = await borrarClaves(pendientes);
+  if (fallidas.length > 0) {
+    throw new Error(
+      `No se pudieron borrar los tokens de la sesión (${String(fallidas.length)} de 2).`,
+    );
+  }
+}
+
+/** Borra las claves y devuelve las que fallaron. */
+async function borrarClaves(keys: string[]): Promise<string[]> {
+  const resultados = await Promise.allSettled(
+    keys.map((key) => SecureStore.deleteItemAsync(key, OPTIONS)),
+  );
+  return keys.filter((_, i) => resultados[i]?.status === 'rejected');
 }
