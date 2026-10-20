@@ -87,7 +87,10 @@ export function HomeScreen(): React.JSX.Element {
         <Notice
           icon="time-outline"
           message={`Tu turno del ${formatShortDay(sinPagar.date, sinPagar.startTime)} con ${professionalName(sinPagar)} todavía no está pagado.`}
-          action={{ label: 'Ver', onPress: irATurnos }}
+          action={{
+            label: 'Pagar',
+            onPress: () => navigation.navigate('Pago', { appointmentId: sinPagar.id }),
+          }}
         />
       ) : null}
 

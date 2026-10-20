@@ -10,6 +10,7 @@ import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
 import { ClinicalRecordScreen } from '../screens/ClinicalRecordScreen';
 import { EntryDetailScreen } from '../screens/EntryDetailScreen';
 import { LegalConsentScreen } from '../screens/LegalConsentScreen';
+import { PaymentScreen } from '../screens/PaymentScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { ProfessionalProfileScreen } from '../screens/ProfessionalProfileScreen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
@@ -111,6 +112,7 @@ function RootStack(): React.JSX.Element {
             <Stack.Screen name="EntradaHC" component={EntryDetailScreen} />
             <Stack.Screen name="Profesional" component={ProfessionalProfileScreen} />
             <Stack.Screen name="Reservar" component={BookAppointmentScreen} />
+            <Stack.Screen name="Pago" component={PaymentScreen} />
           </Stack.Group>
         ) : (
           <Stack.Screen
