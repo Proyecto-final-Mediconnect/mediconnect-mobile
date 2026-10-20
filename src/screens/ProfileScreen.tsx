@@ -26,12 +26,22 @@ export function ProfileScreen(): React.JSX.Element {
   const { signOut } = useSession();
   const [confirmando, setConfirmando] = useState(false);
   const [cerrando, setCerrando] = useState(false);
+  const [errorCierre, setErrorCierre] = useState<string | null>(null);
 
   async function cerrarSesion(): Promise<void> {
     setCerrando(true);
-    // Al terminar, el navegador desmonta esta pantalla: no hace falta volver
-    // `cerrando` a false.
-    await signOut();
+    setErrorCierre(null);
+    try {
+      // Si sale bien, el navegador desmonta esta pantalla: no hace falta volver
+      // `cerrando` a false.
+      await signOut();
+    } catch {
+      // El borrado de los tokens falló, así que la sesión NO se cerró. Hay que
+      // decirlo y dejar reintentar: callarlo dejaría al paciente creyendo que
+      // salió, con los tokens todavía en el dispositivo.
+      setCerrando(false);
+      setErrorCierre('No pudimos cerrar tu sesión. Probá de nuevo.');
+    }
   }
 
   return (
@@ -109,6 +119,7 @@ export function ProfileScreen(): React.JSX.Element {
         confirmLabel="Sí, cerrar sesión"
         dismissLabel="Seguir en la app"
         pending={cerrando}
+        error={errorCierre ?? undefined}
         onDismiss={() => setConfirmando(false)}
         onConfirm={() => void cerrarSesion()}
       />

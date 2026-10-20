@@ -224,6 +224,28 @@ describe('sesión del paciente', () => {
       expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     });
 
+    // Si la app dijera que cerró sesión con los tokens todavía en el Keystore,
+    // el paciente creería que salió y la sesión volvería al abrir la app. En un
+    // celular compartido eso expone turnos e historia clínica.
+    it('si no se pueden borrar los tokens, no dice que cerró sesión', async () => {
+      await iniciarSesionGuardada();
+      await abrirApp();
+      await screen.findByRole('heading', { name: 'Hola, Marina' });
+      __secureStore.failDeletesOf('mediconnect.session.refreshToken');
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Sí, cerrar sesión' }));
+
+      expect(await screen.findByText('No pudimos cerrar tu sesión. Probá de nuevo.')).toBeVisible();
+      // Sigue adentro, y el token que no se pudo borrar sigue donde estaba.
+      expect(screen.getByRole('tab', { name: 'Perfil' })).toBeInTheDocument();
+      expect(
+        screen.queryByRole('heading', { name: 'Ingresá a tu cuenta' }),
+      ).not.toBeInTheDocument();
+      expect(__secureStore.items.has('mediconnect.session.refreshToken')).toBe(true);
+    });
+
     it('pide confirmación y "Seguir en la app" no la cierra', async () => {
       await iniciarSesionGuardada();
       await abrirApp();
