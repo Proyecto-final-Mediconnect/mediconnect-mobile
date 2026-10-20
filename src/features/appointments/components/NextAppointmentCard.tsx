@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../../shared/ui/Button';
 import { Chip } from '../../../shared/ui/Chip';
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
+import { JoinConsultationButton } from '../../video/components/JoinConsultationButton';
 import { formatShortDay, professionalName, statusLabel, statusTone } from '../lib/appointments';
 import { joinStateOf, timeUntilOpen } from '../lib/join-window';
 import type { Appointment } from '../types';
@@ -11,8 +12,9 @@ import type { Appointment } from '../types';
 interface NextAppointmentCardProps {
   /** `null`: el paciente no tiene turnos próximos. */
   appointment: Appointment | null;
-  onJoin: () => void;
   now?: Date;
+  /** Sin turnos próximos, ofrece reservar uno. */
+  onBook?: () => void;
 }
 
 /**
@@ -26,8 +28,8 @@ interface NextAppointmentCardProps {
  */
 export function NextAppointmentCard({
   appointment,
-  onJoin,
   now = new Date(),
+  onBook,
 }: NextAppointmentCardProps): React.JSX.Element {
   if (!appointment) {
     return (
@@ -35,8 +37,13 @@ export function NextAppointmentCard({
         <Text style={styles.eyebrow}>PRÓXIMA CONSULTA</Text>
         <Text style={styles.nombre}>No tenés turnos próximos</Text>
         <Text style={styles.detalle}>
-          Reservá con un profesional desde MediConnect en la web y lo vas a ver acá.
+          Cuando reserves con un profesional, tu próxima consulta va a aparecer acá.
         </Text>
+        {onBook ? (
+          <View style={styles.accion}>
+            <Button label="Sacar un turno" onPress={onBook} fullWidth />
+          </View>
+        ) : null}
       </View>
     );
   }
@@ -56,7 +63,7 @@ export function NextAppointmentCard({
 
       {sala.kind === 'OPEN' ? (
         <View style={styles.accion}>
-          <Button label="Ingresar a la sala" variant="accent" onPress={onJoin} fullWidth />
+          <JoinConsultationButton appointmentId={appointment.id} />
         </View>
       ) : sala.kind === 'TOO_EARLY' ? (
         <View style={[styles.accion, styles.aviso]}>

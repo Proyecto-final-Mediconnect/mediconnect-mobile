@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Chip } from '../../../shared/ui/Chip';
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
+import { JoinConsultationButton } from '../../video/components/JoinConsultationButton';
 import {
   canCancel,
   formatPrice,
@@ -11,6 +12,7 @@ import {
   statusLabel,
   statusTone,
 } from '../lib/appointments';
+import { joinStateOf } from '../lib/join-window';
 import type { Appointment } from '../types';
 
 interface AppointmentCardProps {
@@ -44,6 +46,12 @@ export function AppointmentCard({
         Videoconsulta · {appointment.durationMinutes} min · {formatPrice(appointment.price)}
       </Text>
 
+      {joinStateOf(appointment, now).kind === 'OPEN' ? (
+        <View style={styles.sala}>
+          <JoinConsultationButton appointmentId={appointment.id} />
+        </View>
+      ) : null}
+
       {canCancel(appointment, now) ? (
         <Pressable
           accessibilityRole="button"
@@ -69,6 +77,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   apagado: { opacity: 0.7 },
+  sala: { marginTop: spacing.md },
   fila: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cuando: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.brandDeep },
   nombre: {

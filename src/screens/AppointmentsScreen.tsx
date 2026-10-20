@@ -1,3 +1,4 @@
+import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet } from 'react-native';
 
@@ -13,6 +14,7 @@ import {
 } from '../features/appointments/lib/appointments';
 import type { Appointment } from '../features/appointments/types';
 import { useNow } from '../shared/hooks/use-now';
+import { Button } from '../shared/ui/Button';
 import { usePullToRefresh } from '../shared/hooks/use-pull-to-refresh';
 import { ConfirmSheet } from '../shared/ui/ConfirmSheet';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
@@ -32,6 +34,7 @@ type Vista = 'proximos' | 'pasados';
  * corre al día siguiente aunque el teléfono esté en otra zona.
  */
 export function AppointmentsScreen(): React.JSX.Element {
+  const navigation = useNavigation();
   const turnos = useMyAppointments();
   const tirar = usePullToRefresh(turnos.refetch);
   const cancelar = useCancelAppointment();
@@ -69,6 +72,7 @@ export function AppointmentsScreen(): React.JSX.Element {
   }
 
   const { upcoming, past } = splitByTime(turnos.data, ahora);
+  const irAReservar = (): void => navigation.navigate('Paciente', { screen: 'Reservar' });
   const lista = vista === 'proximos' ? upcoming : past;
 
   const cerrarConfirmacion = (): void => {
@@ -79,6 +83,7 @@ export function AppointmentsScreen(): React.JSX.Element {
   return (
     <Screen scroll={false} padded={false} header={header}>
       <FlatList
+        testID="lista-turnos"
         data={lista}
         keyExtractor={(turno) => turno.id}
         renderItem={({ item }) => (
@@ -93,12 +98,18 @@ export function AppointmentsScreen(): React.JSX.Element {
             colors={[colors.brand]}
           />
         }
+        ListFooterComponent={
+          vista === 'proximos' && lista.length > 0 ? (
+            <Button label="Sacar otro turno" variant="ghost" onPress={irAReservar} fullWidth />
+          ) : null
+        }
         ListEmptyComponent={
           vista === 'proximos' ? (
             <EmptyState
               icon="calendar-outline"
               title="No tenés turnos próximos"
-              description="Reservá con un profesional desde MediConnect en la web y lo vas a ver acá."
+              description="Buscá un profesional y reservá el horario que te quede cómodo."
+              action={{ label: 'Sacar un turno', onPress: irAReservar }}
             />
           ) : (
             <EmptyState

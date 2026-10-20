@@ -30,6 +30,7 @@ export default defineConfig({
       // Carga módulos nativos al importarse. ENG-99.
       { find: /^@sentry\/react-native$/, replacement: stub('sentry-react-native.ts') },
       { find: /^react-native-svg$/, replacement: stub('react-native-svg.tsx') },
+      { find: /^expo-web-browser$/, replacement: stub('expo-web-browser.ts') },
     ],
   },
   test: {

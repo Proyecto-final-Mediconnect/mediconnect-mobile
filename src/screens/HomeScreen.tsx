@@ -1,7 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '../features/auth/session';
+import { CompactAppointmentRow } from '../features/appointments/components/CompactAppointmentRow';
 import { NextAppointmentCard } from '../features/appointments/components/NextAppointmentCard';
 import { useMyAppointments } from '../features/appointments/hooks/use-appointments';
 import {
@@ -10,21 +11,30 @@ import {
   professionalName,
   splitByTime,
 } from '../features/appointments/lib/appointments';
+import { greeting, laterAppointments, pastProfessionals } from '../features/appointments/lib/home';
 import { joinStateOf, timeUntilOpen } from '../features/appointments/lib/join-window';
 import type { Appointment } from '../features/appointments/types';
+import { PastProfessionalCard } from '../features/catalog/components/PastProfessionalCard';
 import { useNow } from '../shared/hooks/use-now';
 import { Notice } from '../shared/ui/Notice';
 import { QuickTile } from '../shared/ui/QuickTile';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
-import { spacing } from '../shared/ui/theme';
+import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 
 /**
  * Inicio: responde "¿qué tengo que hacer ahora?" antes que "¿adónde voy?".
  *
- * La franja oscura del canvas con el saludo y, montada encima, la próxima
- * consulta —con el botón para entrar a la sala cuando está abierta—. Debajo, lo
- * pendiente y los accesos rápidos.
+ * De arriba abajo, de lo urgente a lo útil:
+ * 1. La franja con el saludo y, montada encima, la próxima consulta —con el
+ *    botón para entrar a la sala cuando está abierta—.
+ * 2. Lo pendiente: el turno que falta pagar.
+ * 3. Los turnos que siguen, en una línea cada uno.
+ * 4. Los profesionales con los que ya se atendió, para volver a reservar.
+ * 5. Su historia clínica y su MediPass.
+ *
+ * Reservar no está acá como botón: es la tab central, a un toque desde
+ * cualquier pantalla.
  *
  * La historia clínica queda como acceso, sin su última entrada ni cuántas tiene:
  * cada lectura de la HC deja un registro de acceso en la auditoría (Ley 26.529),
@@ -44,11 +54,11 @@ export function HomeScreen(): React.JSX.Element {
   const sinPagar = proximos?.find(
     (t) => t.status === 'RESERVADO_SIN_PAGAR' && Date.parse(t.scheduledAt) > ahora.getTime(),
   );
-  const cantidadProximos = proximos
-    ? proximos.filter((t) => t.status !== 'CANCELADO').length
-    : null;
+  const siguientes = turnos.data ? laterAppointments(turnos.data, proxima, ahora) : [];
+  const profesionales = turnos.data ? pastProfessionals(turnos.data, ahora) : [];
 
   const irATurnos = (): void => navigation.navigate('Paciente', { screen: 'Turnos' });
+  const irAReservar = (): void => navigation.navigate('Paciente', { screen: 'Reservar' });
 
   return (
     <Screen
@@ -56,7 +66,7 @@ export function HomeScreen(): React.JSX.Element {
         <ScreenHeader
           hero
           tone="dark"
-          title={firstName ? `Hola, ${firstName}` : 'Hola'}
+          title={firstName ? `${greeting(ahora)}, ${firstName}` : greeting(ahora)}
           subtitle={turnos.data ? subtitulo(proxima, ahora) : ' '}
         />
       }
@@ -70,16 +80,7 @@ export function HomeScreen(): React.JSX.Element {
         // sería mentir justo cuando puede estar por empezar una.
         <ErrorState message={turnos.error.message} onRetry={() => void turnos.refetch()} />
       ) : (
-        <NextAppointmentCard
-          appointment={proxima}
-          now={ahora}
-          onJoin={() =>
-            Alert.alert(
-              'Videoconsulta',
-              'En la versión conectada, este botón abre la sala de la consulta con tu profesional.',
-            )
-          }
-        />
+        <NextAppointmentCard appointment={proxima} now={ahora} onBook={irAReservar} />
       )}
 
       {sinPagar ? (
@@ -90,31 +91,63 @@ export function HomeScreen(): React.JSX.Element {
         />
       ) : null}
 
-      <View style={styles.accesos}>
-        <QuickTile
-          icon="calendar-outline"
-          title="Turnos"
-          caption={
-            cantidadProximos === null
-              ? 'Próximos y pasados'
-              : cantidadProximos === 1
-                ? '1 próximo'
-                : `${cantidadProximos} próximos`
-          }
-          onPress={irATurnos}
-        />
-        <QuickTile
-          icon="document-text-outline"
-          title="Historia"
-          caption="Tu historia clínica"
-          onPress={() => navigation.navigate('HistoriaClinica')}
-        />
-        <QuickTile
-          icon="qr-code-outline"
-          title="MediPass"
-          caption="Tu código de emergencia"
-          onPress={() => navigation.navigate('Paciente', { screen: 'MediPass' })}
-        />
+      {siguientes.length > 0 ? (
+        <View style={styles.seccion}>
+          <View style={styles.seccionCabecera}>
+            <Text style={styles.seccionTitulo}>DESPUÉS</Text>
+            <Pressable accessibilityRole="button" hitSlop={spacing.sm} onPress={irATurnos}>
+              <Text style={styles.link}>Ver todos</Text>
+            </Pressable>
+          </View>
+          <View style={styles.grupo}>
+            {siguientes.map((t, i) => (
+              <CompactAppointmentRow
+                key={t.id}
+                appointment={t}
+                last={i === siguientes.length - 1}
+              />
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {profesionales.length > 0 ? (
+        <View style={styles.seccion}>
+          <Text style={styles.seccionTitulo}>VOLVER A CONSULTAR</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.carrusel}
+            // Llega hasta el borde de la pantalla: se nota que hay más para el costado.
+            style={styles.carruselFuera}
+          >
+            {profesionales.map((p) => (
+              <PastProfessionalCard
+                key={p.id}
+                professional={p}
+                onPress={() => navigation.navigate('Profesional', { id: p.id })}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
+
+      <View style={styles.seccion}>
+        <Text style={styles.seccionTitulo}>TU SALUD</Text>
+        <View style={styles.accesos}>
+          <QuickTile
+            icon="document-text-outline"
+            title="Historia clínica"
+            caption="Tus consultas, estudios y recetas"
+            onPress={() => navigation.navigate('HistoriaClinica')}
+          />
+          <QuickTile
+            icon="qr-code-outline"
+            title="MediPass"
+            caption="Tu código para una emergencia"
+            onPress={() => navigation.navigate('Paciente', { screen: 'MediPass' })}
+          />
+        </View>
       </View>
     </Screen>
   );
@@ -139,5 +172,24 @@ function subtitulo(proxima: Appointment | null, ahora: Date): string {
 
 const styles = StyleSheet.create({
   cargando: { minHeight: 160 },
+  seccion: { gap: spacing.sm, marginTop: spacing.sm },
+  seccionCabecera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  seccionTitulo: {
+    marginLeft: spacing.xs,
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    letterSpacing: 1,
+    color: colors.mutedSoft,
+  },
+  link: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.brandHover },
+  grupo: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.card,
+    paddingHorizontal: spacing.md,
+  },
+  carruselFuera: { marginHorizontal: -spacing.lg },
+  carrusel: { gap: spacing.sm, paddingHorizontal: spacing.lg },
   accesos: { flexDirection: 'row', gap: spacing.sm },
 });

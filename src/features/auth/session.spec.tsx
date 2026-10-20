@@ -74,7 +74,7 @@ describe('sesión del paciente', () => {
 
       completarYEnviar('paciente.demo@mediconnect.test', 'Password1');
 
-      expect(await screen.findByRole('heading', { name: 'Hola, Marina' })).toBeVisible();
+      expect(await screen.findByRole('heading', { name: /, Marina$/ })).toBeVisible();
       expect(await readSessionTokens()).toEqual(NUEVOS);
     });
 
@@ -134,7 +134,7 @@ describe('sesión del paciente', () => {
 
       await abrirApp();
 
-      expect(await screen.findByRole('heading', { name: 'Hola, Marina' })).toBeVisible();
+      expect(await screen.findByRole('heading', { name: /, Marina$/ })).toBeVisible();
       expect(screen.queryByLabelText('Contraseña')).not.toBeInTheDocument();
     });
 
@@ -157,7 +157,7 @@ describe('sesión del paciente', () => {
 
       await abrirApp();
 
-      expect(await screen.findByRole('heading', { name: 'Hola, Marina' })).toBeVisible();
+      expect(await screen.findByRole('heading', { name: /, Marina$/ })).toBeVisible();
       expect(await readSessionTokens()).toEqual({
         accessToken: 'access-2',
         refreshToken: 'refresh-2',
@@ -195,7 +195,7 @@ describe('sesión del paciente', () => {
       server.use(http.get(`${API_URL}/me`, () => HttpResponse.json(PACIENTE)));
       fireEvent.click(screen.getByRole('button', { name: 'Probá de nuevo' }));
 
-      expect(await screen.findByRole('heading', { name: 'Hola, Marina' })).toBeVisible();
+      expect(await screen.findByRole('heading', { name: /, Marina$/ })).toBeVisible();
     });
 
     it('una sesión guardada que no es de un paciente se descarta', async () => {
@@ -212,7 +212,7 @@ describe('sesión del paciente', () => {
     it('borra los tokens del dispositivo y vuelve al ingreso', async () => {
       await iniciarSesionGuardada();
       await abrirApp();
-      await screen.findByRole('heading', { name: 'Hola, Marina' });
+      await screen.findByRole('heading', { name: /, Marina$/ });
 
       fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
       expect(await screen.findByText(PACIENTE.email)).toBeVisible();
@@ -249,7 +249,7 @@ describe('sesión del paciente', () => {
     it('pide confirmación y "Seguir en la app" no la cierra', async () => {
       await iniciarSesionGuardada();
       await abrirApp();
-      await screen.findByRole('heading', { name: 'Hola, Marina' });
+      await screen.findByRole('heading', { name: /, Marina$/ });
 
       fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
       fireEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
@@ -285,7 +285,7 @@ describe('sesión del paciente', () => {
       );
       completarYEnviar(otro.email, 'Password1');
 
-      expect(await screen.findByRole('heading', { name: 'Hola, Tomás' })).toBeVisible();
+      expect(await screen.findByRole('heading', { name: /, Tomás$/ })).toBeVisible();
       expect(screen.queryByRole('button', { name: 'Ingresar a la sala' })).not.toBeInTheDocument();
       expect(screen.getByText('Buscando tu próxima consulta…')).toBeInTheDocument();
     });

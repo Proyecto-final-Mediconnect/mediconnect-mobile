@@ -12,10 +12,10 @@ describe('RootNavigator', () => {
     expect(screen.getByRole('tab', { name: 'Inicio' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('ofrece las cuatro tabs del canvas', async () => {
+  it('ofrece las tabs del canvas y Reservar', async () => {
     await renderApp();
 
-    for (const tab of ['Inicio', 'Turnos', 'MediPass', 'Perfil']) {
+    for (const tab of ['Inicio', 'Turnos', 'Reservar', 'MediPass', 'Perfil']) {
       expect(screen.getByRole('tab', { name: tab })).toBeInTheDocument();
     }
   });
@@ -37,7 +37,7 @@ describe('RootNavigator', () => {
   it('los accesos rápidos del inicio llevan a su sección', async () => {
     await renderApp();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Turnos' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver todos' }));
 
     expect(await screen.findByRole('heading', { name: 'Mis turnos' })).toBeVisible();
     expect(screen.getByRole('tab', { name: 'Turnos' })).toHaveAttribute('aria-selected', 'true');
@@ -48,10 +48,10 @@ describe('RootNavigator', () => {
   it('abre la historia clínica desde el inicio y vuelve', async () => {
     await renderApp();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Historia' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Historia clínica' }));
     expect(await screen.findByRole('heading', { name: 'Mi historia clínica' })).toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
-    expect(await screen.findByRole('heading', { name: 'Hola, Marina' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: /, Marina$/ })).toBeVisible();
   });
 });

@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll } from 'vitest';
 import { API_URL, server } from './src/test/msw-server';
 // El mismo módulo al que apunta el alias de `expo-secure-store`.
 import { __secureStore } from './test-stubs/expo-secure-store';
+import { __abiertas } from './test-stubs/expo-web-browser';
 
 // Los tests montan la app entera con el navegador real, y abrirla ahora incluye
 // restaurar la sesión (ENG-114): en una máquina lenta o en CI, el segundo que
@@ -27,6 +28,7 @@ afterEach(() => {
   server.resetHandlers();
   // Cada test arranca sin sesión guardada.
   __secureStore.reset();
+  __abiertas.length = 0;
 });
 
 afterAll(() => {

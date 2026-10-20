@@ -9,6 +9,25 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- Inicio renovado y "Reservar" como tab central. El inicio saluda según la hora
+  de Argentina y, debajo de la próxima consulta, muestra los turnos que siguen,
+  los profesionales con los que ya se atendió el paciente para volver a
+  reservar, y los accesos a la historia clínica y al MediPass. Sacar un turno
+  pasa a la barra de tabs, destacado en el centro.
+- Sacar un turno desde la app (ENG-132, ENG-133). Buscar profesionales
+  (`GET /catalog/professionals`, `GET /specialties`) con filtro por especialidad
+  y por tope de precio, buscador local por nombre y scroll infinito; perfil
+  público (`GET /professionals/:id`); y elegir día y horario de las próximas dos
+  semanas (`GET /professionals/:id/availability`) y reservar con confirmación
+  (`POST /appointments`). El turno queda sin pagar y la app avisa que hay 15
+  minutos para pagarlo desde la web. Accesos desde el inicio y desde "Mis
+  turnos". La hoja de confirmación ya no confirma dos veces con un doble toque.
+- Entrar a la videoconsulta desde la app (ENG-131): "Ingresar a la sala" en el
+  inicio y en la tarjeta del turno en "Mis turnos", solo con la sala abierta.
+  Pide la sala a `POST /appointments/:id/video` y la abre en el navegador del
+  sistema dentro de la app (`expo-web-browser`), con Daily Prebuilt, la misma
+  sala que la web; el navegador pide cámara y micrófono. Si la consulta se
+  graba, avisa antes de entrar. La URL de la sala no se guarda en la caché.
 - Pantallas del paciente (ENG-115, ENG-116, ENG-117): inicio con la próxima
   consulta y el botón para entrar a la sala; mis turnos con próximos y pasados,
   pull-to-refresh y cancelar con confirmación; historia clínica en línea de

@@ -6,9 +6,11 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SessionProvider, useSession } from '../features/auth/session';
+import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
 import { ClinicalRecordScreen } from '../screens/ClinicalRecordScreen';
 import { EntryDetailScreen } from '../screens/EntryDetailScreen';
 import { LoginScreen } from '../screens/LoginScreen';
+import { ProfessionalProfileScreen } from '../screens/ProfessionalProfileScreen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors } from '../shared/ui/theme';
 import { PatientTabs } from './PatientTabs';
@@ -100,6 +102,8 @@ function RootStack(): React.JSX.Element {
             <Stack.Screen name="Paciente" component={PatientTabs} />
             <Stack.Screen name="HistoriaClinica" component={ClinicalRecordScreen} />
             <Stack.Screen name="EntradaHC" component={EntryDetailScreen} />
+            <Stack.Screen name="Profesional" component={ProfessionalProfileScreen} />
+            <Stack.Screen name="Reservar" component={BookAppointmentScreen} />
           </Stack.Group>
         ) : (
           <Stack.Screen

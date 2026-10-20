@@ -81,6 +81,25 @@ export const turnosDemo = {
     turnos = turnos.map((t) => (t.id === id ? cancelado : t));
     return cancelado;
   },
+  /** Reserva un turno nuevo, sin pagar, como `POST /appointments`. */
+  reservar(
+    professional: AppointmentParty,
+    date: string,
+    startTime: string,
+    price: number,
+  ): Appointment {
+    const nuevo = turno(
+      `turno-${date}-${startTime}`,
+      desdeArgentina(date, startTime),
+      professional,
+      'RESERVADO_SIN_PAGAR',
+      price,
+    );
+    turnos = [...turnos, nuevo].sort(
+      (a, b) => Date.parse(a.scheduledAt) - Date.parse(b.scheduledAt),
+    );
+    return nuevo;
+  },
   /** Para los tests: vuelve al estado inicial. */
   reiniciar(ahora?: Date): void {
     turnos = crearTurnosDemo(ahora);
