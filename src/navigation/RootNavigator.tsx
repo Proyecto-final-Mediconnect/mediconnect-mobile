@@ -9,6 +9,7 @@ import { SessionProvider, useSession } from '../features/auth/session';
 import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
 import { ClinicalRecordScreen } from '../screens/ClinicalRecordScreen';
 import { EntryDetailScreen } from '../screens/EntryDetailScreen';
+import { LegalConsentScreen } from '../screens/LegalConsentScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { ProfessionalProfileScreen } from '../screens/ProfessionalProfileScreen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
@@ -97,7 +98,13 @@ function RootStack(): React.JSX.Element {
   return (
     <NavigationContainer theme={tema}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {state.status === 'signedIn' ? (
+        {state.status === 'signedIn' && state.user.legalAccepted === false ? (
+          // Sin la aceptación vigente el backend responde 403 a todo lo del
+          // paciente (ENG-140): la app no existe hasta que acepte, igual que el
+          // `LegalAcceptanceGate` de la web. `=== false` y no `!`: un backend
+          // que todavía no informa el dato no bloquea a nadie.
+          <Stack.Screen name="Consentimiento" component={LegalConsentScreen} />
+        ) : state.status === 'signedIn' ? (
           <Stack.Group>
             <Stack.Screen name="Paciente" component={PatientTabs} />
             <Stack.Screen name="HistoriaClinica" component={ClinicalRecordScreen} />

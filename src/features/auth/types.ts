@@ -11,6 +11,13 @@ export interface SessionUser {
   role: UserRole;
   firstName: string | null;
   lastName: string | null;
+  /**
+   * Si aceptó la versión vigente de los términos, la privacidad y el
+   * consentimiento de datos de salud (ENG-140). Opcional mientras haya un
+   * backend sin ENG-140: sin el dato no se bloquea a nadie.
+   */
+  legalAccepted?: boolean;
+  legalVersion?: string;
 }
 
 export interface LoginInput {

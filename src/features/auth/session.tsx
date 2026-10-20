@@ -15,7 +15,8 @@ import {
   saveSessionTokens,
 } from '../../infrastructure/secure-store/session-tokens';
 import { ApiError, onSessionExpired } from '../../shared/lib/api-client';
-import { fetchMe, login } from './api';
+import { LEGAL_VERSION } from '../legal/legal';
+import { acceptLegal as postLegalAcceptance, fetchMe, login } from './api';
 import type { LoginInput, SessionUser } from './types';
 
 /**
@@ -41,6 +42,11 @@ interface SessionContextValue {
   /** Tira `ApiError` o `NotPatientError`; la pantalla de login decide el mensaje. */
   signIn: (input: LoginInput) => Promise<void>;
   signOut: () => Promise<void>;
+  /**
+   * Acepta los textos legales vigentes (ENG-140) y actualiza el usuario de la
+   * sesión. Tira `ApiError`; la pantalla decide el mensaje.
+   */
+  acceptLegal: () => Promise<void>;
   /** Vuelve a intentar verificar la sesión guardada (desde `unreachable`). */
   retry: () => void;
 }
@@ -141,12 +147,20 @@ export function SessionProvider({ children }: { children: ReactNode }): React.JS
     setState({ status: 'signedOut' });
   }, []);
 
+  const acceptLegal = useCallback(async (): Promise<void> => {
+    const user = await postLegalAcceptance(LEGAL_VERSION);
+    setState({ status: 'signedIn', user });
+  }, []);
+
   const retry = useCallback(() => {
     setState({ status: 'restoring' });
     setIntento((n) => n + 1);
   }, []);
 
-  const value = useMemo(() => ({ state, signIn, signOut, retry }), [state, signIn, signOut, retry]);
+  const value = useMemo(
+    () => ({ state, signIn, signOut, acceptLegal, retry }),
+    [state, signIn, signOut, acceptLegal, retry],
+  );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

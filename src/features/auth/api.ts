@@ -26,3 +26,15 @@ export function fetchMe(token?: string): Promise<SessionUser> {
     fallbackMessage: 'No pudimos verificar tu sesión. Intentá de nuevo.',
   });
 }
+
+/**
+ * `POST /me/legal-acceptance`: deja constancia de que aceptó los textos legales
+ * vigentes (ENG-140). Devuelve el usuario actualizado, con `legalAccepted: true`.
+ */
+export function acceptLegal(version: string): Promise<SessionUser> {
+  return apiRequest<SessionUser>('/me/legal-acceptance', {
+    method: 'POST',
+    body: { version },
+    fallbackMessage: 'No pudimos registrar tu aceptación. Intentá de nuevo.',
+  });
+}

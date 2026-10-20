@@ -22,6 +22,8 @@ export type PatientTabParamList = {
  */
 export type RootStackParamList = {
   Ingresar: undefined;
+  /** El pedido de consentimiento, antes de la app, si no aceptó (ENG-140). */
+  Consentimiento: undefined;
   Paciente: NavigatorScreenParams<PatientTabParamList>;
   HistoriaClinica: undefined;
   EntradaHC: { id: string };
