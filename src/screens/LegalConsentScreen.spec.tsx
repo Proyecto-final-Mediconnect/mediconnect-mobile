@@ -47,7 +47,7 @@ describe('LegalConsentScreen', () => {
     fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
 
-    expect(await screen.findByRole('heading', { name: /^Hola/ })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: /^(Buen día|Buenas tardes|Buenas noches), Marina$/ })).toBeVisible();
     expect(body).toEqual({ version: '2026-10-13' });
   });
 
