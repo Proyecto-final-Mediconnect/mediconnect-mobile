@@ -47,6 +47,28 @@ cp .env.example .env   # completar con los valores del entorno local
 | `EXPO_PUBLIC_ENV`     | Entorno lógico: `development` \| `staging` \| `production`.            |
 | `EXPO_TOKEN`          | Token de Expo para EAS Build en CI (solo CI, no se expone al cliente). |
 
+### Apuntar la app al backend
+
+Expo Go corre en el celular, así que `localhost` es el celular y no tu
+computadora. Para usar el backend local, `EXPO_PUBLIC_API_URL` tiene que llevar
+la IP de la computadora en la red (por ejemplo `http://192.168.0.10:3000`), con
+el celular en la misma red. También sirve la URL del backend desplegado.
+
+Expo lee el `.env` al arrancar Metro: después de cambiarlo, reiniciá con
+`npx expo start --clear`.
+
+## Sesión (ENG-114)
+
+La app usa las rutas `POST /auth/mobile/login` y `POST /auth/mobile/refresh`
+del backend, que devuelven los tokens en el body (la web los recibe en cookies
+httpOnly, que React Native no tiene). Los tokens se guardan **solo** en
+`expo-secure-store` —Keychain en iOS, Keystore en Android— y viajan como
+`Authorization: Bearer`. Todo request pasa por `src/shared/lib/api-client.ts`,
+que renueva la sesión una sola vez cuando el access token vence y vuelve al
+ingreso si ya no se puede renovar.
+
+Solo ingresan pacientes: el panel profesional es la web.
+
 ## Correr la app (Expo)
 
 ```bash
@@ -69,6 +91,9 @@ Convención de nombres de archivos de test: **`.spec.ts` / `.spec.tsx`** (Sprint
 §3.4.10). Los componentes React Native se renderizan en jsdom mapeando
 `react-native` → `react-native-web` (el target web oficial de Expo).
 
+La API se simula con **MSW** (Sprint 0 §4.2.1): cada test declara las respuestas
+que necesita y un request sin handler hace fallar el test.
+
 ## Calidad de código
 
 ```bash
@@ -85,7 +110,7 @@ guardar (§3.4.2). El Dev Container ya viene con esto configurado.
 
 ```
 src/
-├── navigation/      # config de navegación — PENDIENTE ADR-016 (Sprint 1)
+├── navigation/      # navegación — React Navigation 7 (ADR-016)
 ├── screens/         # una pantalla por ruta
 ├── features/        # lógica de negocio por dominio (auth/, ...)
 ├── infrastructure/  # capacidades nativas del dispositivo
