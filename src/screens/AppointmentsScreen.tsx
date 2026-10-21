@@ -87,7 +87,12 @@ export function AppointmentsScreen(): React.JSX.Element {
         data={lista}
         keyExtractor={(turno) => turno.id}
         renderItem={({ item }) => (
-          <AppointmentCard appointment={item} onCancel={setACancelar} now={ahora} />
+          <AppointmentCard
+            appointment={item}
+            onCancel={setACancelar}
+            onPay={(t) => navigation.navigate('Pago', { appointmentId: t.id })}
+            now={ahora}
+          />
         )}
         contentContainerStyle={styles.lista}
         refreshControl={
