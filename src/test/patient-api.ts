@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 
 import type { PatientProfile } from '../features/patient-profile/types';
 import { turnosDemo } from '../mocks/appointments';
+import { matchesSearch } from '../features/catalog/lib/catalog';
 import { disponibilidadDe, ESPECIALIDADES, perfilDe, PROFESIONALES } from '../mocks/catalog';
 import { crearHistoriaDemo } from '../mocks/clinical-record';
 import { PACIENTE_DEMO } from '../mocks/patient';
@@ -51,8 +52,10 @@ export function servirDatosDelPaciente(): void {
       const url = new URL(request.url);
       const especialidades = url.searchParams.getAll('specialtyId');
       const tope = url.searchParams.get('maxPrice');
+      const busqueda = url.searchParams.get('search') ?? '';
       const data = PROFESIONALES.filter(
         (p) =>
+          matchesSearch(p, busqueda) &&
           (especialidades.length === 0 ||
             p.specialties.some((e) => especialidades.includes(e.id))) &&
           (tope === null || (p.price !== null && p.price <= Number(tope))),

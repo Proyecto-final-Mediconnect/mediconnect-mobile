@@ -17,7 +17,7 @@ const OLIVARES: ProfessionalCard = {
 describe('buildCatalogQuery', () => {
   it('manda cada especialidad por separado y el tope de precio', () => {
     const query = new URLSearchParams(
-      buildCatalogQuery({ specialtyIds: ['s1', 's2'], maxPrice: 25000 }, 2),
+      buildCatalogQuery({ search: '', specialtyIds: ['s1', 's2'], maxPrice: 25000 }, 2),
     );
 
     expect(query.getAll('specialtyId')).toEqual(['s1', 's2']);
@@ -26,11 +26,26 @@ describe('buildCatalogQuery', () => {
   });
 
   it('sin filtros no manda especialidad ni precio', () => {
-    const query = new URLSearchParams(buildCatalogQuery({ specialtyIds: [], maxPrice: null }, 1));
+    const query = new URLSearchParams(
+      buildCatalogQuery({ search: '', specialtyIds: [], maxPrice: null }, 1),
+    );
 
     expect(query.has('specialtyId')).toBe(false);
     expect(query.has('maxPrice')).toBe(false);
   });
+});
+
+it('manda la búsqueda al backend, recortada, y no la manda vacía', () => {
+  expect(
+    new URLSearchParams(
+      buildCatalogQuery({ search: '  martín ', specialtyIds: [], maxPrice: null }, 1),
+    ).get('search'),
+  ).toBe('martín');
+  expect(
+    new URLSearchParams(
+      buildCatalogQuery({ search: '   ', specialtyIds: [], maxPrice: null }, 1),
+    ).has('search'),
+  ).toBe(false);
 });
 
 describe('matchesSearch', () => {

@@ -1,12 +1,13 @@
 import { useNavigation } from '@react-navigation/native';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet } from 'react-native';
 
 import { ProfessionalRow } from '../features/catalog/components/ProfessionalRow';
 import { useProfessionalsCatalog, useSpecialties } from '../features/catalog/hooks/use-catalog';
-import { matchesSearch, PRICE_CAPS } from '../features/catalog/lib/catalog';
+import { PRICE_CAPS } from '../features/catalog/lib/catalog';
 import { EMPTY_FILTERS, type CatalogFilters } from '../features/catalog/types';
 import { formatPrice } from '../features/appointments/lib/appointments';
+import { useDebouncedValue } from '../shared/hooks/use-debounced-value';
 import { FilterSheet } from '../shared/ui/FilterSheet';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { SearchFilterBar, type ActiveFilter } from '../shared/ui/SearchFilterBar';
@@ -17,29 +18,21 @@ import { colors, spacing } from '../shared/ui/theme';
  * Sacar un turno, paso 1: buscar al profesional (ENG-132). Equivalente mobile
  * del catálogo de la web (ENG-49). Es la tab central, "Reservar".
  *
- * La especialidad y el tope de precio los filtra el backend; el buscador filtra
- * por nombre o especialidad del lado de la app, como en la web, porque el backend
- * todavía no busca por nombre. Para que encuentre a alguien de la página 3, con
- * texto en el buscador se traen todas las páginas: si no, el filtro solo veía
- * las cargadas, la lista quedaba corta y el scroll infinito no pedía más.
+ * Todo lo filtra el backend: la búsqueda por nombre o especialidad, la
+ * especialidad y el tope de precio. La búsqueda sale 300 ms después de la última
+ * letra, para no mandar un request por tecla.
  */
 export function ProfessionalsScreen(): React.JSX.Element {
   const navigation = useNavigation();
   const [busqueda, setBusqueda] = useState('');
   const [filtros, setFiltros] = useState<CatalogFilters>(EMPTY_FILTERS);
-  const catalogo = useProfessionalsCatalog(filtros);
+  const buscado = useDebouncedValue(busqueda);
+  const catalogo = useProfessionalsCatalog({ ...filtros, search: buscado });
   const especialidades = useSpecialties();
 
-  const buscando = busqueda.trim() !== '';
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = catalogo;
-
-  useEffect(() => {
-    if (buscando && hasNextPage && !isFetchingNextPage) void fetchNextPage();
-  }, [buscando, hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-  const visibles = catalogo.professionals.filter((p) => matchesSearch(p, busqueda));
-  // Mientras se traen las páginas que faltan, "no hay resultados" todavía no es cierto.
-  const completandoBusqueda = buscando && (hasNextPage ?? false);
+  const visibles = catalogo.professionals;
+  // Mientras la búsqueda escrita todavía no salió, "no hay resultados" no es cierto.
+  const completandoBusqueda = busqueda.trim() !== buscado.trim();
   const hayFiltros =
     busqueda.trim() !== '' || filtros.specialtyIds.length > 0 || filtros.maxPrice !== null;
 
