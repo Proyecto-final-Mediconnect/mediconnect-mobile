@@ -21,7 +21,10 @@ export function useProfessionalsCatalog(filters: CatalogFilters) {
     [query.data],
   );
 
-  return { ...query, professionals };
+  /** Cuántos hay con estos filtros en total, no solo en las páginas cargadas. */
+  const total = query.data?.pages[0]?.meta.total ?? null;
+
+  return { ...query, professionals, total };
 }
 
 export function useSpecialties() {

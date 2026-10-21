@@ -4,19 +4,21 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   View,
 } from 'react-native';
 
 import { ProfessionalRow } from '../features/catalog/components/ProfessionalRow';
 import { useProfessionalsCatalog, useSpecialties } from '../features/catalog/hooks/use-catalog';
-import { matchesSearch, PRICE_CAPS } from '../features/catalog/lib/catalog';
+import { FiltersSheet } from '../features/catalog/components/FiltersSheet';
+import { matchesSearch } from '../features/catalog/lib/catalog';
 import { EMPTY_FILTERS, type CatalogFilters } from '../features/catalog/types';
 import { formatPrice } from '../features/appointments/lib/appointments';
-import { FilterChip } from '../shared/ui/FilterChip';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
@@ -51,14 +53,10 @@ export function ProfessionalsScreen(): React.JSX.Element {
   const hayFiltros =
     busqueda.trim() !== '' || filtros.specialtyIds.length > 0 || filtros.maxPrice !== null;
 
-  function alternarEspecialidad(id: string): void {
-    setFiltros((f) => ({
-      ...f,
-      specialtyIds: f.specialtyIds.includes(id)
-        ? f.specialtyIds.filter((x) => x !== id)
-        : [...f.specialtyIds, id],
-    }));
-  }
+  const [verFiltros, setVerFiltros] = useState(false);
+  const cantidadFiltros = filtros.specialtyIds.length + (filtros.maxPrice === null ? 0 : 1);
+  const nombreDe = (id: string): string =>
+    especialidades.data?.find((e) => e.id === id)?.name ?? 'Especialidad';
 
   function limpiar(): void {
     setBusqueda('');
@@ -67,66 +65,90 @@ export function ProfessionalsScreen(): React.JSX.Element {
 
   const header = (
     <ScreenHeader title="Sacar un turno" subtitle="Elegí con quién atenderte.">
-      <View style={styles.buscador}>
-        <Ionicons name="search" size={18} color={colors.muted} />
-        <TextInput
-          accessibilityLabel="Buscar profesional"
-          placeholder="Nombre o especialidad"
-          placeholderTextColor={colors.mutedSoft}
-          value={busqueda}
-          onChangeText={setBusqueda}
-          autoCorrect={false}
-          returnKeyType="search"
-          style={styles.input}
-        />
+      <View style={styles.busquedaFila}>
+        <View style={styles.buscador}>
+          <Ionicons name="search" size={18} color={colors.muted} />
+          <TextInput
+            accessibilityLabel="Buscar profesional"
+            placeholder="Nombre o especialidad"
+            placeholderTextColor={colors.mutedSoft}
+            value={busqueda}
+            onChangeText={setBusqueda}
+            autoCorrect={false}
+            returnKeyType="search"
+            style={styles.input}
+          />
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            cantidadFiltros > 0 ? `Filtros (${String(cantidadFiltros)} activos)` : 'Filtros'
+          }
+          onPress={() => setVerFiltros(true)}
+          style={({ pressed }) => [
+            styles.botonFiltros,
+            cantidadFiltros > 0 && styles.botonFiltrosActivo,
+            pressed && styles.botonFiltrosPresionado,
+          ]}
+        >
+          <Ionicons
+            name="options-outline"
+            size={20}
+            color={cantidadFiltros > 0 ? colors.white : colors.brandDeep}
+          />
+          {cantidadFiltros > 0 ? (
+            <View style={styles.insignia}>
+              <Text style={styles.insigniaTexto}>{cantidadFiltros}</Text>
+            </View>
+          ) : null}
+        </Pressable>
       </View>
     </ScreenHeader>
   );
 
-  const filtrosVista = (
-    <View style={styles.filtros}>
-      {especialidades.data && especialidades.data.length > 0 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.fila}
-        >
-          {especialidades.data.map((e) => (
-            <FilterChip
-              key={e.id}
-              label={e.name}
-              selected={filtros.specialtyIds.includes(e.id)}
-              onPress={() => alternarEspecialidad(e.id)}
-            />
-          ))}
-        </ScrollView>
-      ) : null}
+  // Lo que está filtrando, a la vista y con una ✕ para sacarlo de un toque.
+  const filtrosVista =
+    cantidadFiltros > 0 ? (
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.fila}
+        contentContainerStyle={styles.activos}
+        style={styles.activosFuera}
       >
-        <FilterChip
-          label="Cualquier precio"
-          selected={filtros.maxPrice === null}
-          onPress={() => setFiltros((f) => ({ ...f, maxPrice: null }))}
-        />
-        {PRICE_CAPS.map((tope) => (
-          <FilterChip
-            key={tope}
-            label={`Hasta ${formatPrice(tope)}`}
-            selected={filtros.maxPrice === tope}
-            onPress={() => setFiltros((f) => ({ ...f, maxPrice: tope }))}
+        {filtros.specialtyIds.map((id) => (
+          <ActiveFilter
+            key={id}
+            label={nombreDe(id)}
+            onRemove={() =>
+              setFiltros((f) => ({ ...f, specialtyIds: f.specialtyIds.filter((x) => x !== id) }))
+            }
           />
         ))}
+        {filtros.maxPrice !== null ? (
+          <ActiveFilter
+            label={`Hasta ${formatPrice(filtros.maxPrice)}`}
+            onRemove={() => setFiltros((f) => ({ ...f, maxPrice: null }))}
+          />
+        ) : null}
       </ScrollView>
-    </View>
+    ) : null;
+
+  const hoja = (
+    <FiltersSheet
+      visible={verFiltros}
+      filters={filtros}
+      onChange={setFiltros}
+      onDismiss={() => setVerFiltros(false)}
+      specialties={especialidades.data ?? []}
+      total={catalogo.isFetching && !catalogo.isFetchingNextPage ? null : catalogo.total}
+    />
   );
 
   if (catalogo.isPending) {
     return (
       <Screen scroll={false} header={header}>
         <LoadingState label="Buscando profesionales…" />
+        {hoja}
       </Screen>
     );
   }
@@ -135,6 +157,7 @@ export function ProfessionalsScreen(): React.JSX.Element {
     return (
       <Screen scroll={false} header={header}>
         <ErrorState message={catalogo.error.message} onRetry={() => void catalogo.refetch()} />
+        {hoja}
       </Screen>
     );
   }
@@ -183,13 +206,36 @@ export function ProfessionalsScreen(): React.JSX.Element {
           )
         }
       />
+      {hoja}
     </Screen>
   );
 }
 
+/** Un filtro puesto: el nombre y una ✕ que lo saca. */
+function ActiveFilter({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}): React.JSX.Element {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Sacar el filtro ${label}`}
+      onPress={onRemove}
+      style={({ pressed }) => [styles.activo, pressed && styles.activoPresionado]}
+    >
+      <Text style={styles.activoTexto}>{label}</Text>
+      <Ionicons name="close" size={14} color={colors.brandHover} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  busquedaFila: { marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm },
   buscador: {
-    marginTop: spacing.md,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -207,8 +253,45 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.ink,
   },
-  filtros: { gap: spacing.sm, marginBottom: spacing.sm },
-  fila: { gap: spacing.sm, paddingRight: spacing.lg },
+  botonFiltros: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.field,
+    borderWidth: 1,
+    borderColor: colors.lineStrong,
+    backgroundColor: colors.white,
+  },
+  botonFiltrosActivo: { backgroundColor: colors.brandDeep, borderColor: colors.brandDeep },
+  botonFiltrosPresionado: { opacity: 0.8 },
+  insignia: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    backgroundColor: colors.brand,
+  },
+  insigniaTexto: { fontFamily: fonts.bold, fontSize: 11, color: colors.inkDeep },
+  activosFuera: { marginHorizontal: -spacing.lg, marginBottom: spacing.xs },
+  activos: { gap: spacing.sm, paddingHorizontal: spacing.lg },
+  activo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 32,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.sm + 2,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceTeal,
+  },
+  activoPresionado: { backgroundColor: colors.line },
+  activoTexto: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.brandHover },
   lista: { flexGrow: 1, padding: spacing.lg, gap: spacing.md },
   masCarga: { paddingVertical: spacing.lg },
 });

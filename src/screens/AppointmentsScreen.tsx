@@ -1,26 +1,27 @@
 import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { AppointmentCard } from '../features/appointments/components/AppointmentCard';
+import { CompactAppointmentRow } from '../features/appointments/components/CompactAppointmentRow';
 import {
   useCancelAppointment,
   useMyAppointments,
 } from '../features/appointments/hooks/use-appointments';
 import {
   formatShortDay,
+  isActive,
   professionalName,
   splitByTime,
 } from '../features/appointments/lib/appointments';
 import type { Appointment } from '../features/appointments/types';
 import { useNow } from '../shared/hooks/use-now';
-import { Button } from '../shared/ui/Button';
 import { usePullToRefresh } from '../shared/hooks/use-pull-to-refresh';
 import { ConfirmSheet } from '../shared/ui/ConfirmSheet';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { SegmentedControl } from '../shared/ui/SegmentedControl';
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
-import { colors, spacing } from '../shared/ui/theme';
+import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 
 type Vista = 'proximos' | 'pasados';
 
@@ -42,8 +43,13 @@ export function AppointmentsScreen(): React.JSX.Element {
   const [vista, setVista] = useState<Vista>('proximos');
   const [aCancelar, setACancelar] = useState<Appointment | null>(null);
 
+  const irAReservar = (): void => navigation.navigate('Paciente', { screen: 'Reservar' });
+
   const header = (
-    <ScreenHeader title="Mis turnos">
+    <ScreenHeader
+      title="Mis turnos"
+      action={{ label: 'Nuevo turno', icon: 'add', onPress: irAReservar }}
+    >
       <SegmentedControl
         value={vista}
         onChange={setVista}
@@ -72,8 +78,10 @@ export function AppointmentsScreen(): React.JSX.Element {
   }
 
   const { upcoming, past } = splitByTime(turnos.data, ahora);
-  const irAReservar = (): void => navigation.navigate('Paciente', { screen: 'Reservar' });
-  const lista = vista === 'proximos' ? upcoming : past;
+  // En "Próximos", los que ya no se van a realizar (cancelados, liberados) no
+  // compiten con los vigentes: van en un grupo aparte, al final y apagados.
+  const lista = vista === 'proximos' ? upcoming.filter(isActive) : past;
+  const descartados = vista === 'proximos' ? upcoming.filter((t) => !isActive(t)) : [];
 
   const cerrarConfirmacion = (): void => {
     setACancelar(null);
@@ -104,8 +112,20 @@ export function AppointmentsScreen(): React.JSX.Element {
           />
         }
         ListFooterComponent={
-          vista === 'proximos' && lista.length > 0 ? (
-            <Button label="Sacar otro turno" variant="ghost" onPress={irAReservar} fullWidth />
+          descartados.length > 0 ? (
+            <View style={styles.seccion}>
+              <Text style={styles.seccionTitulo}>CANCELADOS Y LIBERADOS</Text>
+              <View style={styles.grupo}>
+                {descartados.map((t, i) => (
+                  <CompactAppointmentRow
+                    key={t.id}
+                    appointment={t}
+                    last={i === descartados.length - 1}
+                    muted
+                  />
+                ))}
+              </View>
+            </View>
           ) : null
         }
         ListEmptyComponent={
@@ -149,4 +169,19 @@ export function AppointmentsScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   lista: { flexGrow: 1, padding: spacing.lg, gap: spacing.md },
+  seccion: { gap: spacing.sm, marginTop: spacing.sm },
+  seccionTitulo: {
+    marginLeft: spacing.xs,
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    letterSpacing: 1,
+    color: colors.mutedSoft,
+  },
+  grupo: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.card,
+    paddingHorizontal: spacing.md,
+  },
 });

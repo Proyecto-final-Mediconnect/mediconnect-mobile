@@ -39,12 +39,29 @@ describe('Buscar profesionales (ENG-132)', () => {
     });
     await abrirBusqueda();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Dermatología' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Dermatología' }));
 
     await waitFor(() => expect(lista().queryByText('Martín Olivares')).not.toBeInTheDocument());
     expect(lista().getByText('Carolina Ruiz')).toBeInTheDocument();
     expect(pedidas).toContainEqual(['esp-derma']);
     server.events.removeAllListeners();
+  });
+
+  it('el filtro puesto se ve debajo del buscador y se saca con la ✕', async () => {
+    await abrirBusqueda();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Dermatología' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Ver \d+ profesional/ }));
+
+    expect(screen.getByRole('button', { name: 'Filtros (1 activos)' })).toBeInTheDocument();
+    await waitFor(() => expect(lista().queryByText('Martín Olivares')).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sacar el filtro Dermatología' }));
+
+    expect(await lista().findByText('Martín Olivares')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filtros' })).toBeInTheDocument();
   });
 
   it('el buscador encuentra por nombre, sin tildes', async () => {

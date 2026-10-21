@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Chip } from '../../../shared/ui/Chip';
@@ -8,14 +9,14 @@ import { JoinConsultationButton } from '../../video/components/JoinConsultationB
 import {
   canCancel,
   formatPrice,
-  formatShortDay,
-  isActive,
   professionalName,
   statusLabel,
   statusTone,
 } from '../lib/appointments';
+import { dayParts } from '../lib/booking';
 import { joinStateOf } from '../lib/join-window';
 import type { Appointment } from '../types';
+import { DateBadge } from './DateBadge';
 
 interface AppointmentCardProps {
   appointment: Appointment;
@@ -26,9 +27,10 @@ interface AppointmentCardProps {
 }
 
 /**
- * Un turno en la lista: cuándo, con quién, en qué estado y cuánto sale, como
- * las tarjetas de "Mis turnos" del canvas. Un turno que ya no está vigente se
- * muestra apagado, no como uno activo.
+ * Un turno en "Mis turnos": el día en un bloque —como en el inicio—, con quién,
+ * a qué hora y cuánto sale. Debajo, separadas por una línea, las acciones: la
+ * principal como botón ("Pagar", "Ingresar a la sala") y cancelar como texto
+ * discreto, para que no compita con ella. El rojo queda para la confirmación.
  */
 export function AppointmentCard({
   appointment,
@@ -36,43 +38,61 @@ export function AppointmentCard({
   onPay,
   now = new Date(),
 }: AppointmentCardProps): React.JSX.Element {
-  const vigente = isActive(appointment);
+  const salaAbierta = joinStateOf(appointment, now).kind === 'OPEN';
+  const pagar = onPay && canPay(appointment, now);
+  const cancelable = canCancel(appointment, now);
+  const dia = dayParts(appointment.date);
 
   return (
-    <View style={[styles.card, !vigente && styles.apagado]}>
+    <View style={styles.card}>
       <View style={styles.fila}>
-        <Text style={styles.cuando}>
-          {formatShortDay(appointment.date, appointment.startTime).toUpperCase()}
-        </Text>
+        <DateBadge date={appointment.date} />
+        <View style={styles.textos}>
+          <Text style={styles.nombre} numberOfLines={1}>
+            {professionalName(appointment)}
+          </Text>
+          <Text style={styles.detalle}>
+            {dia.day} {dia.month} · {appointment.startTime} · {appointment.durationMinutes} min
+          </Text>
+          <Text style={styles.detalle}>Videoconsulta · {formatPrice(appointment.price)}</Text>
+        </View>
         <Chip label={statusLabel(appointment.status)} tone={statusTone(appointment.status)} />
       </View>
-      <Text style={styles.nombre}>{professionalName(appointment)}</Text>
-      <Text style={styles.detalle}>
-        Videoconsulta · {appointment.durationMinutes} min · {formatPrice(appointment.price)}
-      </Text>
 
-      {joinStateOf(appointment, now).kind === 'OPEN' ? (
-        <View style={styles.sala}>
-          <JoinConsultationButton appointmentId={appointment.id} />
+      {pagar ? (
+        <View style={styles.aviso}>
+          <Ionicons name="time-outline" size={15} color={colors.warmInk} />
+          <Text style={styles.avisoTexto}>
+            Pagalo para confirmarlo; si no, el horario se libera.
+          </Text>
         </View>
       ) : null}
 
-      {onPay && canPay(appointment, now) ? (
-        <View style={styles.sala}>
-          <Button label="Pagar" variant="accent" onPress={() => onPay(appointment)} fullWidth />
+      {salaAbierta || pagar || cancelable ? (
+        <View style={styles.pie}>
+          {cancelable ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Cancelar el turno con ${professionalName(appointment)}`}
+              hitSlop={spacing.sm}
+              onPress={() => onCancel(appointment)}
+              style={({ pressed }) => [styles.cancelar, pressed && styles.cancelarPresionado]}
+            >
+              <Text style={styles.cancelarTexto}>Cancelar</Text>
+            </Pressable>
+          ) : (
+            <View />
+          )}
+          {salaAbierta ? (
+            <View style={styles.principal}>
+              <JoinConsultationButton appointmentId={appointment.id} />
+            </View>
+          ) : pagar ? (
+            <View style={styles.principal}>
+              <Button label="Pagar" variant="accent" onPress={() => onPay(appointment)} fullWidth />
+            </View>
+          ) : null}
         </View>
-      ) : null}
-
-      {canCancel(appointment, now) ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Cancelar el turno con ${professionalName(appointment)}`}
-          hitSlop={spacing.sm}
-          onPress={() => onCancel(appointment)}
-          style={styles.cancelar}
-        >
-          <Text style={styles.cancelarTexto}>Cancelar turno</Text>
-        </Pressable>
       ) : null}
     </View>
   );
@@ -85,23 +105,45 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     borderRadius: radius.card,
     padding: spacing.lg,
-    gap: 2,
+    gap: spacing.md,
   },
-  apagado: { opacity: 0.7 },
-  sala: { marginTop: spacing.md },
-  fila: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cuando: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.brandDeep },
-  nombre: {
-    marginTop: spacing.sm,
-    fontFamily: fonts.bold,
-    fontSize: fontSize.md,
-    color: colors.brandDeep,
-  },
+  fila: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  textos: { flex: 1, gap: 2 },
+  nombre: { fontFamily: fonts.bold, fontSize: fontSize.md, color: colors.brandDeep },
   detalle: { fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.muted },
-  cancelar: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
+  aviso: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.button,
+    backgroundColor: colors.warm,
   },
-  cancelarTexto: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.danger },
+  avisoTexto: {
+    flex: 1,
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.xs + 1,
+    color: colors.warmInk,
+  },
+  pie: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.lineSoft,
+  },
+  principal: { flex: 1, maxWidth: 200 },
+  cancelar: {
+    minHeight: 40,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.button,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  cancelarPresionado: { backgroundColor: colors.surface },
+  cancelarTexto: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.muted },
 });

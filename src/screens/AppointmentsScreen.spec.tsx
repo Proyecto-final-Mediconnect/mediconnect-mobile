@@ -25,10 +25,26 @@ describe('Mis turnos (ENG-115)', () => {
   });
 
   // El caso borde de zona horaria: en UTC ya es el día siguiente.
+  it('los cancelados de "Próximos" van aparte, sin acciones', async () => {
+    await abrirTurnos();
+
+    const grupo = within(lista().getByText('CANCELADOS Y LIBERADOS').parentElement!);
+    expect(grupo.getByText('Ana García')).toBeInTheDocument();
+    expect(grupo.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('"Nuevo turno" lleva a sacar un turno', async () => {
+    await abrirTurnos();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nuevo turno' }));
+
+    expect(await screen.findByText('Elegí con quién atenderte.')).toBeInTheDocument();
+  });
+
   it('el turno de la noche se muestra a las 22:30', async () => {
     await abrirTurnos();
 
-    expect(lista().getByText(/· 22:30$/)).toBeInTheDocument();
+    expect(lista().getByText(/· 22:30 ·/)).toBeInTheDocument();
   });
 
   it('los pasados van en su propia lista', async () => {
