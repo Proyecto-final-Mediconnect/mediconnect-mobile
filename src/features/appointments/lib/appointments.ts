@@ -107,6 +107,36 @@ export function formatShortDay(date: string, startTime: string): string {
   return `${dia} ${d} ${MESES[(m ?? 1) - 1]} · ${startTime}`;
 }
 
+const DIAS_LARGOS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const MESES_LARGOS = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+
+/** `2026-10-21` → `miércoles 21 de octubre`, para el detalle del turno. */
+export function formatLongDay(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const dia = DIAS_LARGOS[new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1)).getUTCDay()];
+  return `${dia} ${d} de ${MESES_LARGOS[(m ?? 1) - 1]}`;
+}
+
+/** `2026-10` → `Octubre 2026`, el título de cada mes en "Mis turnos". */
+export function formatMonth(yearMonth: string): string {
+  const [y, m] = yearMonth.split('-').map(Number);
+  const mes = MESES_LARGOS[(m ?? 1) - 1] ?? '';
+  return `${mes.charAt(0).toUpperCase()}${mes.slice(1)} ${y}`;
+}
+
 /** `18500` → `$18.500`. A mano y no con `Intl`, por lo mismo que la hora. */
 export function formatPrice(amount: number): string {
   return `$${Math.round(amount)

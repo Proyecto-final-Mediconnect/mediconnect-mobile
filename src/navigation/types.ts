@@ -33,6 +33,8 @@ export type RootStackParamList = {
   Reservar: { professionalId: string };
   /** Pagar un turno reservado con MercadoPago (ENG-168). */
   Pago: { appointmentId: string };
+  /** El detalle de un turno propio, con lo que pasó desde la reserva. */
+  Turno: { appointmentId: string };
 };
 
 // Tipa `useNavigation()` en toda la app sin pasarle el genérico cada vez.

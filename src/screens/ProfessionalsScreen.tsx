@@ -1,27 +1,17 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet } from 'react-native';
 
 import { ProfessionalRow } from '../features/catalog/components/ProfessionalRow';
 import { useProfessionalsCatalog, useSpecialties } from '../features/catalog/hooks/use-catalog';
-import { FiltersSheet } from '../features/catalog/components/FiltersSheet';
-import { matchesSearch } from '../features/catalog/lib/catalog';
+import { matchesSearch, PRICE_CAPS } from '../features/catalog/lib/catalog';
 import { EMPTY_FILTERS, type CatalogFilters } from '../features/catalog/types';
 import { formatPrice } from '../features/appointments/lib/appointments';
+import { FilterSheet } from '../shared/ui/FilterSheet';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
+import { SearchFilterBar, type ActiveFilter } from '../shared/ui/SearchFilterBar';
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
-import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
+import { colors, spacing } from '../shared/ui/theme';
 
 /**
  * Sacar un turno, paso 1: buscar al profesional (ENG-132). Equivalente mobile
@@ -55,6 +45,14 @@ export function ProfessionalsScreen(): React.JSX.Element {
 
   const [verFiltros, setVerFiltros] = useState(false);
   const cantidadFiltros = filtros.specialtyIds.length + (filtros.maxPrice === null ? 0 : 1);
+  function alternarEspecialidad(id: string): void {
+    setFiltros((f) => ({
+      ...f,
+      specialtyIds: f.specialtyIds.includes(id)
+        ? f.specialtyIds.filter((x) => x !== id)
+        : [...f.specialtyIds, id],
+    }));
+  }
   const nombreDe = (id: string): string =>
     especialidades.data?.find((e) => e.id === id)?.name ?? 'Especialidad';
 
@@ -63,90 +61,79 @@ export function ProfessionalsScreen(): React.JSX.Element {
     setFiltros(EMPTY_FILTERS);
   }
 
-  const header = (
-    <ScreenHeader title="Sacar un turno" subtitle="Elegí con quién atenderte.">
-      <View style={styles.busquedaFila}>
-        <View style={styles.buscador}>
-          <Ionicons name="search" size={18} color={colors.muted} />
-          <TextInput
-            accessibilityLabel="Buscar profesional"
-            placeholder="Nombre o especialidad"
-            placeholderTextColor={colors.mutedSoft}
-            value={busqueda}
-            onChangeText={setBusqueda}
-            autoCorrect={false}
-            returnKeyType="search"
-            style={styles.input}
-          />
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            cantidadFiltros > 0 ? `Filtros (${String(cantidadFiltros)} activos)` : 'Filtros'
-          }
-          onPress={() => setVerFiltros(true)}
-          style={({ pressed }) => [
-            styles.botonFiltros,
-            cantidadFiltros > 0 && styles.botonFiltrosActivo,
-            pressed && styles.botonFiltrosPresionado,
-          ]}
-        >
-          <Ionicons
-            name="options-outline"
-            size={20}
-            color={cantidadFiltros > 0 ? colors.white : colors.brandDeep}
-          />
-          {cantidadFiltros > 0 ? (
-            <View style={styles.insignia}>
-              <Text style={styles.insigniaTexto}>{cantidadFiltros}</Text>
-            </View>
-          ) : null}
-        </Pressable>
-      </View>
-    </ScreenHeader>
+  const header = <ScreenHeader title="Sacar un turno" subtitle="Elegí con quién atenderte." />;
+
+  const activos: ActiveFilter[] = [
+    ...filtros.specialtyIds.map((id) => ({
+      key: id,
+      label: nombreDe(id),
+      onRemove: () =>
+        setFiltros((f) => ({ ...f, specialtyIds: f.specialtyIds.filter((x) => x !== id) })),
+    })),
+    ...(filtros.maxPrice !== null
+      ? [
+          {
+            key: 'precio',
+            label: `Hasta ${formatPrice(filtros.maxPrice)}`,
+            onRemove: () => setFiltros((f) => ({ ...f, maxPrice: null })),
+          },
+        ]
+      : []),
+  ];
+
+  const barra = (
+    <SearchFilterBar
+      search={busqueda}
+      onSearch={setBusqueda}
+      placeholder="Nombre o especialidad"
+      searchLabel="Buscar profesional"
+      onOpenFilters={() => setVerFiltros(true)}
+      active={activos}
+    />
   );
 
-  // Lo que está filtrando, a la vista y con una ✕ para sacarlo de un toque.
-  const filtrosVista =
-    cantidadFiltros > 0 ? (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.activos}
-        style={styles.activosFuera}
-      >
-        {filtros.specialtyIds.map((id) => (
-          <ActiveFilter
-            key={id}
-            label={nombreDe(id)}
-            onRemove={() =>
-              setFiltros((f) => ({ ...f, specialtyIds: f.specialtyIds.filter((x) => x !== id) }))
-            }
-          />
-        ))}
-        {filtros.maxPrice !== null ? (
-          <ActiveFilter
-            label={`Hasta ${formatPrice(filtros.maxPrice)}`}
-            onRemove={() => setFiltros((f) => ({ ...f, maxPrice: null }))}
-          />
-        ) : null}
-      </ScrollView>
-    ) : null;
-
+  const total = catalogo.isFetching && !catalogo.isFetchingNextPage ? null : catalogo.total;
   const hoja = (
-    <FiltersSheet
+    <FilterSheet
       visible={verFiltros}
-      filters={filtros}
-      onChange={setFiltros}
       onDismiss={() => setVerFiltros(false)}
-      specialties={especialidades.data ?? []}
-      total={catalogo.isFetching && !catalogo.isFetchingNextPage ? null : catalogo.total}
+      groups={[
+        {
+          title: 'Precio de la consulta',
+          options: [
+            {
+              key: 'cualquiera',
+              label: 'Cualquiera',
+              selected: filtros.maxPrice === null,
+              onPress: () => setFiltros((f) => ({ ...f, maxPrice: null })),
+            },
+            ...PRICE_CAPS.map((tope) => ({
+              key: String(tope),
+              label: `Hasta ${formatPrice(tope)}`,
+              selected: filtros.maxPrice === tope,
+              onPress: () => setFiltros((f) => ({ ...f, maxPrice: tope })),
+            })),
+          ],
+        },
+        {
+          title: 'Especialidad',
+          options: (especialidades.data ?? []).map((e) => ({
+            key: e.id,
+            label: e.name,
+            selected: filtros.specialtyIds.includes(e.id),
+            onPress: () => alternarEspecialidad(e.id),
+          })),
+        },
+      ]}
+      resultLabel={verProfesionales(total)}
+      onClear={cantidadFiltros > 0 ? () => setFiltros(EMPTY_FILTERS) : undefined}
     />
   );
 
   if (catalogo.isPending) {
     return (
-      <Screen scroll={false} header={header}>
+      <Screen scroll={false} padded={false} header={header}>
+        {barra}
         <LoadingState label="Buscando profesionales…" />
         {hoja}
       </Screen>
@@ -155,7 +142,8 @@ export function ProfessionalsScreen(): React.JSX.Element {
 
   if (catalogo.isError) {
     return (
-      <Screen scroll={false} header={header}>
+      <Screen scroll={false} padded={false} header={header}>
+        {barra}
         <ErrorState message={catalogo.error.message} onRetry={() => void catalogo.refetch()} />
         {hoja}
       </Screen>
@@ -164,6 +152,7 @@ export function ProfessionalsScreen(): React.JSX.Element {
 
   return (
     <Screen scroll={false} padded={false} header={header}>
+      {barra}
       <FlatList
         testID="lista-profesionales"
         data={visibles}
@@ -174,7 +163,6 @@ export function ProfessionalsScreen(): React.JSX.Element {
             onPress={() => navigation.navigate('Profesional', { id: item.id })}
           />
         )}
-        ListHeaderComponent={filtrosVista}
         contentContainerStyle={styles.lista}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -211,87 +199,13 @@ export function ProfessionalsScreen(): React.JSX.Element {
   );
 }
 
-/** Un filtro puesto: el nombre y una ✕ que lo saca. */
-function ActiveFilter({
-  label,
-  onRemove,
-}: {
-  label: string;
-  onRemove: () => void;
-}): React.JSX.Element {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Sacar el filtro ${label}`}
-      onPress={onRemove}
-      style={({ pressed }) => [styles.activo, pressed && styles.activoPresionado]}
-    >
-      <Text style={styles.activoTexto}>{label}</Text>
-      <Ionicons name="close" size={14} color={colors.brandHover} />
-    </Pressable>
-  );
+function verProfesionales(total: number | null): string {
+  if (total === null) return 'Ver profesionales';
+  if (total === 0) return 'No hay profesionales';
+  return total === 1 ? 'Ver 1 profesional' : `Ver ${String(total)} profesionales`;
 }
 
 const styles = StyleSheet.create({
-  busquedaFila: { marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm },
-  buscador: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.field,
-    borderWidth: 1,
-    borderColor: colors.lineStrong,
-    backgroundColor: colors.white,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    fontFamily: fonts.medium,
-    fontSize: fontSize.md,
-    color: colors.ink,
-  },
-  botonFiltros: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.field,
-    borderWidth: 1,
-    borderColor: colors.lineStrong,
-    backgroundColor: colors.white,
-  },
-  botonFiltrosActivo: { backgroundColor: colors.brandDeep, borderColor: colors.brandDeep },
-  botonFiltrosPresionado: { opacity: 0.8 },
-  insignia: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    minWidth: 18,
-    height: 18,
-    paddingHorizontal: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 9,
-    backgroundColor: colors.brand,
-  },
-  insigniaTexto: { fontFamily: fonts.bold, fontSize: 11, color: colors.inkDeep },
-  activosFuera: { marginHorizontal: -spacing.lg, marginBottom: spacing.xs },
-  activos: { gap: spacing.sm, paddingHorizontal: spacing.lg },
-  activo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    minHeight: 32,
-    paddingLeft: spacing.md,
-    paddingRight: spacing.sm + 2,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceTeal,
-  },
-  activoPresionado: { backgroundColor: colors.line },
-  activoTexto: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.brandHover },
   lista: { flexGrow: 1, padding: spacing.lg, gap: spacing.md },
   masCarga: { paddingVertical: spacing.lg },
 });

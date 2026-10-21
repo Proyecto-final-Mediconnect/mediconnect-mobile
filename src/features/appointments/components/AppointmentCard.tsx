@@ -23,6 +23,8 @@ interface AppointmentCardProps {
   onCancel: (appointment: Appointment) => void;
   /** Abre el pago del turno (ENG-168). Sin esto, la tarjeta no ofrece pagar. */
   onPay?: (appointment: Appointment) => void;
+  /** Abre el detalle del turno al tocar la parte de arriba. */
+  onOpen?: (appointment: Appointment) => void;
   now?: Date;
 }
 
@@ -36,6 +38,7 @@ export function AppointmentCard({
   appointment,
   onCancel,
   onPay,
+  onOpen,
   now = new Date(),
 }: AppointmentCardProps): React.JSX.Element {
   const salaAbierta = joinStateOf(appointment, now).kind === 'OPEN';
@@ -45,7 +48,13 @@ export function AppointmentCard({
 
   return (
     <View style={styles.card}>
-      <View style={styles.fila}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Ver el turno con ${professionalName(appointment)}`}
+        disabled={!onOpen}
+        onPress={() => onOpen?.(appointment)}
+        style={({ pressed }) => [styles.fila, pressed && styles.presionada]}
+      >
         <DateBadge date={appointment.date} />
         <View style={styles.textos}>
           <Text style={styles.nombre} numberOfLines={1}>
@@ -56,8 +65,11 @@ export function AppointmentCard({
           </Text>
           <Text style={styles.detalle}>Videoconsulta · {formatPrice(appointment.price)}</Text>
         </View>
-        <Chip label={statusLabel(appointment.status)} tone={statusTone(appointment.status)} />
-      </View>
+        <View style={styles.estado}>
+          <Chip label={statusLabel(appointment.status)} tone={statusTone(appointment.status)} />
+          {onOpen ? <Ionicons name="chevron-forward" size={16} color={colors.mutedSoft} /> : null}
+        </View>
+      </Pressable>
 
       {pagar ? (
         <View style={styles.aviso}>
@@ -108,6 +120,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   fila: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  presionada: { opacity: 0.6 },
+  estado: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   textos: { flex: 1, gap: 2 },
   nombre: { fontFamily: fonts.bold, fontSize: fontSize.md, color: colors.brandDeep },
   detalle: { fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.muted },

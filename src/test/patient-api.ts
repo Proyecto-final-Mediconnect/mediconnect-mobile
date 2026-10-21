@@ -29,6 +29,18 @@ export function servirDatosDelPaciente(): void {
     http.patch(`${API_URL}/appointments/:id/cancel`, ({ params }) =>
       HttpResponse.json(turnosDemo.cancelar(String(params.id))),
     ),
+    // El estado del pago, para el detalle del turno: los confirmados se pagaron.
+    http.get(`${API_URL}/appointments/:id/payment`, ({ params }) => {
+      const turno = turnosDemo.listar().find((t) => t.id === params.id);
+      const pago = ['CONFIRMADO', 'COMPLETADO'].includes(turno?.status ?? '')
+        ? 'APROBADO'
+        : 'SIN_INICIAR';
+      return HttpResponse.json({
+        appointmentId: params.id,
+        status: pago,
+        appointmentStatus: turno?.status,
+      });
+    }),
     http.get(`${API_URL}/patients/${PACIENTE_DEMO.id}/clinical-record`, () =>
       HttpResponse.json(crearHistoriaDemo()),
     ),
