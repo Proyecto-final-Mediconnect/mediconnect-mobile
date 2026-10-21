@@ -35,7 +35,7 @@ describe('Reservar un turno (ENG-133)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ver mis turnos' }));
     await waitFor(() =>
-      expect(within(screen.getByTestId('lista-turnos')).getAllByText('SIN PAGAR')).toHaveLength(2),
+      expect(within(screen.getByTestId('lista-turnos')).getAllByText('Sin pagar')).toHaveLength(2),
     );
   });
 

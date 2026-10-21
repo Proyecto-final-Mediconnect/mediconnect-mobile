@@ -28,4 +28,6 @@ export interface PaymentStatusView {
   appointmentId: string;
   status: PaymentStatus | 'SIN_INICIAR';
   appointmentStatus: string;
+  /** Cuándo se acreditó el pago, ISO-8601. Opcional, como en `Appointment`. */
+  confirmedAt?: string | null;
 }

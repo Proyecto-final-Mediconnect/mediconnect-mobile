@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -120,6 +120,8 @@ interface ScreenHeaderProps {
   hero?: boolean;
   /** Lo que va debajo del título, dentro del header: un selector, por ejemplo. */
   children?: ReactNode;
+  /** La acción principal de la pantalla, a la derecha del título ("Nuevo turno"). */
+  action?: { label: string; icon: ComponentProps<typeof Ionicons>['name']; onPress: () => void };
 }
 
 /**
@@ -134,6 +136,7 @@ export function ScreenHeader({
   onBack,
   hero = false,
   children,
+  action,
 }: ScreenHeaderProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const oscuro = tone === 'dark';
@@ -164,9 +167,23 @@ export function ScreenHeader({
           <Text style={[styles.volverTexto, oscuro && { color: colors.onNight }]}>Volver</Text>
         </Pressable>
       ) : null}
-      <Text accessibilityRole="header" style={[styles.titulo, oscuro && styles.tituloDark]}>
-        {title}
-      </Text>
+      <View style={styles.tituloFila}>
+        <Text accessibilityRole="header" style={[styles.titulo, oscuro && styles.tituloDark]}>
+          {title}
+        </Text>
+        {action ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={action.label}
+            hitSlop={spacing.sm}
+            onPress={action.onPress}
+            style={({ pressed }) => [styles.accion, pressed && styles.accionPresionada]}
+          >
+            <Ionicons name={action.icon} size={16} color={colors.brandHover} />
+            <Text style={styles.accionTexto}>{action.label}</Text>
+          </Pressable>
+        ) : null}
+      </View>
       {subtitle ? (
         <Text style={[styles.subtitulo, oscuro && styles.subtituloDark]}>{subtitle}</Text>
       ) : null}
@@ -212,6 +229,23 @@ const styles = StyleSheet.create({
   headerDark: { backgroundColor: colors.night },
   volver: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: spacing.sm },
   volverTexto: { fontFamily: fonts.semibold, fontSize: fontSize.md, color: colors.brandHover },
+  tituloFila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  accion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    minHeight: 34,
+    paddingHorizontal: spacing.md,
+    borderRadius: 17,
+    backgroundColor: colors.surfaceTeal,
+  },
+  accionPresionada: { backgroundColor: colors.line },
+  accionTexto: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.brandHover },
   titulo: { fontFamily: fonts.display, fontSize: fontSize.xl, color: colors.brandDeep },
   tituloDark: { fontSize: fontSize.xxl, color: colors.white },
   subtitulo: {

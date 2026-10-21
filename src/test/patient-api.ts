@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 
 import type { PatientProfile } from '../features/patient-profile/types';
 import { turnosDemo } from '../mocks/appointments';
+import { matchesSearch } from '../features/catalog/lib/catalog';
 import { disponibilidadDe, ESPECIALIDADES, perfilDe, PROFESIONALES } from '../mocks/catalog';
 import { crearHistoriaDemo } from '../mocks/clinical-record';
 import { PACIENTE_DEMO } from '../mocks/patient';
@@ -29,6 +30,18 @@ export function servirDatosDelPaciente(): void {
     http.patch(`${API_URL}/appointments/:id/cancel`, ({ params }) =>
       HttpResponse.json(turnosDemo.cancelar(String(params.id))),
     ),
+    // El estado del pago, para el detalle del turno: los confirmados se pagaron.
+    http.get(`${API_URL}/appointments/:id/payment`, ({ params }) => {
+      const turno = turnosDemo.listar().find((t) => t.id === params.id);
+      const pago = ['CONFIRMADO', 'COMPLETADO'].includes(turno?.status ?? '')
+        ? 'APROBADO'
+        : 'SIN_INICIAR';
+      return HttpResponse.json({
+        appointmentId: params.id,
+        status: pago,
+        appointmentStatus: turno?.status,
+      });
+    }),
     http.get(`${API_URL}/patients/${PACIENTE_DEMO.id}/clinical-record`, () =>
       HttpResponse.json(crearHistoriaDemo()),
     ),
@@ -39,8 +52,10 @@ export function servirDatosDelPaciente(): void {
       const url = new URL(request.url);
       const especialidades = url.searchParams.getAll('specialtyId');
       const tope = url.searchParams.get('maxPrice');
+      const busqueda = url.searchParams.get('search') ?? '';
       const data = PROFESIONALES.filter(
         (p) =>
+          matchesSearch(p, busqueda) &&
           (especialidades.length === 0 ||
             p.specialties.some((e) => especialidades.includes(e.id))) &&
           (tope === null || (p.price !== null && p.price <= Number(tope))),
