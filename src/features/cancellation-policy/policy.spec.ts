@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Appointment } from '../appointments/types';
-import { describePolicy, refundNotice, refundPercentFor } from './policy';
+import {
+  describePolicy,
+  refundNotice,
+  refundOutcomeText,
+  refundPercentFor,
+  refundQuoteText,
+} from './policy';
 
 const DEFAULT = { hoursFullRefund: 24, hoursPartialRefund: 6, partialRefundPercent: 50 };
 const NOW = new Date('2026-10-22T12:00:00.000Z');
@@ -92,5 +98,42 @@ describe('refundNotice', () => {
 
   it('sin la política no inventa un porcentaje', () => {
     expect(refundNotice(turno('CONFIRMADO', 30), undefined, NOW)).toBeNull();
+  });
+
+  it('la cuenta de la app es el respaldo sin ENG-65: no promete devolución automática', () => {
+    expect(refundNotice(turno('CONFIRMADO', 30), DEFAULT, NOW)).toMatch(/se gestiona aparte/);
+  });
+});
+
+describe('refundQuoteText (ENG-65)', () => {
+  it('con la cotización del backend dice que la devolución es automática', () => {
+    expect(refundQuoteText(50, 7_500, true)).toBe(
+      'Según la política del profesional, te corresponde el 50 % ($7.500). ' +
+        'Te lo devolvemos por MercadoPago, al mismo medio con el que pagaste.',
+    );
+  });
+
+  it('con 0 % no habla de devolución automática', () => {
+    expect(refundQuoteText(0, 0, true)).toBe(
+      'Según la política del profesional, si cancelás ahora no te corresponde devolución.',
+    );
+  });
+});
+
+describe('refundOutcomeText (ENG-65)', () => {
+  it.each([
+    ['PROCESADO', /Te devolvemos \$7\.500 por MercadoPago/],
+    ['PENDIENTE', /todavía no la confirmó/],
+    ['RECHAZADO', /no aceptó la devolución de \$7\.500/],
+  ] as const)('%s', (status, texto) => {
+    expect(refundOutcomeText({ percent: 50, amount: 7_500, status })).toMatch(texto);
+  });
+
+  it('sin nada que devolver, no dice nada', () => {
+    expect(refundOutcomeText({ percent: 0, amount: 0, status: null })).toBeNull();
+  });
+
+  it('con un backend anterior a ENG-65 la respuesta no trae refund', () => {
+    expect(refundOutcomeText(undefined)).toBeNull();
   });
 });

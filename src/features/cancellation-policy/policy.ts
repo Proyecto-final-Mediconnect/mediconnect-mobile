@@ -1,5 +1,5 @@
 import { formatPrice } from '../appointments/lib/appointments';
-import type { Appointment } from '../appointments/types';
+import type { Appointment, CancellationRefund } from '../appointments/types';
 
 /**
  * Política de cancelación de un profesional (ENG-67), tal como viaja en
@@ -70,13 +70,32 @@ export function describePolicy(policy: CancellationPolicy): string {
 }
 
 /**
- * Lo que se le dice al paciente antes de cancelar un turno **pagado**: cuánto
- * le corresponde según la política. `null` si el turno no está pagado (no hay
- * nada que devolver) o si no se sabe la política: mejor no decir un porcentaje
- * que decir uno falso.
+ * Lo que se le dice al paciente antes de cancelar un turno pagado, a partir de
+ * cuánto le corresponde.
  *
- * Mientras no esté ENG-65 la devolución no se pide sola, y el texto no lo
- * promete.
+ * `automatico` dice si el backend pide la devolución solo (ENG-65). Con un
+ * backend anterior no lo hace, y el texto no lo promete.
+ */
+export function refundQuoteText(percent: number, amount: number, automatico: boolean): string {
+  if (percent === 0) {
+    return 'Según la política del profesional, si cancelás ahora no te corresponde devolución.';
+  }
+
+  const cuanto = percent === MAX_REFUND_PERCENT ? 'la devolución total' : `el ${percent} %`;
+  return `Según la política del profesional, te corresponde ${cuanto} (${formatPrice(amount)}). ${
+    automatico
+      ? 'Te lo devolvemos por MercadoPago, al mismo medio con el que pagaste.'
+      : 'Por ahora la devolución no se hace sola: se gestiona aparte.'
+  }`;
+}
+
+/**
+ * La cuenta hecha en la app con la política actual del profesional. Es el
+ * respaldo para un backend sin la cotización de ENG-65: la cotización usa la
+ * política guardada en el turno al reservar, que es la que vale.
+ *
+ * `null` si el turno no está pagado (no hay nada que devolver) o si no se sabe
+ * la política: mejor no decir un porcentaje que decir uno falso.
  */
 export function refundNotice(
   appointment: Appointment,
@@ -86,12 +105,23 @@ export function refundNotice(
   if (appointment.status !== 'CONFIRMADO' || !policy) return null;
 
   const pct = refundPercentFor(policy, new Date(appointment.scheduledAt), now);
-  if (pct === 0) {
-    return 'Según la política del profesional, si cancelás ahora no te corresponde devolución.';
-  }
+  return refundQuoteText(pct, (appointment.price * pct) / 100, false);
+}
 
-  const monto = formatPrice((appointment.price * pct) / 100);
-  return `Según la política del profesional, te corresponde ${
-    pct === MAX_REFUND_PERCENT ? 'la devolución total' : `el ${pct} %`
-  } (${monto}). Por ahora la devolución no se hace sola: se gestiona aparte.`;
+/**
+ * Qué pasó con la devolución, después de cancelar (ENG-65). `null` si no había
+ * nada que devolver.
+ */
+export function refundOutcomeText(refund: CancellationRefund | undefined): string | null {
+  if (!refund || refund.status === null) return null;
+
+  const monto = formatPrice(refund.amount);
+  switch (refund.status) {
+    case 'PROCESADO':
+      return `Te devolvemos ${monto} por MercadoPago, al mismo medio con el que pagaste. Puede tardar unos días en verse.`;
+    case 'PENDIENTE':
+      return `Pedimos la devolución de ${monto}, pero MercadoPago todavía no la confirmó. La seguimos nosotros.`;
+    case 'RECHAZADO':
+      return `MercadoPago no aceptó la devolución de ${monto}. La vamos a resolver a mano.`;
+  }
 }

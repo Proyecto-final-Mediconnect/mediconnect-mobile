@@ -25,11 +25,13 @@ import { getPaymentStatus } from '../features/payments/api';
 import { canPay } from '../features/payments/lib/payment';
 import { JoinConsultationButton } from '../features/video/components/JoinConsultationButton';
 import type { RootStackParamList } from '../navigation/types';
+import { refundOutcomeText } from '../features/cancellation-policy/policy';
 import { useRefundNotice } from '../features/cancellation-policy/use-refund-notice';
 import { useNow } from '../shared/hooks/use-now';
 import { Button } from '../shared/ui/Button';
 import { Chip } from '../shared/ui/Chip';
 import { ConfirmSheet } from '../shared/ui/ConfirmSheet';
+import { Notice } from '../shared/ui/Notice';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
@@ -54,6 +56,8 @@ export function AppointmentDetailScreen(): React.JSX.Element {
 
   const turno = turnos.data?.find((t) => t.id === params.appointmentId) ?? null;
   const devolucion = useRefundNotice(confirmando ? turno : null, ahora);
+  /** Qué pasó con la devolución al cancelar desde acá (ENG-65). */
+  const [resultadoDevolucion, setResultadoDevolucion] = useState<string | null>(null);
   const pago = useQuery({
     queryKey: ['payment', params.appointmentId, 'detalle'],
     queryFn: () => getPaymentStatus(params.appointmentId),
@@ -95,6 +99,8 @@ export function AppointmentDetailScreen(): React.JSX.Element {
 
   return (
     <Screen header={header}>
+      {resultadoDevolucion ? <Notice icon="cash-outline" message={resultadoDevolucion} /> : null}
+
       <View style={styles.card}>
         <View style={styles.quien}>
           {profesional ? (
@@ -171,7 +177,8 @@ export function AppointmentDetailScreen(): React.JSX.Element {
         }}
         onConfirm={() =>
           cancelar.mutate(turno.id, {
-            onSuccess: () => {
+            onSuccess: (cancelado) => {
+              setResultadoDevolucion(refundOutcomeText(cancelado.refund));
               setConfirmando(false);
               void pago.refetch();
             },
