@@ -23,7 +23,12 @@ export const JOIN_OPENS_MINUTES_BEFORE = 10;
 /** Tolerancia después del final del turno. Espeja `JOIN_GRACE_MINUTES_AFTER`. */
 export const JOIN_GRACE_MINUTES_AFTER = 15;
 
-/** Estados del turno que tienen videoconsulta. Espeja `JOINABLE_STATUSES`. */
+/**
+ * Estados del turno que tienen videoconsulta. Espeja `JOINABLE_STATUSES`.
+ *
+ * `RESERVADO_SIN_PAGAR` también tiene sala, pero no se entra hasta pagar
+ * (ENG-147): ver `UNPAID` en {@link JoinState}.
+ */
 const JOINABLE_STATUSES = ['RESERVADO_SIN_PAGAR', 'CONFIRMADO'];
 
 export type JoinState =
@@ -31,8 +36,20 @@ export type JoinState =
   | { kind: 'TOO_EARLY'; opensAt: Date }
   | { kind: 'OPEN' }
   | { kind: 'CLOSED' }
+  /**
+   * Turno sin pagar que todavía no terminó: en vez de entrar, hay que pagar. El
+   * backend responde 409 "Pagá el turno para entrar a la consulta." (ENG-147).
+   */
+  | { kind: 'UNPAID' }
   /** Cancelado o liberado: no hay consulta que abrir. */
   | { kind: 'NOT_APPLICABLE' };
+
+/**
+ * Lo que ve el paciente en un turno sin pagar. El pago es de la web: la app no
+ * cobra (ver `BookAppointmentScreen`).
+ */
+export const UNPAID_JOIN_MESSAGE =
+  'Pagá el turno para entrar a la consulta. El pago se hace desde MediConnect en la web.';
 
 export interface JoinWindow {
   opensAt: Date;
@@ -58,8 +75,9 @@ export function joinStateOf(appointment: Appointment, now: Date = new Date()): J
 
   const { opensAt, closesAt } = joinWindowFor(appointment);
 
-  if (now < opensAt) return { kind: 'TOO_EARLY', opensAt };
   if (now > closesAt) return { kind: 'CLOSED' };
+  if (appointment.status === 'RESERVADO_SIN_PAGAR') return { kind: 'UNPAID' };
+  if (now < opensAt) return { kind: 'TOO_EARLY', opensAt };
 
   return { kind: 'OPEN' };
 }

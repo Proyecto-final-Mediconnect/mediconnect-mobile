@@ -6,7 +6,7 @@ import { Chip } from '../../../shared/ui/Chip';
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
 import { JoinConsultationButton } from '../../video/components/JoinConsultationButton';
 import { formatShortDay, professionalName, statusLabel, statusTone } from '../lib/appointments';
-import { joinStateOf, timeUntilOpen } from '../lib/join-window';
+import { joinStateOf, timeUntilOpen, UNPAID_JOIN_MESSAGE } from '../lib/join-window';
 import type { Appointment } from '../types';
 
 interface NextAppointmentCardProps {
@@ -65,6 +65,11 @@ export function NextAppointmentCard({
         <View style={styles.accion}>
           <JoinConsultationButton appointmentId={appointment.id} />
         </View>
+      ) : sala.kind === 'UNPAID' ? (
+        <View style={[styles.accion, styles.aviso]}>
+          <Ionicons name="card-outline" size={16} color={colors.muted} />
+          <Text style={[styles.avisoTexto, styles.avisoLargo]}>{UNPAID_JOIN_MESSAGE}</Text>
+        </View>
       ) : sala.kind === 'TOO_EARLY' ? (
         <View style={[styles.accion, styles.aviso]}>
           <Ionicons name="time-outline" size={16} color={colors.muted} />
@@ -108,5 +113,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     paddingVertical: spacing.md,
   },
+  avisoLargo: { flexShrink: 1 },
   avisoTexto: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.muted },
 });
