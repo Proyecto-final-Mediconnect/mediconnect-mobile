@@ -9,11 +9,16 @@ const base = (appointmentId: string): string =>
 /**
  * `POST /appointments/:id/payment`: el link de Checkout Pro del turno. El
  * backend lo crea la primera vez y después devuelve el mismo, así que un doble
- * toque no genera dos cobros. Sin body: monto y moneda salen del turno.
+ * toque no genera dos cobros. Monto y moneda salen del turno.
+ *
+ * `origen: 'app'` hace que MercadoPago vuelva a la app (`mediconnect://pago/…`)
+ * y no a la web (ENG-172). Necesita el backend de ENG-172: el anterior rechaza
+ * el campo con un 400.
  */
 export function startCheckout(appointmentId: string): Promise<CheckoutLink> {
   return apiRequest<CheckoutLink>(base(appointmentId), {
     method: 'POST',
+    body: { origen: 'app' },
     fallbackMessage: 'No pudimos iniciar el pago. Probá de nuevo.',
   });
 }
