@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { formatPrice } from '../features/appointments/lib/appointments';
 import { ProfessionalAvatar } from '../features/catalog/components/ProfessionalAvatar';
+import { describePolicy } from '../features/cancellation-policy/policy';
 import { usePublicProfile } from '../features/catalog/hooks/use-catalog';
 import { fullName } from '../features/catalog/lib/catalog';
 import type { RootStackParamList } from '../navigation/types';
@@ -75,6 +76,13 @@ export function ProfessionalProfileScreen(): React.JSX.Element {
           />
         )}
       </View>
+
+      {p.cancellationPolicy ? (
+        <View style={styles.seccion}>
+          <Text style={styles.seccionTitulo}>Si tenés que cancelar</Text>
+          <Text style={styles.bio}>{describePolicy(p.cancellationPolicy)}</Text>
+        </View>
+      ) : null}
 
       {p.bio ? (
         <View style={styles.seccion}>

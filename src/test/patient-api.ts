@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 
 import type { PatientProfile } from '../features/patient-profile/types';
 import { turnosDemo } from '../mocks/appointments';
+import { refundPercentFor } from '../features/cancellation-policy/policy';
 import { matchesSearch } from '../features/catalog/lib/catalog';
 import { disponibilidadDe, ESPECIALIDADES, perfilDe, PROFESIONALES } from '../mocks/catalog';
 import { crearHistoriaDemo } from '../mocks/clinical-record';
@@ -24,12 +25,36 @@ export const FICHA: PatientProfile = {
  * clínica y su ficha. La HC responde solo para su propio id: si la app la pidiera
  * con otro, el request no tendría handler y el test fallaría.
  */
+/** La política default del backend, que es la que tienen guardada los turnos de ejemplo. */
+const POLITICA_DEMO = { hoursFullRefund: 24, hoursPartialRefund: 6, partialRefundPercent: 50 };
+
+/** Lo que devolvería el backend al cancelar ahora (ENG-65): solo un turno pagado. */
+function cotizar(id: string): { percent: number; amount: number } | null {
+  const turno = turnosDemo.listar().find((t) => t.id === id);
+  if (!turno) return null;
+  const percent =
+    turno.status === 'CONFIRMADO'
+      ? refundPercentFor(POLITICA_DEMO, new Date(turno.scheduledAt), new Date())
+      : 0;
+  return { percent, amount: (turno.price * percent) / 100 };
+}
+
 export function servirDatosDelPaciente(): void {
   server.use(
     http.get(`${API_URL}/appointments/me`, () => HttpResponse.json(turnosDemo.listar())),
-    http.patch(`${API_URL}/appointments/:id/cancel`, ({ params }) =>
-      HttpResponse.json(turnosDemo.cancelar(String(params.id))),
-    ),
+    http.get(`${API_URL}/appointments/:id/cancellation-quote`, ({ params }) => {
+      const cotizacion = cotizar(String(params.id));
+      return cotizacion
+        ? HttpResponse.json({ ...cotizacion, status: null })
+        : HttpResponse.json({ message: 'No encontramos ese turno.' }, { status: 404 });
+    }),
+    http.patch(`${API_URL}/appointments/:id/cancel`, ({ params }) => {
+      const cotizacion = cotizar(String(params.id)) ?? { percent: 0, amount: 0 };
+      return HttpResponse.json({
+        ...turnosDemo.cancelar(String(params.id)),
+        refund: { ...cotizacion, status: cotizacion.percent > 0 ? 'PROCESADO' : null },
+      });
+    }),
     // El estado del pago, para el detalle del turno: los confirmados se pagaron.
     http.get(`${API_URL}/appointments/:id/payment`, ({ params }) => {
       const turno = turnosDemo.listar().find((t) => t.id === params.id);

@@ -24,10 +24,13 @@ import {
   professionalName,
 } from '../features/appointments/lib/appointments';
 import type { Appointment } from '../features/appointments/types';
+import { refundOutcomeText } from '../features/cancellation-policy/policy';
+import { useRefundNotice } from '../features/cancellation-policy/use-refund-notice';
 import { useNow } from '../shared/hooks/use-now';
 import { usePullToRefresh } from '../shared/hooks/use-pull-to-refresh';
 import { ConfirmSheet } from '../shared/ui/ConfirmSheet';
 import { FilterSheet } from '../shared/ui/FilterSheet';
+import { Notice } from '../shared/ui/Notice';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { SearchFilterBar, type ActiveFilter } from '../shared/ui/SearchFilterBar';
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
@@ -51,6 +54,10 @@ export function AppointmentsScreen(): React.JSX.Element {
   const [filtros, setFiltros] = useState<AgendaFilters>(EMPTY_AGENDA_FILTERS);
   const [verFiltros, setVerFiltros] = useState(false);
   const [aCancelar, setACancelar] = useState<Appointment | null>(null);
+  const devolucion = useRefundNotice(aCancelar, ahora);
+  /** Qué pasó con la devolución del último turno cancelado (ENG-65). Solo lo
+   *  dice la respuesta de la cancelación, así que se muestra hasta que se cierra. */
+  const [resultadoDevolucion, setResultadoDevolucion] = useState<string | null>(null);
 
   const irAReservar = (): void => navigation.navigate('Paciente', { screen: 'Reservar' });
   const abrir = (t: Appointment): void => navigation.navigate('Turno', { appointmentId: t.id });
@@ -133,6 +140,15 @@ export function AppointmentsScreen(): React.JSX.Element {
 
   return (
     <Screen scroll={false} padded={false} header={header}>
+      {resultadoDevolucion ? (
+        <View style={styles.aviso}>
+          <Notice
+            icon="cash-outline"
+            message={resultadoDevolucion}
+            action={{ label: 'Entendido', onPress: () => setResultadoDevolucion(null) }}
+          />
+        </View>
+      ) : null}
       {turnos.data.length > 0 ? barra : null}
       <SectionList
         testID="lista-turnos"
@@ -237,7 +253,7 @@ export function AppointmentsScreen(): React.JSX.Element {
         title="¿Cancelar el turno?"
         message={
           aCancelar
-            ? `Se cancela tu turno del ${formatShortDay(aCancelar.date, aCancelar.startTime)} con ${professionalName(aCancelar)}, y el horario queda libre para otro paciente.`
+            ? `Se cancela tu turno del ${formatShortDay(aCancelar.date, aCancelar.startTime)} con ${professionalName(aCancelar)}, y el horario queda libre para otro paciente.${devolucion ? `\n\n${devolucion}` : ''}`
             : ''
         }
         confirmLabel="Cancelar turno"
@@ -246,7 +262,14 @@ export function AppointmentsScreen(): React.JSX.Element {
         error={cancelar.isError ? cancelar.error.message : null}
         onDismiss={cerrarConfirmacion}
         onConfirm={() => {
-          if (aCancelar) cancelar.mutate(aCancelar.id, { onSuccess: cerrarConfirmacion });
+          if (aCancelar) {
+            cancelar.mutate(aCancelar.id, {
+              onSuccess: (cancelado) => {
+                setResultadoDevolucion(refundOutcomeText(cancelado.refund));
+                cerrarConfirmacion();
+              },
+            });
+          }
         }}
       />
     </Screen>
@@ -270,6 +293,7 @@ const styles = StyleSheet.create({
     color: colors.mutedSoft,
   },
   tarjeta: { marginBottom: spacing.md },
+  aviso: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   // Las filas de un mes forman una sola tarjeta: cada una pone sus lados y la
   // primera y la última, las esquinas.
   grupo: {

@@ -12,6 +12,8 @@ import {
   freeSlots,
 } from '../features/appointments/lib/booking';
 import type { Appointment, AvailabilitySlot } from '../features/appointments/types';
+import { describePolicy } from '../features/cancellation-policy/policy';
+import { usePublicProfile } from '../features/catalog/hooks/use-catalog';
 import { fullName } from '../features/catalog/lib/catalog';
 import type { RootStackParamList } from '../navigation/types';
 import { Button } from '../shared/ui/Button';
@@ -49,6 +51,9 @@ export function BookAppointmentScreen(): React.JSX.Element {
   const profesional = disponibilidad.data?.professional;
   const nombre = profesional ? fullName(profesional) : '';
   const precio = profesional?.consultationPrice ?? null;
+  // La disponibilidad no trae la política: sale del perfil, que ya está en
+  // caché porque el paciente llega a esta pantalla desde ahí.
+  const politica = usePublicProfile(params.professionalId).data?.cancellationPolicy;
 
   const header = (
     <ScreenHeader
@@ -193,7 +198,7 @@ export function BookAppointmentScreen(): React.JSX.Element {
           horario && dia
             ? `Con ${nombre}, el ${formatShortDay(dia, horario.startTime)} (${horario.durationMinutes} min)${
                 precio !== null ? `, por ${formatPrice(precio)}` : ''
-              }. ${AVISO_PAGO}`
+              }. ${AVISO_PAGO}${politica ? `\n\n${describePolicy(politica)}` : ''}`
             : ''
         }
         confirmLabel="Reservar turno"
