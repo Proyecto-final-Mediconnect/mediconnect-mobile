@@ -20,6 +20,25 @@ export enum WebBrowserResultType {
   LOCKED = 'locked',
 }
 
+/**
+ * La sesión del checkout (ENG-172). Los tests la ven como una apertura más: lo
+ * que importa es a qué URL se fue y adónde se espera volver.
+ */
+export const __vueltas: string[] = [];
+
+export async function openAuthSessionAsync(
+  url: string,
+  redirectUrl: string,
+): Promise<{ type: WebBrowserResultType | 'success'; url?: string }> {
+  if (__control.fallarProxima) {
+    __control.fallarProxima = false;
+    throw new Error('No hay un navegador disponible');
+  }
+  __abiertas.push(url);
+  __vueltas.push(redirectUrl);
+  return { type: 'success', url: `${redirectUrl}/turno?resultado=exito` };
+}
+
 export async function openBrowserAsync(url: string): Promise<{ type: WebBrowserResultType }> {
   if (__control.fallarProxima) {
     __control.fallarProxima = false;
