@@ -56,6 +56,28 @@ describe('Mis turnos (ENG-115)', () => {
     expect(lista().queryByText('Sin pagar')).not.toBeInTheDocument();
   });
 
+  it('cancelar un turno pagado dice cuánto se devuelve según la política (ENG-173)', async () => {
+    await abrirTurnos();
+
+    // Pagado, dentro de 12 días: más de 24 h, la devolución total.
+    fireEvent.click(lista().getByRole('button', { name: 'Cancelar el turno con Martín Olivares' }));
+    const hoja = await screen.findByRole('alert');
+
+    expect(
+      await within(hoja).findByText(/te corresponde la devolución total \(\$26\.000\)/),
+    ).toBeInTheDocument();
+  });
+
+  it('cancelar un turno sin pagar no habla de devolución (ENG-173)', async () => {
+    await abrirTurnos();
+
+    fireEvent.click(lista().getByRole('button', { name: 'Cancelar el turno con Tomás Aliaga' }));
+    const hoja = await screen.findByRole('alert');
+
+    expect(within(hoja).getByText(/con Tomás Aliaga/)).toBeInTheDocument();
+    expect(within(hoja).queryByText(/devolución/)).not.toBeInTheDocument();
+  });
+
   it('"Mantener el turno" cierra sin cancelar', async () => {
     await abrirTurnos();
 

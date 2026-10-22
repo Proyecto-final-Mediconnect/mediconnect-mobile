@@ -1,3 +1,5 @@
+import type { CancellationPolicy } from '../cancellation-policy/policy';
+
 /* Tipos del catálogo de profesionales: los mismos que la web (ENG-49, ENG-50). */
 
 export interface Specialty {
@@ -36,6 +38,12 @@ export interface PublicProfessionalProfile {
   education: Education[];
   price: number | null;
   currency: string;
+  /**
+   * Política de cancelación (ENG-67). El backend la manda siempre, con el
+   * default si el profesional no la configuró; es opcional solo para tolerar un
+   * backend anterior.
+   */
+  cancellationPolicy?: CancellationPolicy;
 }
 
 export interface ProfessionalsPage {

@@ -24,6 +24,7 @@ import {
   professionalName,
 } from '../features/appointments/lib/appointments';
 import type { Appointment } from '../features/appointments/types';
+import { useRefundNotice } from '../features/cancellation-policy/use-refund-notice';
 import { useNow } from '../shared/hooks/use-now';
 import { usePullToRefresh } from '../shared/hooks/use-pull-to-refresh';
 import { ConfirmSheet } from '../shared/ui/ConfirmSheet';
@@ -51,6 +52,7 @@ export function AppointmentsScreen(): React.JSX.Element {
   const [filtros, setFiltros] = useState<AgendaFilters>(EMPTY_AGENDA_FILTERS);
   const [verFiltros, setVerFiltros] = useState(false);
   const [aCancelar, setACancelar] = useState<Appointment | null>(null);
+  const devolucion = useRefundNotice(aCancelar, ahora);
 
   const irAReservar = (): void => navigation.navigate('Paciente', { screen: 'Reservar' });
   const abrir = (t: Appointment): void => navigation.navigate('Turno', { appointmentId: t.id });
@@ -237,7 +239,7 @@ export function AppointmentsScreen(): React.JSX.Element {
         title="¿Cancelar el turno?"
         message={
           aCancelar
-            ? `Se cancela tu turno del ${formatShortDay(aCancelar.date, aCancelar.startTime)} con ${professionalName(aCancelar)}, y el horario queda libre para otro paciente.`
+            ? `Se cancela tu turno del ${formatShortDay(aCancelar.date, aCancelar.startTime)} con ${professionalName(aCancelar)}, y el horario queda libre para otro paciente.${devolucion ? `\n\n${devolucion}` : ''}`
             : ''
         }
         confirmLabel="Cancelar turno"

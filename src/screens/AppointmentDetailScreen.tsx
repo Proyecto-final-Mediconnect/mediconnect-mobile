@@ -25,6 +25,7 @@ import { getPaymentStatus } from '../features/payments/api';
 import { canPay } from '../features/payments/lib/payment';
 import { JoinConsultationButton } from '../features/video/components/JoinConsultationButton';
 import type { RootStackParamList } from '../navigation/types';
+import { useRefundNotice } from '../features/cancellation-policy/use-refund-notice';
 import { useNow } from '../shared/hooks/use-now';
 import { Button } from '../shared/ui/Button';
 import { Chip } from '../shared/ui/Chip';
@@ -52,6 +53,7 @@ export function AppointmentDetailScreen(): React.JSX.Element {
   const [confirmando, setConfirmando] = useState(false);
 
   const turno = turnos.data?.find((t) => t.id === params.appointmentId) ?? null;
+  const devolucion = useRefundNotice(confirmando ? turno : null, ahora);
   const pago = useQuery({
     queryKey: ['payment', params.appointmentId, 'detalle'],
     queryFn: () => getPaymentStatus(params.appointmentId),
@@ -158,7 +160,7 @@ export function AppointmentDetailScreen(): React.JSX.Element {
       <ConfirmSheet
         visible={confirmando}
         title="¿Cancelar el turno?"
-        message={`Se cancela tu turno del ${formatShortDay(turno.date, turno.startTime)} con ${professionalName(turno)}, y el horario queda libre para otro paciente.`}
+        message={`Se cancela tu turno del ${formatShortDay(turno.date, turno.startTime)} con ${professionalName(turno)}, y el horario queda libre para otro paciente.${devolucion ? `\n\n${devolucion}` : ''}`}
         confirmLabel="Cancelar turno"
         dismissLabel="Mantener el turno"
         pending={cancelar.isPending}
