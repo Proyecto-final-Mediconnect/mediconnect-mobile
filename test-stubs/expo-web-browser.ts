@@ -13,11 +13,18 @@ export enum WebBrowserPresentationStyle {
   FULL_SCREEN = 'fullScreen',
 }
 
-export async function openBrowserAsync(url: string): Promise<{ type: 'dismiss' }> {
+export enum WebBrowserResultType {
+  CANCEL = 'cancel',
+  DISMISS = 'dismiss',
+  OPENED = 'opened',
+  LOCKED = 'locked',
+}
+
+export async function openBrowserAsync(url: string): Promise<{ type: WebBrowserResultType }> {
   if (__control.fallarProxima) {
     __control.fallarProxima = false;
     throw new Error('No hay un navegador disponible');
   }
   __abiertas.push(url);
-  return { type: 'dismiss' };
+  return { type: WebBrowserResultType.DISMISS };
 }

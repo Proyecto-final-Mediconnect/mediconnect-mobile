@@ -2,6 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Chip } from '../../../shared/ui/Chip';
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
+import { canPay } from '../../payments/lib/payment';
+import { Button } from '../../../shared/ui/Button';
 import { JoinConsultationButton } from '../../video/components/JoinConsultationButton';
 import {
   canCancel,
@@ -18,6 +20,8 @@ import type { Appointment } from '../types';
 interface AppointmentCardProps {
   appointment: Appointment;
   onCancel: (appointment: Appointment) => void;
+  /** Abre el pago del turno (ENG-168). Sin esto, la tarjeta no ofrece pagar. */
+  onPay?: (appointment: Appointment) => void;
   now?: Date;
 }
 
@@ -29,6 +33,7 @@ interface AppointmentCardProps {
 export function AppointmentCard({
   appointment,
   onCancel,
+  onPay,
   now = new Date(),
 }: AppointmentCardProps): React.JSX.Element {
   const vigente = isActive(appointment);
@@ -53,6 +58,12 @@ export function AppointmentCard({
         </View>
       ) : sala === 'UNPAID' ? (
         <Text style={[styles.sala, styles.avisoPago]}>{UNPAID_JOIN_MESSAGE}</Text>
+      ) : null}
+
+      {onPay && canPay(appointment, now) ? (
+        <View style={styles.sala}>
+          <Button label="Pagar" variant="accent" onPress={() => onPay(appointment)} fullWidth />
+        </View>
       ) : null}
 
       {canCancel(appointment, now) ? (

@@ -21,17 +21,15 @@ import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 
-/** Lo que dice la app sobre el pago mientras no se pueda pagar desde el celular. */
-const AVISO_PAGO =
-  'Tenés 15 minutos para pagarlo desde MediConnect en la web. Si no, el horario se libera para otro paciente.';
+/** Lo que dice la app sobre el pago: ENG-101 libera los turnos no pagados a los 15 minutos. */
+const AVISO_PAGO = 'Tenés 15 minutos para pagarlo. Si no, el horario se libera para otro paciente.';
 
 /**
  * Sacar un turno, paso 2: elegir día y horario y reservar (ENG-133).
  * Equivalente mobile de ENG-54.
  *
- * El turno queda reservado sin pagar: el pago con MercadoPago es de la web
- * (ENG-63) y, como ENG-101 libera los turnos no pagados a los 15 minutos, la
- * app lo dice antes y después de reservar.
+ * El turno queda reservado sin pagar y, como ENG-101 libera los turnos no
+ * pagados a los 15 minutos, la app lo dice y ofrece pagarlo ahí mismo (ENG-168).
  */
 export function BookAppointmentScreen(): React.JSX.Element {
   const navigation = useNavigation();
@@ -76,7 +74,14 @@ export function BookAppointmentScreen(): React.JSX.Element {
         </View>
         <Notice icon="time-outline" message={AVISO_PAGO} />
         <Button
+          label="Pagar ahora"
+          variant="accent"
+          onPress={() => navigation.navigate('Pago', { appointmentId: reservado.id })}
+          fullWidth
+        />
+        <Button
           label="Ver mis turnos"
+          variant="secondary"
           onPress={() => navigation.navigate('Paciente', { screen: 'Turnos' })}
           fullWidth
         />
