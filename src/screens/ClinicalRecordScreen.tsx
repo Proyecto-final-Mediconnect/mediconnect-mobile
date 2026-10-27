@@ -117,12 +117,12 @@ export function ClinicalRecordScreen(): React.JSX.Element {
               Cada entrada queda sellada y no se puede modificar. Si un profesional necesita
               corregir algo, agrega una corrección vinculada al registro original.
             </Text>
-          ) : null
+          ) : undefined
         }
         ListFooterComponent={
           visibles < filtradas.length ? (
             <Text style={styles.mas}>Cargando más entradas…</Text>
-          ) : null
+          ) : undefined
         }
         ListEmptyComponent={
           entradas.length === 0 ? (
