@@ -60,17 +60,22 @@ export function usePaymentStatus(
  * prueba con el del sistema; si tampoco, tira y la pantalla lo muestra.
  *
  * Devuelve `true` si ya se sabe que el paciente terminó: volvió por el link o
- * cerró el navegador a mano. El `?resultado=` del link **no se usa**: lo dispara
+ * cerró el navegador a mano (`false` si no se llegó a abrir porque ya había otra
+ * sesión). El `?resultado=` del link **no se usa**: lo dispara
  * el navegador y no confirma nada; el resultado lo sigue leyendo la pantalla
  * del backend. Con el navegador del sistema no hay forma de saberlo desde acá,
  * y la pantalla lo detecta cuando la app vuelve al primer plano.
  */
 export async function openCheckout(checkoutUrl: string): Promise<boolean> {
   try {
-    await WebBrowser.openAuthSessionAsync(checkoutUrl, CHECKOUT_RETURN_URL, {
+    const result = await WebBrowser.openAuthSessionAsync(checkoutUrl, CHECKOUT_RETURN_URL, {
       dismissButtonStyle: 'close',
+      // En iOS la sesión comparte cookies con Safari: no dejar la de MercadoPago
+      // del paciente guardada en el celular.
+      preferEphemeralSession: true,
     });
-    return true;
+    // `locked`: ya había otra sesión abierta y no se abrió ningún navegador.
+    return result.type !== WebBrowser.WebBrowserResultType.LOCKED;
   } catch {
     await Linking.openURL(checkoutUrl);
     return false;

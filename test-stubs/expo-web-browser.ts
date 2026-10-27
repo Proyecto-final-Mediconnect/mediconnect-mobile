@@ -7,7 +7,11 @@ export const __abiertas: string[] = [];
 
 /** Para los tests del error: la próxima apertura falla, como en un Android sin
  *  Custom Tabs. */
-export const __control = { fallarProxima: false };
+export const __control = {
+  fallarProxima: false,
+  /** Cómo termina la próxima sesión del checkout (`success` si no se pisa). */
+  resultadoProximo: null as string | null,
+};
 
 export enum WebBrowserPresentationStyle {
   FULL_SCREEN = 'fullScreen',
@@ -36,6 +40,11 @@ export async function openAuthSessionAsync(
   }
   __abiertas.push(url);
   __vueltas.push(redirectUrl);
+  const tipo = __control.resultadoProximo;
+  if (tipo) {
+    __control.resultadoProximo = null;
+    return { type: tipo as WebBrowserResultType };
+  }
   return { type: 'success', url: `${redirectUrl}/turno?resultado=exito` };
 }
 

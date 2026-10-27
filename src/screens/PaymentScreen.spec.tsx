@@ -141,6 +141,33 @@ describe('Pagar el turno desde la app (ENG-168)', () => {
     expect(pedidos.posts).toBe(1);
   });
 
+  it('si el paciente cierra el navegador sin pagar, pasa a consultar el estado', async () => {
+    __control.resultadoProximo = 'dismiss';
+    await abrirPagoDesdeTurnos(
+      ...backendDePago({
+        estado: { status: 'PENDIENTE', appointmentStatus: 'RESERVADO_SIN_PAGAR' },
+      }),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pagar con MercadoPago' }));
+
+    expect(await screen.findByText('Consultando el estado de tu pago…')).toBeVisible();
+  });
+
+  it('si ya había otra sesión abierta, no da el pago por vuelto', async () => {
+    __control.resultadoProximo = 'locked';
+    await abrirPagoDesdeTurnos(
+      ...backendDePago({
+        estado: { status: 'PENDIENTE', appointmentStatus: 'RESERVADO_SIN_PAGAR' },
+      }),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pagar con MercadoPago' }));
+
+    expect(await screen.findByText('Completá el pago en MercadoPago')).toBeVisible();
+    expect(screen.queryByText('Consultando el estado de tu pago…')).not.toBeInTheDocument();
+  });
+
   it('si no se puede abrir MercadoPago, lo dice', async () => {
     const sistema = vi.spyOn(Linking, 'openURL').mockRejectedValue(new Error('sin navegador'));
     __control.fallarProxima = true;
