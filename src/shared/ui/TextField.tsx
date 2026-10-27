@@ -1,6 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState, type Ref } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type TextInputInstance,
+  type TextInputProps,
+} from 'react-native';
 
 import { colors, fonts, fontSize, radius, spacing } from './theme';
 
@@ -13,7 +21,7 @@ type TextFieldProps = Omit<TextInputProps, 'secureTextEntry'> & {
    * Llega al `TextInput` con el resto de las props (en React 19 `ref` es una
    * prop más). Sirve para pasar el foco al campo siguiente desde el teclado.
    */
-  ref?: Ref<TextInput>;
+  ref?: Ref<TextInputInstance>;
 };
 
 // Equivalente al `TextField` de la web: rótulo arriba, error abajo en rojo y,
