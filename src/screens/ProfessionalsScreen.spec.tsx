@@ -39,12 +39,29 @@ describe('Buscar profesionales (ENG-132)', () => {
     });
     await abrirBusqueda();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Dermatología' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Dermatología' }));
 
     await waitFor(() => expect(lista().queryByText('Martín Olivares')).not.toBeInTheDocument());
     expect(lista().getByText('Carolina Ruiz')).toBeInTheDocument();
     expect(pedidas).toContainEqual(['esp-derma']);
     server.events.removeAllListeners();
+  });
+
+  it('el filtro puesto se ve debajo del buscador y se saca con la ✕', async () => {
+    await abrirBusqueda();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Dermatología' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Ver \d+ profesional/ }));
+
+    expect(screen.getByRole('button', { name: 'Filtros (1 activos)' })).toBeInTheDocument();
+    await waitFor(() => expect(lista().queryByText('Martín Olivares')).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sacar el filtro Dermatología' }));
+
+    expect(await lista().findByText('Martín Olivares')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filtros' })).toBeInTheDocument();
   });
 
   it('el buscador encuentra por nombre, sin tildes', async () => {
@@ -54,8 +71,8 @@ describe('Buscar profesionales (ENG-132)', () => {
       target: { value: 'martin' },
     });
 
+    await waitFor(() => expect(lista().queryByText('Valeria Ocampo')).not.toBeInTheDocument());
     expect(lista().getByText('Martín Olivares')).toBeInTheDocument();
-    expect(lista().queryByText('Valeria Ocampo')).not.toBeInTheDocument();
   });
 
   it('sin resultados lo dice y ofrece limpiar los filtros', async () => {
@@ -64,10 +81,10 @@ describe('Buscar profesionales (ENG-132)', () => {
     fireEvent.change(screen.getByLabelText('Buscar profesional'), {
       target: { value: 'nadie' },
     });
-    expect(screen.getByText('No hay profesionales con esos filtros')).toBeInTheDocument();
+    expect(await screen.findByText('No hay profesionales con esos filtros')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
-    expect(lista().getByText('Martín Olivares')).toBeInTheDocument();
+    expect(await lista().findByText('Martín Olivares')).toBeInTheDocument();
   });
 
   it('si no carga, lo dice con la opción de reintentar', async () => {
@@ -92,39 +109,30 @@ describe('Buscar profesionales (ENG-132)', () => {
     expect(screen.getByRole('button', { name: 'Ver turnos disponibles' })).toBeInTheDocument();
   });
 
-  // El backend no busca por nombre: el filtro es local y tiene que ver todo el
-  // catálogo, no solo la primera página.
-  it('el buscador encuentra a alguien que está en otra página', async () => {
-    const primero = PROFESIONALES[0]!;
-    const resto = PROFESIONALES.slice(1);
-    await renderApp(
-      http.get(`${API_URL}/catalog/professionals`, ({ request }) => {
-        const page = Number(new URL(request.url).searchParams.get('page') ?? '1');
-        const data = page === 1 ? [primero] : resto;
-        return HttpResponse.json({
-          data,
-          meta: {
-            page,
-            limit: 1,
-            total: PROFESIONALES.length,
-            totalPages: 2,
-            hasNextPage: page === 1,
-          },
-        });
-      }),
-    );
-    fireEvent.click(screen.getByRole('tab', { name: 'Reservar' }));
-    await waitFor(() => screen.getByTestId('lista-profesionales'));
-    await lista().findByText(`${primero.firstName} ${primero.lastName}`);
-    const buscado = resto[resto.length - 1]!;
-
-    fireEvent.change(screen.getByLabelText('Buscar profesional'), {
-      target: { value: buscado.lastName },
+  // La búsqueda la hace el backend: así encuentra a cualquiera del catálogo, no
+  // solo a los de las páginas cargadas, y no se manda un request por letra.
+  it('la búsqueda se la pide al backend, una vez que se dejó de escribir', async () => {
+    const buscadas: (string | null)[] = [];
+    server.events.on('request:start', ({ request }) => {
+      const url = new URL(request.url);
+      if (url.pathname === '/catalog/professionals') buscadas.push(url.searchParams.get('search'));
     });
+    await abrirBusqueda();
 
-    expect(
-      await lista().findByText(`${buscado.firstName} ${buscado.lastName}`),
-    ).toBeInTheDocument();
+    const buscador = screen.getByLabelText('Buscar profesional');
+    fireEvent.change(buscador, { target: { value: 'oli' } });
+    fireEvent.change(buscador, { target: { value: 'olivares' } });
+
+    await waitFor(() => expect(buscadas).toContain('olivares'));
+    expect(buscadas).not.toContain('oli');
+    expect(await lista().findByText('Martín Olivares')).toBeInTheDocument();
+    server.events.removeAllListeners();
+  });
+
+  it('el buscador topa el texto en 80 caracteres, lo que acepta el backend', async () => {
+    await abrirBusqueda();
+
+    expect(screen.getByLabelText('Buscar profesional')).toHaveAttribute('maxlength', '80');
   });
 
   it('sin precio publicado, el perfil no ofrece reservar', async () => {

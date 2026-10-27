@@ -23,6 +23,12 @@ export interface Appointment {
   status: string;
   professional: AppointmentParty | null;
   patient: AppointmentParty | null;
+  /**
+   * Cuándo se reservó y cuándo se canceló, ISO-8601. Opcionales: un backend
+   * anterior a que se expusieran no los manda, y el detalle se arregla sin ellos.
+   */
+  createdAt?: string | null;
+  cancelledAt?: string | null;
 }
 
 /* Disponibilidad y reserva (ENG-133): `GET /professionals/:id/availability` y `POST /appointments`. */

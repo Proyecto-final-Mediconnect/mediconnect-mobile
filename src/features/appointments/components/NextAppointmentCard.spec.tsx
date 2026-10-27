@@ -30,7 +30,7 @@ describe('NextAppointmentCard', () => {
 
     expect(screen.getByText('JUE 3 SEP · 09:30')).toBeInTheDocument();
     expect(screen.getByText('Valeria Ocampo')).toBeInTheDocument();
-    expect(screen.getByText('CONFIRMADO')).toBeInTheDocument();
+    expect(screen.getByText('Confirmado')).toBeInTheDocument();
   });
 
   // Un botón gris no explica por qué no anda: antes de hora se dice cuándo abre.

@@ -49,11 +49,13 @@ export interface ProfessionalsPage {
   };
 }
 
-/** Lo que el backend filtra. La búsqueda por nombre es local (ver `matchesSearch`). */
+/** Lo que filtra el backend, incluida la búsqueda por nombre o especialidad. */
 export interface CatalogFilters {
+  /** Nombre, apellido o especialidad; sin tildes ni mayúsculas. Vacío: sin búsqueda. */
+  search: string;
   specialtyIds: string[];
   /** Tope de precio; `null` es cualquier precio. */
   maxPrice: number | null;
 }
 
-export const EMPTY_FILTERS: CatalogFilters = { specialtyIds: [], maxPrice: null };
+export const EMPTY_FILTERS: CatalogFilters = { search: '', specialtyIds: [], maxPrice: null };
