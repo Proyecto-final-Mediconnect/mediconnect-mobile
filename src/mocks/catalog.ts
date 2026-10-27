@@ -72,6 +72,8 @@ export function perfilDe(id: string): PublicProfessionalProfile | undefined {
     ],
     price: p.price,
     currency: p.currency,
+    // El default del backend (ENG-67), para un profesional que no la configuró.
+    cancellationPolicy: { hoursFullRefund: 24, hoursPartialRefund: 6, partialRefundPercent: 50 },
   };
 }
 

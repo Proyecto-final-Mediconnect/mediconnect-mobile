@@ -23,6 +23,24 @@ describe('Reservar un turno (ENG-133)', () => {
     expect(screen.queryByRole('button', { name: 'Reservar a las 09:00' })).not.toBeInTheDocument();
   });
 
+  it('el perfil y la confirmación muestran la política de cancelación (ENG-173)', async () => {
+    await renderApp();
+    fireEvent.click(screen.getByRole('tab', { name: 'Reservar' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Ver el perfil de Martín Olivares' }),
+    );
+
+    expect(await screen.findByText('Si tenés que cancelar')).toBeInTheDocument();
+    expect(screen.getByText(/Entre 24 horas y 6 horas antes, el 50 %/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver turnos disponibles' }));
+    await screen.findByText('HORARIOS LIBRES');
+    fireEvent.click(screen.getByRole('button', { name: 'Reservar a las 10:00' }));
+
+    const hoja = await screen.findByRole('alert');
+    expect(within(hoja).getByText(/Entre 24 horas y 6 horas antes, el 50 %/)).toBeInTheDocument();
+  });
+
   it('confirmado, el turno queda reservado sin pagar y aparece en "Mis turnos"', async () => {
     await abrirReserva();
 

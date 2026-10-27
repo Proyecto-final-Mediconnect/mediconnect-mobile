@@ -33,6 +33,26 @@ export interface Appointment {
 
 /* Disponibilidad y reserva (ENG-133): `GET /professionals/:id/availability` y `POST /appointments`. */
 
+/** Qué pasó con el reembolso de una cancelación (ENG-65). */
+export type RefundOutcome = 'PROCESADO' | 'PENDIENTE' | 'RECHAZADO';
+
+/**
+ * Cuánto le corresponde al paciente si cancela, y qué pasó con eso (ENG-65).
+ * `status` es `null` cuando no hay nada que devolver: el turno no estaba pago
+ * o la política da 0 %. En la cotización, antes de cancelar, siempre es `null`.
+ */
+export interface CancellationRefund {
+  percent: number;
+  amount: number;
+  status: RefundOutcome | null;
+}
+
+/** Lo que devuelve `PATCH /appointments/:id/cancel`. `refund` falta con un
+ *  backend anterior a ENG-65. */
+export interface CancelledAppointment extends Appointment {
+  refund?: CancellationRefund;
+}
+
 export type SlotStatus = 'AVAILABLE' | 'BOOKED' | 'BLOCKED' | 'PAST';
 
 export interface AvailabilitySlot {

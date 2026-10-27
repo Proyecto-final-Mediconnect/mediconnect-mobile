@@ -184,7 +184,7 @@ export function PaymentScreen(): React.JSX.Element {
         <Resultado icono="time-outline" tono="warning" titulo="El turno ya no está reservado">
           {resultado === 'TURNO_VENCIDO'
             ? 'Se liberó porque no se pagó a tiempo, y el horario volvió a estar disponible. Podés reservar otro cuando quieras.'
-            : 'El pago se acreditó, pero el turno se canceló o se liberó mientras pagabas. Guardá el comprobante de MercadoPago: los reembolsos de estos casos todavía se gestionan a mano.'}
+            : 'El pago se acreditó, pero el turno se canceló o se liberó mientras pagabas. Te devolvemos el pago entero por MercadoPago, al mismo medio con el que pagaste; puede tardar unos días en verse.'}
         </Resultado>
         <Button
           label="Reservar otro turno"
