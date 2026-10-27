@@ -16,9 +16,8 @@ interface AccessListProps {
  * como vigentes haría creer que alguien está mirando cuando no.
  */
 export function AccessList({ accesses, now, onRevoke }: AccessListProps): React.JSX.Element {
-  const vigentes = accesses.filter(
-    (a) => !a.revocadoEl && estadoDeAcceso(a, now).estado === 'VIGENTE',
-  );
+  // El backend ya los filtra; esto cubre el que vence entre dos consultas.
+  const vigentes = accesses.filter((a) => estadoDeAcceso(a, now).estado === 'VIGENTE');
 
   if (vigentes.length === 0) {
     return (
@@ -37,16 +36,16 @@ export function AccessList({ accesses, now, onRevoke }: AccessListProps): React.
           <View key={acceso.id} style={styles.fila}>
             <View style={styles.vivo} />
             <View style={styles.textos}>
-              <Text style={styles.quien}>{acceso.quien}</Text>
+              <Text style={styles.quien}>{acceso.consultante}</Text>
               <Text style={styles.contexto}>
-                {acceso.contexto}
-                {acceso.matricula ? ` · ${acceso.matricula}` : ''}
+                Entró con tu código
+                {acceso.matricula ? ` · Matrícula ${acceso.matricula}` : ''}
               </Text>
               <Text style={styles.vence}>Se corta sola en {cuentaRegresiva(resta)}</Text>
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Revocar el acceso de ${acceso.quien}`}
+              accessibilityLabel={`Revocar el acceso de ${acceso.consultante}`}
               hitSlop={spacing.sm}
               onPress={() => onRevoke(acceso)}
               style={styles.revocar}

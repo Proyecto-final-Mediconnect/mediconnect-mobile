@@ -1,8 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { fetchAccesses, fetchVitalBlock, revokeAccess } from '../api';
+import { fetchAccesses, fetchMyCode, fetchVitalBlock, revokeAccess } from '../api';
+import { proximaConsultaDelCodigo } from '../lib/medipass';
 
+export const CODIGO_KEY = ['medipass', 'code'] as const;
 const ACCESOS_KEY = ['medipass', 'accesses'] as const;
+
+/**
+ * El código vigente (ENG-72). Se vuelve a pedir justo cuando vence, así el QR
+ * nunca muestra uno que ya no sirve. `enabled` en falso mientras está oculto:
+ * con la app en segundo plano no hay nada que mostrar ni que renovar.
+ */
+export function useMyMediPassCode(enabled: boolean) {
+  return useQuery({
+    queryKey: CODIGO_KEY,
+    queryFn: fetchMyCode,
+    enabled,
+    // Nada de guardarlo después de dejar de mostrarlo (ENG-117).
+    gcTime: 0,
+    refetchInterval: (query) =>
+      proximaConsultaDelCodigo(
+        query.state.status === 'error' ? null : (query.state.data?.expiraEl ?? null),
+        new Date(),
+      ),
+  });
+}
 
 export function useVitalBlock() {
   return useQuery({ queryKey: ['medipass', 'vital'], queryFn: fetchVitalBlock });

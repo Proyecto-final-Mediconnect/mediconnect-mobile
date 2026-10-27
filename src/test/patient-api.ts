@@ -6,6 +6,7 @@ import { refundPercentFor } from '../features/cancellation-policy/policy';
 import { matchesSearch } from '../features/catalog/lib/catalog';
 import { disponibilidadDe, ESPECIALIDADES, perfilDe, PROFESIONALES } from '../mocks/catalog';
 import { crearHistoriaDemo } from '../mocks/clinical-record';
+import { accesosDemo, codigoDemo, VITAL_DEMO } from '../mocks/medipass';
 import { PACIENTE_DEMO } from '../mocks/patient';
 import { API_URL, server } from './msw-server';
 
@@ -42,6 +43,13 @@ function cotizar(id: string): { percent: number; amount: number } | null {
 export function servirDatosDelPaciente(): void {
   server.use(
     http.get(`${API_URL}/appointments/me`, () => HttpResponse.json(turnosDemo.listar())),
+    http.get(`${API_URL}/medipass/me`, () => HttpResponse.json(codigoDemo())),
+    http.get(`${API_URL}/medipass/me/vital`, () => HttpResponse.json(VITAL_DEMO)),
+    http.get(`${API_URL}/medipass/me/accesses`, () => HttpResponse.json(accesosDemo.listar())),
+    http.delete(`${API_URL}/medipass/me/accesses/:id`, ({ params }) => {
+      accesosDemo.revocar(String(params.id));
+      return new HttpResponse(null, { status: 204 });
+    }),
     http.get(`${API_URL}/appointments/:id/cancellation-quote`, ({ params }) => {
       const cotizacion = cotizar(String(params.id));
       return cotizacion

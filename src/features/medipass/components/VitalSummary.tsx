@@ -8,46 +8,71 @@ import type { VitalBlock } from '../types';
  * medicación activa y diagnósticos. Es el bloque vital, el mínimo que no se
  * puede apagar. Va en el mismo orden en que lo lee un médico de guardia: lo
  * que puede matar primero.
+ *
+ * Lo que el paciente no cargó todavía se dice ("Sin cargar"): acá lo lee él
+ * mismo, y tiene que saber qué le falta antes de necesitarlo.
  */
 export function VitalSummary({ vital }: { vital: VitalBlock }): React.JSX.Element {
+  const alergias = vital.alergias ?? [];
+  const medicacion = vital.medicacion ?? [];
+  const condiciones = vital.condiciones ?? [];
+
   return (
     <View style={styles.bloque}>
       <View style={styles.fila}>
-        <Dato rotulo="GRUPO SANGUÍNEO" valor={vital.grupoSanguineo} />
-        <Dato rotulo="EDAD" valor={`${vital.edad} años`} />
+        <Dato rotulo="GRUPO SANGUÍNEO" valor={vital.grupoSanguineo || SIN_CARGAR} />
+        <Dato rotulo="EDAD" valor={vital.edad != null ? `${vital.edad} años` : SIN_CARGAR} />
       </View>
 
       <Seccion titulo="ALERGIAS">
-        {vital.alergias.map((a) => (
-          <Linea key={a.que} principal={a.que} secundaria={a.gravedad} alerta />
-        ))}
+        {alergias.length ? (
+          alergias.map((a) => (
+            <Linea key={a.que} principal={a.que} secundaria={a.gravedad} alerta />
+          ))
+        ) : (
+          <Linea principal={SIN_CARGAR} />
+        )}
       </Seccion>
 
       <Seccion titulo="MEDICACIÓN ACTIVA">
-        {vital.medicacion.map((m) => (
-          <Linea
-            key={m.droga}
-            principal={m.droga}
-            secundaria={[m.dosis, m.nota].filter(Boolean).join(' · ')}
-          />
-        ))}
+        {medicacion.length ? (
+          medicacion.map((m) => (
+            <Linea
+              key={m.droga}
+              principal={m.droga}
+              secundaria={[m.dosis, m.nota].filter(Boolean).join(' · ')}
+            />
+          ))
+        ) : (
+          <Linea principal={SIN_CARGAR} />
+        )}
       </Seccion>
 
       <Seccion titulo="DIAGNÓSTICOS">
-        {vital.condiciones.map((c) => (
-          <Linea key={c.nombre} principal={c.nombre} secundaria={c.codigo} />
-        ))}
+        {condiciones.length ? (
+          condiciones.map((c) => (
+            <Linea key={c.nombre} principal={c.nombre} secundaria={c.codigo} />
+          ))
+        ) : (
+          <Linea principal={SIN_CARGAR} />
+        )}
       </Seccion>
 
       <Seccion titulo="CONTACTO DE EMERGENCIA">
-        <Linea
-          principal={`${vital.contacto.nombre} · ${vital.contacto.vinculo}`}
-          secundaria={vital.contacto.telefono}
-        />
+        {vital.contacto ? (
+          <Linea
+            principal={`${vital.contacto.nombre} · ${vital.contacto.vinculo}`}
+            secundaria={vital.contacto.telefono}
+          />
+        ) : (
+          <Linea principal={SIN_CARGAR} />
+        )}
       </Seccion>
     </View>
   );
 }
+
+const SIN_CARGAR = 'Sin cargar';
 
 function Dato({ rotulo, valor }: { rotulo: string; valor: string }): React.JSX.Element {
   return (
