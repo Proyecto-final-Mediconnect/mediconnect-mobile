@@ -16,6 +16,8 @@ interface ConfirmSheetProps {
   onDismiss: () => void;
   /** Mientras se confirma no se puede cerrar ni volver a tocar. */
   pending?: boolean;
+  /** Para esperar un dato antes de poder confirmar. */
+  confirmDisabled?: boolean;
   error?: string | null;
   /** `danger` para lo que no se deshace (cancelar); `primary` para confirmar algo nuevo (reservar). */
   confirmVariant?: 'danger' | 'primary';
@@ -39,6 +41,7 @@ export function ConfirmSheet({
   onConfirm,
   onDismiss,
   pending = false,
+  confirmDisabled = false,
   error,
   confirmVariant = 'danger',
 }: ConfirmSheetProps): React.JSX.Element {
@@ -68,6 +71,7 @@ export function ConfirmSheet({
           label={confirmLabel}
           variant={confirmVariant}
           loading={pending}
+          disabled={confirmDisabled}
           onPress={confirmar}
           fullWidth
         />

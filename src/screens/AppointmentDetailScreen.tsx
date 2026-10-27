@@ -166,10 +166,11 @@ export function AppointmentDetailScreen(): React.JSX.Element {
       <ConfirmSheet
         visible={confirmando}
         title="¿Cancelar el turno?"
-        message={`Se cancela tu turno del ${formatShortDay(turno.date, turno.startTime)} con ${professionalName(turno)}, y el horario queda libre para otro paciente.${devolucion ? `\n\n${devolucion}` : ''}`}
+        message={`Se cancela tu turno del ${formatShortDay(turno.date, turno.startTime)} con ${professionalName(turno)}, y el horario queda libre para otro paciente.${devolucion.texto ? `\n\n${devolucion.texto}` : ''}`}
         confirmLabel="Cancelar turno"
         dismissLabel="Mantener el turno"
         pending={cancelar.isPending}
+        confirmDisabled={devolucion.cargando}
         error={cancelar.isError ? cancelar.error.message : null}
         onDismiss={() => {
           setConfirmando(false);

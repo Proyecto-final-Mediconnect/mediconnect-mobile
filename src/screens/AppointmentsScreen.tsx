@@ -253,12 +253,13 @@ export function AppointmentsScreen(): React.JSX.Element {
         title="¿Cancelar el turno?"
         message={
           aCancelar
-            ? `Se cancela tu turno del ${formatShortDay(aCancelar.date, aCancelar.startTime)} con ${professionalName(aCancelar)}, y el horario queda libre para otro paciente.${devolucion ? `\n\n${devolucion}` : ''}`
+            ? `Se cancela tu turno del ${formatShortDay(aCancelar.date, aCancelar.startTime)} con ${professionalName(aCancelar)}, y el horario queda libre para otro paciente.${devolucion.texto ? `\n\n${devolucion.texto}` : ''}`
             : ''
         }
         confirmLabel="Cancelar turno"
         dismissLabel="Mantener el turno"
         pending={cancelar.isPending}
+        confirmDisabled={devolucion.cargando}
         error={cancelar.isError ? cancelar.error.message : null}
         onDismiss={cerrarConfirmacion}
         onConfirm={() => {

@@ -91,6 +91,43 @@ describe('Mis turnos (ENG-115)', () => {
     ).toHaveTextContent(/se gestiona aparte/);
   });
 
+  it('un error de la cotización que no es un 404 no cae en el respaldo ni promete nada falso', async () => {
+    await abrirTurnos(
+      http.get(`${API_URL}/appointments/:id/cancellation-quote`, () =>
+        HttpResponse.json({ message: 'Boom' }, { status: 503 }),
+      ),
+    );
+
+    fireEvent.click(lista().getByRole('button', { name: 'Cancelar el turno con Martín Olivares' }));
+    const hoja = await screen.findByRole('alert');
+
+    expect(await within(hoja).findByText(/No pudimos calcular la devolución/)).toBeInTheDocument();
+    expect(within(hoja).queryByText(/se gestiona aparte/)).not.toBeInTheDocument();
+  });
+
+  it('mientras se calcula la devolución no se puede confirmar la cancelación', async () => {
+    let responder: () => void = () => undefined;
+    const cotizacion = new Promise<void>((resolver) => {
+      responder = resolver;
+    });
+    await abrirTurnos(
+      http.get(`${API_URL}/appointments/:id/cancellation-quote`, async () => {
+        await cotizacion;
+        return HttpResponse.json({ percent: 100, amount: 26000, status: null });
+      }),
+    );
+
+    fireEvent.click(lista().getByRole('button', { name: 'Cancelar el turno con Martín Olivares' }));
+    const hoja = await screen.findByRole('alert');
+
+    expect(within(hoja).getByText(/Calculando cuánto te devolvemos/)).toBeInTheDocument();
+    expect(within(hoja).getByRole('button', { name: 'Cancelar turno' })).toBeDisabled();
+
+    responder();
+    expect(await within(hoja).findByText(/la devolución total/)).toBeInTheDocument();
+    expect(within(hoja).getByRole('button', { name: 'Cancelar turno' })).toBeEnabled();
+  });
+
   it('cancelar un turno sin pagar no habla de devolución (ENG-173)', async () => {
     await abrirTurnos();
 
