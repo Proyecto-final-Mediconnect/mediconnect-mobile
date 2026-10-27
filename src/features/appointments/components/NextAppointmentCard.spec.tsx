@@ -48,6 +48,18 @@ describe('NextAppointmentCard', () => {
     expect(screen.getByRole('button', { name: 'Ingresar a la sala' })).toBeInTheDocument();
   });
 
+  it('sin pagar pide el pago en vez de ofrecer la sala (ENG-147)', () => {
+    render(
+      <NextAppointmentCard
+        appointment={{ ...TURNO, status: 'RESERVADO_SIN_PAGAR' }}
+        now={new Date('2026-09-03T12:25:00Z')}
+      />,
+    );
+
+    expect(screen.getByText(/Pagá el turno para entrar a la consulta/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ingresar a la sala' })).not.toBeInTheDocument();
+  });
+
   it('sin turnos lo dice', () => {
     render(<NextAppointmentCard appointment={null} />);
 

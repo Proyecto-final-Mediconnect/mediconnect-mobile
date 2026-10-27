@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Appointment } from '../../appointments/types';
-import { canPay, paymentOutcomeOf } from './payment';
+import { canPay, isCheckoutUrl, paymentOutcomeOf } from './payment';
 
 const vista = (status: string, appointmentStatus: string) => ({
   appointmentId: 'a1',
@@ -48,5 +48,22 @@ describe('canPay', () => {
     expect(canPay(turno('CONFIRMADO', '2026-10-22T12:00:00Z'), ahora)).toBe(false);
     expect(canPay(turno('LIBERADO', '2026-10-22T12:00:00Z'), ahora)).toBe(false);
     expect(canPay(turno('RESERVADO_SIN_PAGAR', '2026-10-20T12:00:00Z'), ahora)).toBe(false);
+  });
+});
+
+describe('isCheckoutUrl', () => {
+  it('acepta el checkout de MercadoPago, sandbox incluido', () => {
+    expect(isCheckoutUrl('https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=1')).toBe(
+      true,
+    );
+    expect(isCheckoutUrl('https://sandbox.mercadopago.com.ar/checkout/v1/redirect')).toBe(true);
+  });
+
+  it('rechaza otros esquemas, otros dominios y basura', () => {
+    expect(isCheckoutUrl('http://www.mercadopago.com.ar/x')).toBe(false);
+    expect(isCheckoutUrl('intent://pagar#Intent;end')).toBe(false);
+    expect(isCheckoutUrl('https://mercadopago.com.ar.evil.com/x')).toBe(false);
+    expect(isCheckoutUrl('https://evilmercadopago.com/x')).toBe(false);
+    expect(isCheckoutUrl('no es una url')).toBe(false);
   });
 });

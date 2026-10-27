@@ -14,7 +14,7 @@ import {
   statusTone,
 } from '../lib/appointments';
 import { dayParts } from '../lib/booking';
-import { joinStateOf } from '../lib/join-window';
+import { joinStateOf, UNPAID_JOIN_MESSAGE } from '../lib/join-window';
 import type { Appointment } from '../types';
 import { DateBadge } from './DateBadge';
 
@@ -41,7 +41,8 @@ export function AppointmentCard({
   onOpen,
   now = new Date(),
 }: AppointmentCardProps): React.JSX.Element {
-  const salaAbierta = joinStateOf(appointment, now).kind === 'OPEN';
+  const sala = joinStateOf(appointment, now).kind;
+  const salaAbierta = sala === 'OPEN';
   const pagar = onPay && canPay(appointment, now);
   const cancelable = canCancel(appointment, now);
   const dia = dayParts(appointment.date);
@@ -79,6 +80,8 @@ export function AppointmentCard({
           </Text>
         </View>
       ) : null}
+
+      {sala === 'UNPAID' ? <Text style={styles.avisoPago}>{UNPAID_JOIN_MESSAGE}</Text> : null}
 
       {salaAbierta || pagar || cancelable ? (
         <View style={styles.pie}>
@@ -140,6 +143,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs + 1,
     color: colors.warmInk,
   },
+  avisoPago: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.muted },
   pie: {
     flexDirection: 'row',
     alignItems: 'center',

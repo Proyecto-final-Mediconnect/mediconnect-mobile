@@ -46,6 +46,20 @@ export function paymentOutcomeOf(
 }
 
 /**
+ * Si la URL de pago que mandó el backend es del checkout de MercadoPago (https y
+ * dominio `mercadopago.com[.ar]`, incluido el sandbox). Se valida antes de abrirla:
+ * `Linking.openURL` acepta cualquier esquema (`intent:`, `tel:`, otra app…).
+ */
+export function isCheckoutUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === 'https:' && /(^|\.)mercadopago\.com(\.ar)?$/.test(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Si se ofrece pagar el turno: reservado sin pagar y todavía no empezó. El
  * backend revalida todo (incluida la retención de 15 minutos de ENG-101).
  */
