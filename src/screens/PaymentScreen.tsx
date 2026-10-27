@@ -15,6 +15,8 @@ import {
 } from '../features/appointments/lib/appointments';
 import {
   openCheckout,
+  POLL_CHECKOUT_INTERVAL_MS,
+  POLL_INTERVAL_MS,
   usePaymentStatus,
   useStartCheckout,
 } from '../features/payments/hooks/use-payment';
@@ -67,6 +69,7 @@ export function PaymentScreen(): React.JSX.Element {
     params.appointmentId,
     fase !== 'inicio' && !agotado,
     estadoPrevio,
+    fase === 'checkout' ? POLL_CHECKOUT_INTERVAL_MS : POLL_INTERVAL_MS,
   );
   const resultado: PaymentOutcome | null =
     fase !== 'inicio' && estado.data ? paymentOutcomeOf(estado.data, estadoPrevio) : null;
@@ -135,7 +138,8 @@ export function PaymentScreen(): React.JSX.Element {
     );
   }
 
-  if (turnos.isError || !turno) {
+  // Un refetch en segundo plano que falla no tapa el pago si el turno ya está cargado.
+  if (!turno) {
     return (
       <Screen scroll={false} header={header}>
         <ErrorState
@@ -218,7 +222,9 @@ export function PaymentScreen(): React.JSX.Element {
             {fase === 'checkout'
               ? 'Cuando termines, cerrá la ventana y volvé a la app: el turno se confirma solo cuando MercadoPago nos avisa.'
               : agotado
-                ? 'Puede tardar unos minutos. El turno se confirma solo y lo vas a ver en Mis turnos.'
+                ? estadoPrevio === 'RECHAZADO'
+                  ? 'Puede que MercadoPago haya rechazado el pago de nuevo, o que todavía esté en camino. Si se confirma, lo vas a ver en Mis turnos.'
+                  : 'Puede tardar unos minutos. El turno se confirma solo y lo vas a ver en Mis turnos.'
                 : 'En unos segundos nos llega el aviso de MercadoPago.'}
           </Text>
           {agotado ? (

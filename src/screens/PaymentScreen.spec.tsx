@@ -101,6 +101,31 @@ describe('Pagar el turno desde la app (ENG-168)', () => {
     expect(screen.getByRole('button', { name: 'Reservar otro turno' })).toBeVisible();
   });
 
+  it('no abre una URL de pago que no es de MercadoPago', async () => {
+    const sistema = vi.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    await abrirPagoDesdeTurnos(
+      http.post(`${API_URL}/appointments/${TURNO}/payment`, () =>
+        HttpResponse.json({
+          appointmentId: TURNO,
+          checkoutUrl: 'intent://pagar#Intent;end',
+          sandbox: true,
+          amount: 22_000,
+          currency: 'ARS',
+          status: 'PENDIENTE',
+        }),
+      ),
+      ...backendDePago({
+        estado: { status: 'PENDIENTE', appointmentStatus: 'RESERVADO_SIN_PAGAR' },
+      }),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pagar con MercadoPago' }));
+
+    expect(await screen.findByText('No pudimos abrir MercadoPago. Probá de nuevo.')).toBeVisible();
+    expect(sistema).not.toHaveBeenCalled();
+    sistema.mockRestore();
+  });
+
   it('dos toques seguidos piden un solo link de pago', async () => {
     const pedidos = { posts: 0 };
     await abrirPagoDesdeTurnos(
