@@ -45,11 +45,12 @@ export type JoinState =
   | { kind: 'NOT_APPLICABLE' };
 
 /**
- * Lo que ve el paciente en un turno sin pagar. El pago es de la web: la app no
- * cobra (ver `BookAppointmentScreen`).
+ * Lo que ve el paciente en un turno sin pagar. No dice dónde se paga a propósito:
+ * el pago dentro de la app (ENG-168) todavía no está en esta rama.
+ * TODO(ENG-168): cuando entre, sumar en `AppointmentCard` y `NextAppointmentCard`
+ * el botón que navega a `Pago` para los turnos `UNPAID`.
  */
-export const UNPAID_JOIN_MESSAGE =
-  'Pagá el turno para entrar a la consulta. El pago se hace desde MediConnect en la web.';
+export const UNPAID_JOIN_MESSAGE = 'Pagá el turno para entrar a la consulta.';
 
 export interface JoinWindow {
   opensAt: Date;
