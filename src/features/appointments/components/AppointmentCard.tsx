@@ -12,7 +12,7 @@ import {
   statusLabel,
   statusTone,
 } from '../lib/appointments';
-import { joinStateOf } from '../lib/join-window';
+import { joinStateOf, UNPAID_JOIN_MESSAGE } from '../lib/join-window';
 import type { Appointment } from '../types';
 
 interface AppointmentCardProps {
@@ -32,6 +32,7 @@ export function AppointmentCard({
   now = new Date(),
 }: AppointmentCardProps): React.JSX.Element {
   const vigente = isActive(appointment);
+  const sala = joinStateOf(appointment, now).kind;
 
   return (
     <View style={[styles.card, !vigente && styles.apagado]}>
@@ -46,10 +47,12 @@ export function AppointmentCard({
         Videoconsulta · {appointment.durationMinutes} min · {formatPrice(appointment.price)}
       </Text>
 
-      {joinStateOf(appointment, now).kind === 'OPEN' ? (
+      {sala === 'OPEN' ? (
         <View style={styles.sala}>
           <JoinConsultationButton appointmentId={appointment.id} />
         </View>
+      ) : sala === 'UNPAID' ? (
+        <Text style={[styles.sala, styles.avisoPago]}>{UNPAID_JOIN_MESSAGE}</Text>
       ) : null}
 
       {canCancel(appointment, now) ? (
@@ -78,6 +81,7 @@ const styles = StyleSheet.create({
   },
   apagado: { opacity: 0.7 },
   sala: { marginTop: spacing.md },
+  avisoPago: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.muted },
   fila: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cuando: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.brandDeep },
   nombre: {
