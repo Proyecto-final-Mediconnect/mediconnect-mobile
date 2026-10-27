@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw';
 import { Linking } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
 
-import { __abiertas, __control } from '../../test-stubs/expo-web-browser';
+import { __abiertas, __control, __vueltas } from '../../test-stubs/expo-web-browser';
 import { API_URL } from '../test/msw-server';
 import { renderApp } from '../test/render-app';
 
@@ -20,11 +20,14 @@ function backendDePago({
 }: {
   statusAlAbrir?: string;
   estado: Pago;
-  pedidos?: { posts: number };
+  pedidos?: { posts: number; cuerpos?: unknown[] };
 }) {
   return [
-    http.post(`${API_URL}/appointments/${TURNO}/payment`, () => {
-      if (pedidos) pedidos.posts += 1;
+    http.post(`${API_URL}/appointments/${TURNO}/payment`, async ({ request }) => {
+      if (pedidos) {
+        pedidos.posts += 1;
+        pedidos.cuerpos?.push(await request.json());
+      }
       return HttpResponse.json({
         appointmentId: TURNO,
         checkoutUrl: CHECKOUT,
@@ -47,6 +50,26 @@ async function abrirPagoDesdeTurnos(...respuestas: Parameters<typeof renderApp>)
   fireEvent.click(lista.getByRole('button', { name: 'Pagar' }));
   await screen.findByRole('button', { name: 'Pagar con MercadoPago' });
 }
+
+describe('Volver a la app después de pagar (ENG-172)', () => {
+  it('pide el link para la app y abre el checkout esperando volver a mediconnect://pago', async () => {
+    __vueltas.length = 0;
+    const pedidos = { posts: 0, cuerpos: [] as unknown[] };
+    await abrirPagoDesdeTurnos(
+      ...backendDePago({
+        estado: { status: 'APROBADO', appointmentStatus: 'CONFIRMADO' },
+        pedidos,
+      }),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pagar con MercadoPago' }));
+
+    // Lo que confirma es el backend, no el link de vuelta.
+    expect(await screen.findByText('¡Listo, tu turno está confirmado!')).toBeVisible();
+    expect(pedidos.cuerpos).toEqual([{ origen: 'app' }]);
+    expect(__vueltas).toEqual(['mediconnect://pago']);
+  });
+});
 
 describe('Pagar el turno desde la app (ENG-168)', () => {
   it('abre el checkout de MercadoPago y, al volver, muestra el turno confirmado', async () => {
@@ -141,6 +164,33 @@ describe('Pagar el turno desde la app (ENG-168)', () => {
 
     await screen.findByText('¡Listo, tu turno está confirmado!');
     expect(pedidos.posts).toBe(1);
+  });
+
+  it('si el paciente cierra el navegador sin pagar, pasa a consultar el estado', async () => {
+    __control.resultadoProximo = 'dismiss';
+    await abrirPagoDesdeTurnos(
+      ...backendDePago({
+        estado: { status: 'PENDIENTE', appointmentStatus: 'RESERVADO_SIN_PAGAR' },
+      }),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pagar con MercadoPago' }));
+
+    expect(await screen.findByText('Consultando el estado de tu pago…')).toBeVisible();
+  });
+
+  it('si ya había otra sesión abierta, no da el pago por vuelto', async () => {
+    __control.resultadoProximo = 'locked';
+    await abrirPagoDesdeTurnos(
+      ...backendDePago({
+        estado: { status: 'PENDIENTE', appointmentStatus: 'RESERVADO_SIN_PAGAR' },
+      }),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pagar con MercadoPago' }));
+
+    expect(await screen.findByText('Completá el pago en MercadoPago')).toBeVisible();
+    expect(screen.queryByText('Consultando el estado de tu pago…')).not.toBeInTheDocument();
   });
 
   it('si no se puede abrir MercadoPago, lo dice', async () => {

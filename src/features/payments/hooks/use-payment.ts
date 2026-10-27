@@ -13,6 +13,14 @@ export const POLL_INTERVAL_MS = 2_000;
 export const POLL_CHECKOUT_INTERVAL_MS = 8_000;
 
 /**
+ * Adónde vuelve MercadoPago al terminar (ENG-172): el backend arma los
+ * `back_urls` como `mediconnect://pago/{id}?resultado=…`, con el `scheme` del
+ * `app.json`. En Expo Go el esquema es otro y no aplica: ahí la vuelta se sigue
+ * detectando con `AppState`, como antes.
+ */
+export const CHECKOUT_RETURN_URL = 'mediconnect://pago';
+
+/**
  * Pide el link de pago. **Sin reintento automático**: es una escritura contra
  * un proveedor de pagos, y un reintento silencioso solo demora el error.
  */
@@ -50,24 +58,30 @@ export function usePaymentStatus(
 }
 
 /**
- * Abre el checkout de MercadoPago en el navegador dentro de la app. Si no abre
- * (Android sin Custom Tabs), prueba con el del sistema; si tampoco, tira y la
- * pantalla lo muestra.
+ * Abre el checkout de MercadoPago en el navegador dentro de la app, como una
+ * sesión que se cierra sola cuando MercadoPago redirige a
+ * {@link CHECKOUT_RETURN_URL} (ENG-172). Si no abre (Android sin Custom Tabs),
+ * prueba con el del sistema; si tampoco, tira y la pantalla lo muestra.
  *
- * Devuelve `true` si ya se sabe que el paciente cerró el navegador. En iOS la
- * promesa se resuelve al cerrarlo; en Android se resuelve enseguida (`opened`)
- * y no hay forma de saberlo desde acá: la pantalla lo detecta cuando la app
- * vuelve al primer plano.
+ * Devuelve `true` si ya se sabe que el paciente terminó: volvió por el link o
+ * cerró el navegador a mano (`false` si no se llegó a abrir porque ya había otra
+ * sesión). El `?resultado=` del link **no se usa**: lo dispara
+ * el navegador y no confirma nada; el resultado lo sigue leyendo la pantalla
+ * del backend. Con el navegador del sistema no hay forma de saberlo desde acá,
+ * y la pantalla lo detecta cuando la app vuelve al primer plano.
  */
 export async function openCheckout(checkoutUrl: string): Promise<boolean> {
   // Fuera del try: una URL rara no tiene que caer al navegador del sistema.
   if (!isCheckoutUrl(checkoutUrl)) throw new Error('URL de pago inválida');
   try {
-    const result = await WebBrowser.openBrowserAsync(checkoutUrl, {
-      presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+    const result = await WebBrowser.openAuthSessionAsync(checkoutUrl, CHECKOUT_RETURN_URL, {
       dismissButtonStyle: 'close',
+      // En iOS la sesión comparte cookies con Safari: no dejar la de MercadoPago
+      // del paciente guardada en el celular.
+      preferEphemeralSession: true,
     });
-    return result.type !== WebBrowser.WebBrowserResultType.OPENED;
+    // `locked`: ya había otra sesión abierta y no se abrió ningún navegador.
+    return result.type !== WebBrowser.WebBrowserResultType.LOCKED;
   } catch {
     await Linking.openURL(checkoutUrl);
     return false;
