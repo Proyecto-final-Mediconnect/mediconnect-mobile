@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AccessList } from '../features/medipass/components/AccessList';
@@ -32,6 +33,17 @@ export function MediPassScreen(): React.JSX.Element {
   const revocar = useRevokeAccess();
   const ahora = useNow(1000);
   const [aRevocar, setARevocar] = useState<MediPassAccess | null>(null);
+
+  // La pestaña queda montada al cambiar de pestaña: sin esto, lo que el
+  // paciente acaba de editar en su perfil no aparecería acá hasta reabrir la app.
+  const { refetch: refetchVital } = vital;
+  const { refetch: refetchAccesos } = accesos;
+  useFocusEffect(
+    useCallback(() => {
+      void refetchVital();
+      void refetchAccesos();
+    }, [refetchVital, refetchAccesos]),
+  );
 
   const cerrar = (): void => {
     setARevocar(null);
