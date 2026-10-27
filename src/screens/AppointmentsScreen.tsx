@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 
 import { AppointmentCard } from '../features/appointments/components/AppointmentCard';
@@ -54,6 +54,14 @@ export function AppointmentsScreen(): React.JSX.Element {
 
   const irAReservar = (): void => navigation.navigate('Paciente', { screen: 'Reservar' });
   const abrir = (t: Appointment): void => navigation.navigate('Turno', { appointmentId: t.id });
+
+  // Arriba de los `return` tempranos (reglas de hooks): recalcular sólo si
+  // cambian los turnos, los filtros o el minuto, no en cada render.
+  const filtrados = useMemo(
+    () => filterAgenda(turnos.data ?? [], filtros, ahora),
+    [turnos.data, filtros, ahora],
+  );
+  const secciones = useMemo(() => agendaSections(filtrados, ahora), [filtrados, ahora]);
 
   const header = (
     <ScreenHeader
@@ -110,8 +118,6 @@ export function AppointmentsScreen(): React.JSX.Element {
     );
   }
 
-  const filtrados = filterAgenda(turnos.data, filtros, ahora);
-  const secciones = agendaSections(filtrados, ahora);
   const hayFiltros = filtros.search.trim() !== '' || activos.length > 0;
 
   const cerrarConfirmacion = (): void => {

@@ -3,6 +3,9 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 
 import { colors, fonts, fontSize, radius, spacing } from './theme';
 
+/** Largo máximo de `search` que acepta el backend. */
+const MAX_SEARCH_LENGTH = 80;
+
 export interface ActiveFilter {
   key: string;
   label: string;
@@ -47,6 +50,8 @@ export function SearchFilterBar({
             value={search}
             onChangeText={onSearch}
             autoCorrect={false}
+            // El backend rechaza (400) una búsqueda de más de 80 caracteres.
+            maxLength={MAX_SEARCH_LENGTH}
             returnKeyType="search"
             style={styles.input}
           />

@@ -129,6 +129,12 @@ describe('Buscar profesionales (ENG-132)', () => {
     server.events.removeAllListeners();
   });
 
+  it('el buscador topa el texto en 80 caracteres, lo que acepta el backend', async () => {
+    await abrirBusqueda();
+
+    expect(screen.getByLabelText('Buscar profesional')).toHaveAttribute('maxlength', '80');
+  });
+
   it('sin precio publicado, el perfil no ofrece reservar', async () => {
     const conPrecio = PROFESIONALES[0]!;
     const perfil = perfilDe(conPrecio.id)!;
