@@ -16,7 +16,7 @@ interface FilterSheetProps {
   groups: FilterGroup[];
   /** El botón principal: dice qué se va a ver ("Ver 3 profesionales"). */
   resultLabel: string;
-  /** Sin filtros puestos no se ofrece limpiar. */
+  /** Sin filtros puestos, "Limpiar" queda desactivado. */
   onClear?: () => void;
 }
 
@@ -48,11 +48,22 @@ export function FilterSheet({
         ))}
       </ScrollView>
 
+      {/* "Limpiar" está siempre, desactivado si no hay nada que limpiar: si
+          apareciera recién al elegir un filtro, la hoja crecería hacia arriba y
+          todo se movería bajo el dedo. */}
       <View style={styles.botones}>
-        <Button label={resultLabel} onPress={onDismiss} fullWidth />
-        {onClear ? (
-          <Button label="Limpiar filtros" variant="secondary" onPress={onClear} fullWidth />
-        ) : null}
+        <View style={styles.limpiar}>
+          <Button
+            label="Limpiar"
+            variant="secondary"
+            onPress={() => onClear?.()}
+            disabled={!onClear}
+            fullWidth
+          />
+        </View>
+        <View style={styles.principal}>
+          <Button label={resultLabel} onPress={onDismiss} fullWidth />
+        </View>
       </View>
     </Sheet>
   );
@@ -69,5 +80,7 @@ const styles = StyleSheet.create({
     color: colors.mutedSoft,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  botones: { gap: spacing.sm, marginTop: spacing.lg },
+  botones: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
+  limpiar: { flex: 1 },
+  principal: { flex: 2 },
 });
