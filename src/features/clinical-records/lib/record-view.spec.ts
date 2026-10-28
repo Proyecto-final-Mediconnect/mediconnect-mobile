@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { crearHistoriaDemo } from '../../../mocks/clinical-record';
-import { correctionLinks, newestFirst, typesPresent } from './record-view';
+import { correctionLinks, newestFirst, typesPresent, searchEntries } from './record-view';
 
 const HISTORIA = crearHistoriaDemo(new Date('2026-09-23T12:00:00.000Z'));
 
@@ -27,5 +27,11 @@ describe('record-view', () => {
       'ESTUDIO',
       'CORRECCION',
     ]);
+  });
+});
+
+describe('searchEntries', () => {
+  it('sin texto devuelve todo', () => {
+    expect(searchEntries([], '')).toEqual([]);
   });
 });
