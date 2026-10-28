@@ -1,28 +1,60 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import * as Brightness from 'expo-brightness';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
+import { codigoDemo } from '../mocks/medipass';
+import { API_URL } from '../test/msw-server';
 import { renderApp } from '../test/render-app';
 
-async function abrirMediPass(): Promise<void> {
-  await renderApp();
+function pasarA(estado: 'hidden' | 'visible'): void {
+  act(() => {
+    Object.defineProperty(document, 'visibilityState', { value: estado, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+}
+
+async function abrirMediPass(...respuestas: Parameters<typeof renderApp>): Promise<void> {
+  await renderApp(...respuestas);
   fireEvent.click(screen.getByRole('tab', { name: 'MediPass' }));
   await screen.findByText('Dra. Valeria Ocampo');
 }
 
 describe('Mi MediPass (ENG-117)', () => {
-  // Hasta ENG-117 los datos no son del paciente: no pueden pasar por suyos.
-  it('avisa que es una vista previa con datos de ejemplo', async () => {
+  it('ya no es una vista previa: muestra los datos del backend', async () => {
     await abrirMediPass();
 
-    expect(screen.getByText(/Vista previa con datos de ejemplo/)).toBeInTheDocument();
+    expect(screen.queryByText(/Vista previa con datos de ejemplo/)).not.toBeInTheDocument();
   });
 
-  it('muestra el código rotatorio con su cuenta regresiva', async () => {
+  it('el QR lleva la ficha de emergencia de la web con el código del backend', async () => {
     await abrirMediPass();
+    const { codigo } = codigoDemo();
 
-    expect(screen.getByTestId('qr-value')).toHaveTextContent(/^MP-AR-8F42-[0-9A-F]{4}$/);
+    expect(await screen.findByTestId('qr-value')).toHaveTextContent(
+      new RegExp(`/medipass/emergencia\\?codigo=${codigo}$`),
+    );
+    expect(screen.getByText(`${codigo.slice(0, 4)}-${codigo.slice(4)}`)).toBeInTheDocument();
     expect(screen.getByText(/^Se renueva en \d\d:\d\d$/)).toBeInTheDocument();
+  });
+
+  it('si no puede pedir el código lo dice y deja reintentar', async () => {
+    await abrirMediPass(
+      http.get(`${API_URL}/medipass/me`, () =>
+        HttpResponse.json({ message: 'No pudimos cargar tu código MediPass.' }, { status: 500 }),
+      ),
+    );
+
+    expect(await screen.findByText('No pudimos cargar tu código MediPass.')).toBeInTheDocument();
+    expect(screen.queryByTestId('qr-value')).not.toBeInTheDocument();
+  });
+
+  it('con el bloque vital sin cargar dice qué falta', async () => {
+    await abrirMediPass(
+      http.get(`${API_URL}/medipass/me/vital`, () => HttpResponse.json({ nombre: 'Marina Sosa' })),
+    );
+
+    expect((await screen.findAllByText('Sin cargar')).length).toBeGreaterThan(0);
   });
 
   it('muestra lo que ve quien lo escanea', async () => {
@@ -68,27 +100,24 @@ describe('Mi MediPass (ENG-117)', () => {
     fireEvent.click(within(hoja).getByRole('button', { name: 'Revocar acceso' }));
 
     await waitFor(() => expect(screen.queryByText('Dra. Valeria Ocampo')).not.toBeInTheDocument());
-    expect(screen.getByText('Guardia · Hospital Italiano')).toBeInTheDocument();
+    expect(screen.getByText('Guardia Hospital Italiano')).toBeInTheDocument();
   });
 
   // Un teléfono que queda sobre una mesa no puede seguir mostrando la llave.
   it('oculta el código cuando la app pasa a segundo plano', async () => {
     await abrirMediPass();
 
-    act(() => {
-      Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
-      document.dispatchEvent(new Event('visibilitychange'));
-    });
+    await screen.findByTestId('qr-value');
+
+    pasarA('hidden');
 
     expect(await screen.findByText('Código oculto')).toBeInTheDocument();
     expect(screen.queryByTestId('qr-value')).not.toBeInTheDocument();
 
-    act(() => {
-      Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
-      document.dispatchEvent(new Event('visibilitychange'));
-    });
+    pasarA('visible');
     fireEvent.click(screen.getByRole('button', { name: 'Mostrar código' }));
 
-    expect(screen.getByTestId('qr-value')).toBeInTheDocument();
+    // Se pide de nuevo al backend: el anterior no quedó guardado.
+    expect(await screen.findByTestId('qr-value')).toBeInTheDocument();
   });
 });

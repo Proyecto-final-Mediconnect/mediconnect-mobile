@@ -3,32 +3,47 @@ import type { EmergencyScope, MediPassAccess } from '../types';
 /**
  * Reglas del MediPass (EP-05).
  *
- * Puras y testeadas, como el resto: cuando existan los endpoints, esto no cambia.
+ * Puras y testeadas, como el resto.
  */
 
 /**
- * Cada cuánto rota el código, en milisegundos.
- *
- * **Son los 5 minutos de ENG-72, no un número elegido acá.** El canvas dibuja un
- * código fijo (`MP-AR-8F42-91C7-D0A3`) y el ticket pide uno rotatorio, que es una
- * diferencia de seguridad y no de estilo: un código fijo es una credencial
- * permanente —quien lo vio una vez entra para siempre—, y uno que rota deja de
- * servir a los cinco minutos.
+ * Cada cuánto rota el código: los 5 minutos de ENG-72. Lo rota el servidor; acá
+ * solo sirve para dibujar la barra de lo que falta.
  */
 export const ROTACION_MS = 5 * 60_000;
 
-/** Cuánto dura una sesión de acceso. Son los 30 minutos de ENG-104. */
-export const SESION_MS = 30 * 60_000;
+/** Milisegundos hasta `expiraEl`, nunca negativo. */
+export function msHasta(expiraEl: string, now: Date): number {
+  return Math.max(0, new Date(expiraEl).getTime() - now.getTime());
+}
 
 /**
- * Milisegundos hasta la próxima rotación.
+ * Cuándo volver a pedir el código, en ms (el `refetchInterval` de la consulta).
  *
- * Se calcula sobre el reloj absoluto y no sobre cuándo se abrió la pantalla: el
- * código lo rota el servidor en ventanas fijas, así que dos personas mirando el
- * mismo MediPass tienen que ver el mismo tiempo restante.
+ * Justo después de que vence, para que el QR nunca muestre uno que ya no sirve.
+ * Con el backend fallando (`expiraEl` en `null`) se espera 30 s en vez de
+ * insistir cada segundo; y si llega uno ya vencido (reloj del teléfono
+ * adelantado), 15 s, para no quedar en un bucle.
  */
-export function msHastaRotacion(now: Date, ventanaMs: number = ROTACION_MS): number {
-  return ventanaMs - (now.getTime() % ventanaMs);
+export function proximaConsultaDelCodigo(expiraEl: string | null, now: Date): number {
+  if (!expiraEl) return 30_000;
+  const restante = new Date(expiraEl).getTime() - now.getTime();
+  return restante > 0 ? Math.max(5_000, restante + 500) : 15_000;
+}
+
+/**
+ * Lo que va en el QR: la ficha de emergencia de la web con el código. Es la
+ * misma URL que arma la web, así que cualquier cámara la abre en el navegador
+ * de quien escanea, sin instalar nada.
+ */
+export function emergencyUrl(webUrl: string, codigo: string): string {
+  return `${webUrl}/medipass/emergencia?codigo=${encodeURIComponent(codigo)}`;
+}
+
+/** `AB12CD34` → `AB12-CD34`: de a cuatro se lee y se dicta sin errores. */
+export function formatCodigo(codigo: string): string {
+  const limpio = codigo.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+  return limpio.length === 8 ? `${limpio.slice(0, 4)}-${limpio.slice(4)}` : limpio;
 }
 
 export type EstadoAcceso = { estado: 'VIGENTE'; msRestantes: number } | { estado: 'VENCIDO' };

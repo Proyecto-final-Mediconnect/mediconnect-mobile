@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AccessList } from '../features/medipass/components/AccessList';
@@ -13,9 +14,8 @@ import {
 import type { MediPassAccess } from '../features/medipass/types';
 import { useNow } from '../shared/hooks/use-now';
 import { ConfirmSheet } from '../shared/ui/ConfirmSheet';
-import { Notice } from '../shared/ui/Notice';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
-import { LoadingState } from '../shared/ui/StatusViews';
+import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, spacing } from '../shared/ui/theme';
 
 /**
@@ -34,6 +34,17 @@ export function MediPassScreen(): React.JSX.Element {
   const ahora = useNow(1000);
   const [aRevocar, setARevocar] = useState<MediPassAccess | null>(null);
 
+  // La pestaña queda montada al cambiar de pestaña: sin esto, lo que el
+  // paciente acaba de editar en su perfil no aparecería acá hasta reabrir la app.
+  const { refetch: refetchVital } = vital;
+  const { refetch: refetchAccesos } = accesos;
+  useFocusEffect(
+    useCallback(() => {
+      void refetchVital();
+      void refetchAccesos();
+    }, [refetchVital, refetchAccesos]),
+  );
+
   const cerrar = (): void => {
     setARevocar(null);
     revocar.reset();
@@ -50,17 +61,13 @@ export function MediPassScreen(): React.JSX.Element {
         />
       }
     >
-      {/* El backend todavía no tiene rutas de MediPass (ENG-117): todo lo de esta
-          pantalla es de ejemplo, y en una app de salud no puede pasar por propio. */}
-      <Notice
-        icon="flask-outline"
-        message="Vista previa con datos de ejemplo: tu MediPass todavía no está disponible."
-      />
       <MediPassCode />
 
       <Text style={styles.seccion}>Accediendo ahora</Text>
       {accesos.data ? (
         <AccessList accesses={accesos.data} now={ahora} onRevoke={setARevocar} />
+      ) : accesos.isError ? (
+        <ErrorState message={accesos.error.message} onRetry={() => void accesos.refetch()} />
       ) : (
         <View style={styles.cargando}>
           <LoadingState />
@@ -70,6 +77,8 @@ export function MediPassScreen(): React.JSX.Element {
       <Text style={styles.seccion}>Lo que ve quien lo escanea</Text>
       {vital.data ? (
         <VitalSummary vital={vital.data} />
+      ) : vital.isError ? (
+        <ErrorState message={vital.error.message} onRetry={() => void vital.refetch()} />
       ) : (
         <View style={styles.cargando}>
           <LoadingState />
@@ -81,7 +90,7 @@ export function MediPassScreen(): React.JSX.Element {
         title="¿Revocar el acceso?"
         message={
           aRevocar
-            ? `${aRevocar.quien} deja de ver tu MediPass en este momento. Si lo necesita de nuevo, vas a tener que mostrarle el código otra vez.`
+            ? `${aRevocar.consultante} deja de ver tu MediPass en este momento. Si lo necesita de nuevo, vas a tener que mostrarle el código otra vez.`
             : ''
         }
         confirmLabel="Revocar acceso"

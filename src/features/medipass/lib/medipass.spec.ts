@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ROTACION_MS,
   accesosVigentes,
   cuentaRegresiva,
   estadoDeAcceso,
-  msHastaRotacion,
+  emergencyUrl,
+  formatCodigo,
+  msHasta,
+  proximaConsultaDelCodigo,
   muestraBloque,
   normalizarAlcance,
 } from './medipass';
@@ -14,27 +16,54 @@ const AHORA = new Date('2026-09-03T12:00:00.000Z');
 
 function acceso(overrides: Partial<MediPassAccess> & { id: string }): MediPassAccess {
   return {
-    quien: 'Dra. Valeria Ocampo',
-    contexto: 'Videoconsulta',
+    consultante: 'Dra. Valeria Ocampo',
+    matricula: null,
     desde: '2026-09-03T11:50:00.000Z',
     expiraEl: '2026-09-03T12:20:00.000Z',
-    alcance: ['VITAL'],
+    minutosRestantes: 20,
     ...overrides,
   };
 }
 
-describe('msHastaRotacion', () => {
-  it('se calcula sobre ventanas fijas del reloj, no desde que se abrió la pantalla', () => {
-    // 12:00:00 exacto cae en el borde: falta una ventana entera.
-    expect(msHastaRotacion(new Date('2026-09-03T12:00:00.000Z'))).toBe(ROTACION_MS);
-    // A los dos minutos de la ventana, faltan tres.
-    expect(msHastaRotacion(new Date('2026-09-03T12:02:00.000Z'))).toBe(3 * 60_000);
+describe('msHasta', () => {
+  it('cuenta hasta el vencimiento que manda el backend', () => {
+    expect(msHasta('2026-09-03T12:03:00.000Z', AHORA)).toBe(3 * 60_000);
   });
 
-  it('dos personas mirando el mismo MediPass ven el mismo tiempo', () => {
-    const momento = new Date('2026-09-03T12:03:20.000Z');
+  it('nunca da negativo', () => {
+    expect(msHasta('2026-09-03T11:59:00.000Z', AHORA)).toBe(0);
+  });
+});
 
-    expect(msHastaRotacion(momento)).toBe(msHastaRotacion(new Date(momento)));
+describe('proximaConsultaDelCodigo', () => {
+  it('pide el siguiente apenas vence el actual', () => {
+    expect(proximaConsultaDelCodigo('2026-09-03T12:03:00.000Z', AHORA)).toBe(3 * 60_000 + 500);
+  });
+
+  it('no consulta más seguido que cada 5 segundos', () => {
+    expect(proximaConsultaDelCodigo('2026-09-03T12:00:01.000Z', AHORA)).toBe(5_000);
+  });
+
+  it('con un código ya vencido espera 15 segundos en vez de entrar en bucle', () => {
+    expect(proximaConsultaDelCodigo('2026-09-03T11:59:00.000Z', AHORA)).toBe(15_000);
+  });
+
+  it('con el backend fallando espera 30 segundos', () => {
+    expect(proximaConsultaDelCodigo(null, AHORA)).toBe(30_000);
+  });
+});
+
+describe('emergencyUrl', () => {
+  it('arma la ficha de emergencia de la web, igual que la web', () => {
+    expect(emergencyUrl('https://web.test', 'AB12CD34')).toBe(
+      'https://web.test/medipass/emergencia?codigo=AB12CD34',
+    );
+  });
+});
+
+describe('formatCodigo', () => {
+  it('parte el código de 8 en dos grupos de 4', () => {
+    expect(formatCodigo('ab12cd34')).toBe('AB12-CD34');
   });
 });
 
