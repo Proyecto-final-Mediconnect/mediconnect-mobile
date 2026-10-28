@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
+import qrLogo from '../../../../assets/brand/qr-logo.png';
 import { useNow } from '../../../shared/hooks/use-now';
 import { WEB_URL } from '../../../shared/lib/web-url';
 import { Button } from '../../../shared/ui/Button';
@@ -24,6 +25,8 @@ import { cuentaRegresiva, emergencyUrl, formatCodigo, msHasta, ROTACION_MS } fro
  * El QR va sobre blanco puro y con margen: es lo que necesita otro teléfono para
  * leerlo con la luz de una guardia.
  */
+const QR_SIZE = 208;
+
 export function MediPassCode(): React.JSX.Element {
   const queryClient = useQueryClient();
   const ahora = useNow(1000);
@@ -50,10 +53,18 @@ export function MediPassCode(): React.JSX.Element {
       valor ? (
         <QRCode
           value={emergencyUrl(WEB_URL, valor)}
-          size={208}
+          size={QR_SIZE}
           color={colors.night}
           backgroundColor={colors.white}
           quietZone={8}
+          // El corazón de MediConnect en el azul del QR. Tapa módulos, así
+          // que va con el nivel de corrección más alto: `H` recupera hasta un
+          // ~30 % del código y el logo ocupa ~22 % del lado.
+          ecl="H"
+          logo={qrLogo}
+          logoSize={Math.round(QR_SIZE * 0.22)}
+          logoBackgroundColor={colors.white}
+          logoMargin={2}
         />
       ) : null,
     [valor],
