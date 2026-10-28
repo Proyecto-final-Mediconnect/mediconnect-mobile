@@ -1,206 +1,163 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { DateBadge } from '../../appointments/components/DateBadge';
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
-import { authorName, formatEntryShortDate, readEntryFields } from '../lib/clinical-entry';
+import { authorName, readEntryFields } from '../lib/clinical-entry';
+import { entryDay } from '../lib/record-view';
 import { ENTRY_TYPE_LABELS, type ClinicalEntry } from '../types';
 
-const COLOR_TIPO: Record<string, { fondo: string; tinta: string }> = {
-  CORRECCION: { fondo: colors.tagCorreccion, tinta: colors.tagCorreccionInk },
-  ESTUDIO: { fondo: colors.tagEstudio, tinta: colors.tagEstudioInk },
+/**
+ * Color de cada tipo de registro, igual que en la web: una píldora con un punto,
+ * y el mismo color para el punto del riel. El ámbar queda para "Corregida", que
+ * es una advertencia y no un tipo.
+ */
+const TONO_TIPO: Record<string, { fondo: string; tinta: string; punto: string }> = {
+  CONSULTA: { fondo: colors.surfaceTeal, tinta: colors.brandHover, punto: colors.brand },
+  DIAGNOSTICO: { fondo: colors.tagConsulta, tinta: colors.tagConsultaInk, punto: colors.brandDeep },
+  PRESCRIPCION: {
+    fondo: colors.tagCorreccion,
+    tinta: colors.tagCorreccionInk,
+    punto: colors.tagCorreccionInk,
+  },
+  ESTUDIO: { fondo: colors.tagEstudio, tinta: colors.tagEstudioInk, punto: colors.tagEstudioInk },
+  CORRECCION: { fondo: colors.lineSoft, tinta: colors.muted, punto: colors.mutedSoft },
 };
-const COLOR_POR_DEFECTO = { fondo: colors.tagConsulta, tinta: colors.tagConsultaInk };
+const TONO_POR_DEFECTO = { fondo: colors.lineSoft, tinta: colors.muted, punto: colors.mutedSoft };
 
+/** El tipo de un registro en una píldora con su punto de color. */
 export function EntryTypeTag({ type }: { type: string }): React.JSX.Element {
-  const color = COLOR_TIPO[type] ?? COLOR_POR_DEFECTO;
+  const tono = TONO_TIPO[type] ?? TONO_POR_DEFECTO;
   return (
-    <Text style={[styles.tag, { backgroundColor: color.fondo, color: color.tinta }]}>
-      {(ENTRY_TYPE_LABELS[type] ?? type).toUpperCase()}
-    </Text>
+    <View style={[styles.pill, { backgroundColor: tono.fondo }]}>
+      <View style={[styles.pillPunto, { backgroundColor: tono.punto }]} />
+      <Text style={[styles.pillTexto, { color: tono.tinta }]}>
+        {ENTRY_TYPE_LABELS[type] ?? type}
+      </Text>
+    </View>
+  );
+}
+
+/** "Corregida": hay un registro posterior que la corrige. */
+export function CorrectedTag(): React.JSX.Element {
+  return (
+    <View style={[styles.pill, { backgroundColor: colors.warm }]}>
+      <View style={[styles.pillPunto, { backgroundColor: colors.warmDot }]} />
+      <Text style={[styles.pillTexto, { color: colors.warmInk }]}>Corregida</Text>
+    </View>
   );
 }
 
 interface EntryCardProps {
   entry: ClinicalEntry;
-  /** La corrección que tiene esta entrada, si alguien la corrigió después. */
-  correctedBy?: ClinicalEntry;
-  /** La entrada que esta corrige, si está en la lista. */
-  corrects?: ClinicalEntry;
+  /** Si una entrada posterior la corrige. */
+  corrected: boolean;
+  /** La última de su mes: el riel no sigue más abajo. */
+  last: boolean;
   onOpen: (id: string) => void;
 }
 
 /**
- * Una entrada de la historia en la línea de tiempo, como las tarjetas de la HC
- * de la web: tipo, fecha, el primer campo como titular, quién la firmó y un
- * adelanto. Tocarla abre el registro completo.
+ * Un registro en la línea de tiempo de la historia clínica, como en la web: el
+ * riel con un punto del color del tipo (ámbar si tiene una corrección) y al lado
+ * una tarjeta compacta con el día en un bloque, el titular, quién lo firmó y el
+ * tipo al costado. Todo el detalle va en la pantalla de la entrada.
  *
- * El vínculo de corrección va en los dos sentidos (ENG-100): la original avisa
- * que tiene una corrección posterior y la corrección dice qué corrige. Sin el
- * lado de la original, quien la lee no se entera de que hay otra versión.
+ * **El titular es el primer campo del contenido.** Las entradas no tienen campo
+ * título; el primer campo de cada tipo es el que la resume.
  */
-export function EntryCard({
-  entry,
-  correctedBy,
-  corrects,
-  onOpen,
-}: EntryCardProps): React.JSX.Element {
-  const [titular, ...resto] = readEntryFields(entry);
-  const adelanto = resto[0];
-  const corregida = correctedBy !== undefined;
+export function EntryCard({ entry, corrected, last, onOpen }: EntryCardProps): React.JSX.Element {
+  const titular = readEntryFields(entry)[0]?.value ?? 'Esta entrada no tiene contenido legible.';
+  const tono = TONO_TIPO[entry.entryType] ?? TONO_POR_DEFECTO;
+  const hora = new Date(entry.createdAt).toLocaleTimeString('es-AR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  });
 
   return (
     <View style={styles.fila}>
       <View style={styles.riel}>
-        <View style={styles.linea} />
-        <View style={[styles.punto, corregida && styles.puntoCorregido]} />
+        <View style={[styles.linea, last && styles.lineaFinal]} />
+        <View
+          style={[styles.punto, { backgroundColor: corrected ? colors.warmDot : tono.punto }]}
+        />
       </View>
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${ENTRY_TYPE_LABELS[entry.entryType] ?? entry.entryType}: ${titular?.value ?? 'sin contenido legible'}`}
+        accessibilityLabel={`${ENTRY_TYPE_LABELS[entry.entryType] ?? entry.entryType}: ${titular}`}
         onPress={() => onOpen(entry.id)}
         style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       >
-        <View style={styles.encabezado}>
+        <DateBadge date={entryDay(entry)} muted={corrected} />
+        <View style={styles.textos}>
+          <Text style={[styles.titular, corrected && styles.titularApagado]} numberOfLines={1}>
+            {titular}
+          </Text>
+          {/* "Firmada por" y no el nombre suelto: debajo de un titular clínico,
+              el nombre solo se lee como si fuera el paciente. */}
+          <Text style={styles.firma} numberOfLines={1}>
+            Firmada por {authorName(entry)} · {hora}
+          </Text>
           <View style={styles.etiquetas}>
             <EntryTypeTag type={entry.entryType} />
-            {corregida ? <Text style={[styles.tag, styles.tagCorregida]}>CORREGIDA</Text> : null}
+            {corrected ? <CorrectedTag /> : null}
           </View>
-          <Text style={styles.fecha}>{formatEntryShortDate(entry.createdAt)}</Text>
         </View>
-
-        <Text style={styles.titular}>
-          {titular?.value ?? 'Esta entrada no tiene contenido legible.'}
-        </Text>
-        <Text style={styles.firma}>Firmada por {authorName(entry)}</Text>
-
-        {adelanto ? (
-          <Text style={styles.adelanto} numberOfLines={2}>
-            <Text style={styles.adelantoRotulo}>{adelanto.label}: </Text>
-            {adelanto.value}
-          </Text>
-        ) : null}
-
-        {entry.correctsEntryId ? (
-          <Vinculo
-            texto="Corrige un registro anterior, que se conserva sin cambios."
-            accion={
-              corrects
-                ? { label: 'Ver el original', onPress: () => onOpen(corrects.id) }
-                : undefined
-            }
-          />
-        ) : null}
-
-        {correctedBy ? (
-          <Vinculo
-            texto="Tiene una corrección posterior. Este registro se conserva como se escribió."
-            accion={{ label: 'Ver la corrección', onPress: () => onOpen(correctedBy.id) }}
-          />
-        ) : null}
+        <Ionicons name="chevron-forward" size={18} color={colors.mutedSoft} />
       </Pressable>
     </View>
   );
 }
 
-function Vinculo({
-  texto,
-  accion,
-}: {
-  texto: string;
-  accion?: { label: string; onPress: () => void };
-}): React.JSX.Element {
-  return (
-    <View style={styles.vinculo}>
-      <Text style={styles.vinculoTexto}>{texto}</Text>
-      {accion ? (
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel={accion.label}
-          hitSlop={spacing.sm}
-          onPress={accion.onPress}
-        >
-          <Text style={styles.vinculoAccion}>{accion.label}</Text>
-        </Pressable>
-      ) : null}
-    </View>
-  );
-}
+const PUNTO = 14;
 
 const styles = StyleSheet.create({
   fila: { flexDirection: 'row', gap: spacing.md },
-  riel: { width: 12, alignItems: 'center' },
+  riel: { width: PUNTO, alignItems: 'center' },
   linea: {
     position: 'absolute',
     top: 0,
-    bottom: -spacing.md,
+    bottom: -spacing.sm,
     width: 2,
     backgroundColor: colors.line,
   },
+  lineaFinal: { bottom: '50%' },
   punto: {
-    marginTop: 22,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    marginTop: 30,
+    width: PUNTO,
+    height: PUNTO,
+    borderRadius: PUNTO / 2,
     borderWidth: 3,
-    borderColor: colors.brandHover,
-    backgroundColor: colors.white,
+    borderColor: colors.surface,
   },
-  puntoCorregido: { borderColor: colors.warmDot },
   card: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.line,
     borderRadius: radius.card,
-    padding: spacing.lg,
-    gap: 2,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
   pressed: { borderColor: colors.brand },
-  encabezado: {
+  textos: { flex: 1, gap: 3 },
+  titular: { fontFamily: fonts.semibold, fontSize: fontSize.md, color: colors.brandDeep },
+  titularApagado: { color: colors.muted },
+  firma: { fontFamily: fonts.medium, fontSize: fontSize.xs, color: colors.mutedSoft },
+  etiquetas: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 3 },
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  etiquetas: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, flexShrink: 1 },
-  tag: {
-    overflow: 'hidden',
-    borderRadius: 5,
-    paddingHorizontal: 7,
+    gap: 5,
+    borderRadius: 999,
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    fontFamily: fonts.bold,
-    fontSize: 10,
-    letterSpacing: 0.6,
   },
-  tagCorregida: { backgroundColor: colors.warm, color: colors.warmInk },
-  fecha: { fontFamily: fonts.semibold, fontSize: fontSize.xs, color: colors.mutedSoft },
-  titular: {
-    marginTop: spacing.sm,
-    fontFamily: fonts.bold,
-    fontSize: fontSize.md,
-    color: colors.brandDeep,
-  },
-  firma: { fontFamily: fonts.medium, fontSize: fontSize.xs, color: colors.muted },
-  adelanto: {
-    marginTop: spacing.sm,
-    fontFamily: fonts.regular,
-    fontSize: fontSize.sm,
-    lineHeight: 19,
-    color: colors.ink,
-  },
-  adelantoRotulo: { fontFamily: fonts.semibold, color: colors.muted },
-  vinculo: {
-    marginTop: spacing.md,
-    borderRadius: radius.field,
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    gap: 4,
-  },
-  vinculoTexto: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.xs,
-    lineHeight: 17,
-    color: colors.muted,
-  },
-  vinculoAccion: { fontFamily: fonts.bold, fontSize: fontSize.xs, color: colors.brandDeep },
+  pillPunto: { width: 6, height: 6, borderRadius: 3 },
+  pillTexto: { fontFamily: fonts.semibold, fontSize: 11 },
 });
