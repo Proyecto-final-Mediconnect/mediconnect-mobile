@@ -1,4 +1,4 @@
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -11,8 +11,9 @@ import {
   useRevokeAccess,
   useVitalBlock,
 } from '../features/medipass/hooks/use-medipass';
-import type { MediPassAccess } from '../features/medipass/types';
+import type { MediPassAccess, VitalBlock } from '../features/medipass/types';
 import { useNow } from '../shared/hooks/use-now';
+import { Button } from '../shared/ui/Button';
 import { ConfirmSheet } from '../shared/ui/ConfirmSheet';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
@@ -26,8 +27,20 @@ import { colors, fonts, fontSize, spacing } from '../shared/ui/theme';
  * sirve en una guardia—, así que el código va primero y grande, con el brillo al
  * máximo mientras la pantalla está abierta.
  */
+/** Sin nada clínico cargado: el médico solo vería el nombre y la edad (ENG-136). */
+function vitalVacio(vital: VitalBlock): boolean {
+  return (
+    !vital.grupoSanguineo &&
+    !vital.alergias?.length &&
+    !vital.medicacion?.length &&
+    !vital.condiciones?.length &&
+    !vital.contacto
+  );
+}
+
 export function MediPassScreen(): React.JSX.Element {
   useFullBrightness();
+  const navigation = useNavigation();
   const vital = useVitalBlock();
   const accesos = useAccesses();
   const revocar = useRevokeAccess();
@@ -76,7 +89,17 @@ export function MediPassScreen(): React.JSX.Element {
 
       <Text style={styles.seccion}>Lo que ve quien lo escanea</Text>
       {vital.data ? (
-        <VitalSummary vital={vital.data} />
+        <>
+          <VitalSummary vital={vital.data} />
+          {/* Lo que se edita está en el perfil (ENG-136): desde acá se llega
+              directo, y si está vacío se insiste. */}
+          <Button
+            label={vitalVacio(vital.data) ? 'Cargar mis datos de emergencia' : 'Editar mis datos'}
+            variant={vitalVacio(vital.data) ? 'accent' : 'secondary'}
+            onPress={() => navigation.navigate('DatosEmergencia')}
+            fullWidth
+          />
+        </>
       ) : vital.isError ? (
         <ErrorState message={vital.error.message} onRetry={() => void vital.refetch()} />
       ) : (

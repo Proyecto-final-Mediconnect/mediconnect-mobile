@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useState, type ComponentProps } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSession, useSessionUser } from '../features/auth/session';
 import { displayNameOf, initialsOf } from '../features/auth/types';
 import { useMyProfile } from '../features/patient-profile/hooks/use-my-profile';
+import { isEmpty, toForm } from '../features/patient-profile/vital-info';
 import { Button } from '../shared/ui/Button';
 import { ConfirmSheet } from '../shared/ui/ConfirmSheet';
 import { Notice } from '../shared/ui/Notice';
@@ -22,6 +24,7 @@ import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
  */
 export function ProfileScreen(): React.JSX.Element {
   const user = useSessionUser();
+  const navigation = useNavigation();
   const ficha = useMyProfile();
   const { signOut } = useSession();
   const [confirmando, setConfirmando] = useState(false);
@@ -88,6 +91,58 @@ export function ProfileScreen(): React.JSX.Element {
         </>
       )}
 
+      {ficha.data ? (
+        <>
+          <Text style={styles.seccion}>PARA UNA EMERGENCIA</Text>
+          {/* Lo que ve un médico al escanear el MediPass (ENG-136). Vacío, el
+              MediPass no le sirve de nada: se avisa y se lleva a cargarlo. */}
+          {isEmpty(toForm(ficha.data)) ? (
+            <Notice
+              icon="medkit-outline"
+              message="Tu MediPass está vacío: un médico de guardia solo vería tu nombre y tu edad."
+            />
+          ) : (
+            <View style={styles.grupo}>
+              <Fila
+                icono="water-outline"
+                rotulo="Grupo sanguíneo"
+                valor={ficha.data.bloodType ?? SIN_CARGAR}
+              />
+              <Fila
+                icono="alert-circle-outline"
+                rotulo="Alergias"
+                valor={lista(ficha.data.allergies?.map((a) => a.que))}
+              />
+              <Fila
+                icono="medical-outline"
+                rotulo="Medicación"
+                valor={lista(ficha.data.medications?.map((m) => m.droga))}
+              />
+              <Fila
+                icono="call-outline"
+                rotulo="Contacto de emergencia"
+                valor={
+                  ficha.data.emergencyContact
+                    ? `${ficha.data.emergencyContact.nombre} · ${ficha.data.emergencyContact.telefono}`
+                    : SIN_CARGAR
+                }
+                ultima
+              />
+            </View>
+          )}
+          <Button
+            label={
+              isEmpty(toForm(ficha.data))
+                ? 'Cargar mis datos de emergencia'
+                : 'Editar mis datos de emergencia'
+            }
+            variant={isEmpty(toForm(ficha.data)) ? 'accent' : 'secondary'}
+            onPress={() => navigation.navigate('DatosEmergencia')}
+            fullWidth
+          />
+        </>
+      ) : null}
+
       <Text style={styles.seccion}>PRIVACIDAD</Text>
       <View style={styles.grupo}>
         <Fila
@@ -150,6 +205,11 @@ function Fila({
 }
 
 const SIN_CARGAR = 'Sin cargar';
+
+/** "Penicilina, Ibuprofeno" o "Sin cargar". */
+function lista(items: string[] | undefined): string {
+  return items?.length ? items.join(', ') : SIN_CARGAR;
+}
 
 const MESES = [
   'enero',

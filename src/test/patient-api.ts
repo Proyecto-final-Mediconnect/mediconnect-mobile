@@ -40,7 +40,11 @@ function cotizar(id: string): { percent: number; amount: number } | null {
   return { percent, amount: (turno.price * percent) / 100 };
 }
 
+/** La ficha que devuelve el backend falso; guardar los datos vitales la cambia. */
+let ficha: PatientProfile = FICHA;
+
 export function servirDatosDelPaciente(): void {
+  ficha = FICHA;
   server.use(
     http.get(`${API_URL}/appointments/me`, () => HttpResponse.json(turnosDemo.listar())),
     http.get(`${API_URL}/medipass/me`, () => HttpResponse.json(codigoDemo())),
@@ -78,7 +82,22 @@ export function servirDatosDelPaciente(): void {
     http.get(`${API_URL}/patients/${PACIENTE_DEMO.id}/clinical-record`, () =>
       HttpResponse.json(crearHistoriaDemo()),
     ),
-    http.get(`${API_URL}/patients/me`, () => HttpResponse.json(FICHA)),
+    http.get(`${API_URL}/patients/me`, () => HttpResponse.json(ficha)),
+    // Reemplaza el bloque vital entero, como el backend (ENG-136).
+    http.put(`${API_URL}/patients/me/vital`, async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>;
+      ficha = {
+        ...FICHA,
+        sex: null,
+        bloodType: null,
+        allergies: null,
+        medications: null,
+        conditions: null,
+        emergencyContact: null,
+        ...body,
+      };
+      return HttpResponse.json(ficha);
+    }),
     // Catálogo y reserva (ENG-132, ENG-133).
     http.get(`${API_URL}/specialties`, () => HttpResponse.json(ESPECIALIDADES)),
     http.get(`${API_URL}/catalog/professionals`, ({ request }) => {
