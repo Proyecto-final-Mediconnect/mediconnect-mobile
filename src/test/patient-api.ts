@@ -43,13 +43,29 @@ function cotizar(id: string): { percent: number; amount: number } | null {
 /** La ficha que devuelve el backend falso; guardar los datos vitales la cambia. */
 let ficha: PatientProfile = FICHA;
 
+const TODO_VISIBLE = {
+  grupoSanguineo: true,
+  alergias: true,
+  medicacion: true,
+  condiciones: true,
+  contacto: true,
+};
+/** Qué ve un consultante externo (ENG-149); arranca todo visible. */
+let scope = TODO_VISIBLE;
+
 export function servirDatosDelPaciente(): void {
   ficha = FICHA;
+  scope = TODO_VISIBLE;
   server.use(
     http.get(`${API_URL}/appointments/me`, () => HttpResponse.json(turnosDemo.listar())),
     http.get(`${API_URL}/medipass/me`, () => HttpResponse.json(codigoDemo())),
     http.get(`${API_URL}/medipass/me/vital`, () => HttpResponse.json(VITAL_DEMO)),
     http.get(`${API_URL}/medipass/me/accesses`, () => HttpResponse.json(accesosDemo.listar())),
+    http.get(`${API_URL}/medipass/me/scope`, () => HttpResponse.json(scope)),
+    http.put(`${API_URL}/medipass/me/scope`, async ({ request }) => {
+      scope = (await request.json()) as typeof scope;
+      return HttpResponse.json(scope);
+    }),
     http.delete(`${API_URL}/medipass/me/accesses/:id`, ({ params }) => {
       accesosDemo.revocar(String(params.id));
       return new HttpResponse(null, { status: 204 });

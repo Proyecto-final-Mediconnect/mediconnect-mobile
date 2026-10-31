@@ -9,6 +9,8 @@ import { useFullBrightness } from '../features/medipass/hooks/use-full-brightnes
 import {
   useAccesses,
   useRevokeAccess,
+  useSaveScope,
+  useScope,
   useVitalBlock,
 } from '../features/medipass/hooks/use-medipass';
 import type { MediPassAccess, VitalBlock } from '../features/medipass/types';
@@ -41,6 +43,8 @@ function vitalVacio(vital: VitalBlock): boolean {
 export function MediPassScreen(): React.JSX.Element {
   useFullBrightness();
   const navigation = useNavigation();
+  const scope = useScope();
+  const guardarScope = useSaveScope();
   const vital = useVitalBlock();
   const accesos = useAccesses();
   const revocar = useRevokeAccess();
@@ -90,7 +94,21 @@ export function MediPassScreen(): React.JSX.Element {
       <Text style={styles.seccion}>Lo que ve quien lo escanea</Text>
       {vital.data ? (
         <>
-          <VitalSummary vital={vital.data} />
+          <Text style={styles.ayuda}>
+            Tu nombre y tu edad siempre se ven. Lo demás lo elegís con cada interruptor, y vale
+            también para quien ya está mirando.
+          </Text>
+          <VitalSummary
+            vital={vital.data}
+            scope={scope.data}
+            saving={guardarScope.isPending}
+            onToggle={(bloque) => {
+              if (scope.data) guardarScope.mutate({ ...scope.data, [bloque]: !scope.data[bloque] });
+            }}
+          />
+          {guardarScope.isError ? (
+            <Text style={styles.error}>No pudimos guardar el cambio, probá de nuevo.</Text>
+          ) : null}
           {/* Lo que se edita está en el perfil (ENG-136): desde acá se llega
               directo, y si está vacío se insiste. */}
           <Button
@@ -137,4 +155,11 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   cargando: { minHeight: 120 },
+  ayuda: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.xs,
+    lineHeight: 17,
+    color: colors.onNightSoft,
+  },
+  error: { fontFamily: fonts.semibold, fontSize: fontSize.xs, color: colors.danger },
 });

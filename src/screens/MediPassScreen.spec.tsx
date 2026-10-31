@@ -120,4 +120,14 @@ describe('Mi MediPass (ENG-117)', () => {
     // Se pide de nuevo al backend: el anterior no quedó guardado.
     expect(await screen.findByTestId('qr-value')).toBeInTheDocument();
   });
+
+  // ENG-149: el paciente elige qué ve quien escanea, desde la misma ficha.
+  it('apagar un bloque lo marca como oculto para quien escanea', async () => {
+    await abrirMediPass();
+
+    const interruptor = await screen.findByLabelText('Mostrar medicación a quien escanea');
+    fireEvent.click(interruptor);
+
+    expect(await screen.findByText('No lo ve quien escanea tu código')).toBeInTheDocument();
+  });
 });

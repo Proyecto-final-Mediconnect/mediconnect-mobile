@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { fetchAccesses, fetchMyCode, fetchVitalBlock, revokeAccess } from '../api';
+import {
+  fetchAccesses,
+  fetchMyCode,
+  fetchScope,
+  fetchVitalBlock,
+  revokeAccess,
+  saveScope,
+} from '../api';
+import type { MediPassScope } from '../types';
 import { proximaConsultaDelCodigo } from '../lib/medipass';
 
 export const CODIGO_KEY = ['medipass', 'code'] as const;
@@ -44,5 +52,30 @@ export function useRevokeAccess() {
   return useMutation({
     mutationFn: revokeAccess,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ACCESOS_KEY }),
+  });
+}
+
+const SCOPE_KEY = ['medipass', 'scope'] as const;
+
+/** Qué bloques ve un consultante externo (ENG-149). */
+export function useScope() {
+  return useQuery({ queryKey: SCOPE_KEY, queryFn: fetchScope });
+}
+
+/** Cambia el scope al instante y lo guarda; si falla, vuelve atrás. */
+export function useSaveScope() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveScope,
+    onMutate: async (nuevo: MediPassScope) => {
+      await queryClient.cancelQueries({ queryKey: SCOPE_KEY });
+      const anterior = queryClient.getQueryData<MediPassScope>(SCOPE_KEY);
+      queryClient.setQueryData(SCOPE_KEY, nuevo);
+      return { anterior };
+    },
+    onError: (_error, _nuevo, contexto) => {
+      if (contexto?.anterior) queryClient.setQueryData(SCOPE_KEY, contexto.anterior);
+    },
+    onSuccess: (guardado) => queryClient.setQueryData(SCOPE_KEY, guardado),
   });
 }

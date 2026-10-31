@@ -1,5 +1,5 @@
 import { apiRequest } from '../../shared/lib/api-client';
-import type { MediPassAccess, MediPassCode, VitalBlock } from './types';
+import type { MediPassAccess, MediPassCode, MediPassScope, VitalBlock } from './types';
 
 /* API del MediPass: los mismos endpoints que usa la web. */
 
@@ -35,5 +35,21 @@ export function revokeAccess(id: string): Promise<void> {
   return apiRequest<void>(`/medipass/me/accesses/${encodeURIComponent(id)}`, {
     method: 'DELETE',
     fallbackMessage: 'No pudimos revocar el acceso. Probá de nuevo.',
+  });
+}
+
+/** `GET /medipass/me/scope`: qué bloques ve un consultante externo (ENG-149). */
+export function fetchScope(): Promise<MediPassScope> {
+  return apiRequest<MediPassScope>('/medipass/me/scope', {
+    fallbackMessage: 'No pudimos cargar qué se muestra.',
+  });
+}
+
+/** `PUT /medipass/me/scope`: cambia qué ve un consultante externo (ENG-149). */
+export function saveScope(scope: MediPassScope): Promise<MediPassScope> {
+  return apiRequest<MediPassScope>('/medipass/me/scope', {
+    method: 'PUT',
+    body: scope,
+    fallbackMessage: 'No pudimos guardar el cambio, probá de nuevo.',
   });
 }
