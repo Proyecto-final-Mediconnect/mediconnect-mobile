@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
 import { formatPrice } from '../../appointments/lib/appointments';
+import { RatingPill } from '../../reviews/components/RatingPill';
+import { hasRating } from '../../reviews/lib/reviews';
 import { fullName, mainSpecialty } from '../lib/catalog';
 import type { ProfessionalCard } from '../types';
 import { ProfessionalAvatar } from './ProfessionalAvatar';
@@ -35,6 +37,13 @@ export function ProfessionalRow({
             ? 'Precio a confirmar'
             : `${formatPrice(professional.price)} la consulta`}
         </Text>
+        {/* Sin reseñas no se dice nada: "Sin reseñas todavía" en casi todas las
+            filas de un catálogo nuevo sería ruido, y el perfil ya lo explica. */}
+        {hasRating(professional.rating) ? (
+          <View style={styles.calificacion}>
+            <RatingPill rating={professional.rating} />
+          </View>
+        ) : null}
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.mutedSoft} />
     </Pressable>
@@ -57,4 +66,5 @@ const styles = StyleSheet.create({
   nombre: { fontFamily: fonts.bold, fontSize: fontSize.md, color: colors.brandDeep },
   especialidad: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.brandHover },
   precio: { fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.muted },
+  calificacion: { marginTop: spacing.xs },
 });

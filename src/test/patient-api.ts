@@ -95,6 +95,12 @@ export function servirDatosDelPaciente(): void {
         disponibilidadDe(String(params.id), new URL(request.url).searchParams.get('from') ?? ''),
       ),
     ),
+    // Reseñas (ENG-80, ENG-82): por defecto la paciente no dejó ninguna y los
+    // profesionales no tienen; los tests de reseñas declaran las suyas.
+    http.get(`${API_URL}/reviews/me`, () => HttpResponse.json([])),
+    http.get(`${API_URL}/professionals/:id/reviews`, () =>
+      HttpResponse.json({ reviews: [], rating: null, page: 1, hasMore: false }),
+    ),
     http.get(`${API_URL}/professionals/:id`, ({ params }) => {
       const perfil = perfilDe(String(params.id));
       return perfil
