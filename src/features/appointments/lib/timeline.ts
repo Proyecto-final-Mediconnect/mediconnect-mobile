@@ -29,6 +29,24 @@ function cuando(iso: string | null | undefined): string | null {
   return formatShortDay(date, time).replace(/^\S+ /, '');
 }
 
+/**
+ * En qué quedó el reembolso de un turno que se cayó (ENG-174). `null` si no hubo
+ * reembolso. Lo usan el detalle y la fila de "Mis turnos".
+ */
+export function refundStep(appointment: Appointment): { title: string; tone: StepTone } | null {
+  const refund = appointment.refundState;
+  if (!refund) return null;
+  const monto = formatPrice(refund.amount);
+  switch (refund.status) {
+    case 'PENDIENTE':
+      return { title: `Pedimos el reembolso de ${monto}`, tone: 'current' };
+    case 'PROCESADO':
+      return { title: `Te devolvimos ${monto}`, tone: 'done' };
+    case 'RECHAZADO':
+      return { title: `No se pudo hacer el reembolso de ${monto}`, tone: 'bad' };
+  }
+}
+
 export function appointmentTimeline(
   appointment: Appointment,
   payment: PaymentStatusView | null,
@@ -45,9 +63,14 @@ export function appointmentTimeline(
   const { status } = appointment;
 
   // El pago. Sin dato del pago, se deduce del estado: un turno confirmado se pagó.
+  // Con un reembolso registrado (ENG-174) también se pagó, y lo que se devolvió
+  // va en su propio paso después de la cancelación: así un parcial no se lee
+  // como "te devolvimos el pago" ni uno pendiente desaparece.
   const pago = payment?.status;
+  const reembolso = refundStep(appointment);
   if (
     pago === 'APROBADO' ||
+    (reembolso && pago !== 'RECHAZADO') ||
     (!pago && ['CONFIRMADO', 'COMPLETADO', 'NO_ASISTIO'].includes(status))
   ) {
     pasos.push({
@@ -76,6 +99,7 @@ export function appointmentTimeline(
       when: cuando(appointment.cancelledAt),
       tone: 'bad',
     });
+    if (reembolso) pasos.push({ key: 'reembolso', when: null, ...reembolso });
     return pasos;
   }
   if (status === 'LIBERADO') {
@@ -85,6 +109,7 @@ export function appointmentTimeline(
       when: null,
       tone: 'bad',
     });
+    if (reembolso) pasos.push({ key: 'reembolso', when: null, ...reembolso });
     return pasos;
   }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Appointment } from '../types';
-import { appointmentTimeline } from './timeline';
+import { appointmentTimeline, refundStep } from './timeline';
 
 const AHORA = new Date('2026-10-21T15:00:00Z');
 
@@ -70,5 +70,53 @@ describe('appointmentTimeline', () => {
     const pasos = appointmentTimeline(turno('LIBERADO'), null, AHORA);
 
     expect(pasos.at(-1)?.title).toBe('Se liberó el horario porque no se pagó a tiempo');
+  });
+
+  describe('estado del reembolso (ENG-174)', () => {
+    const cancelado = (refundState: Appointment['refundState']) =>
+      turno('CANCELADO', { cancelledAt: '2026-10-21T13:00:00Z', refundState });
+    const PAGO = {
+      appointmentId: 't',
+      status: 'APROBADO',
+      appointmentStatus: 'CANCELADO',
+    } as const;
+
+    it('un parcial acreditado dice cuánto se devolvió, después de cancelar', () => {
+      const pasos = titulos(
+        appointmentTimeline(cancelado({ amount: 9000, status: 'PROCESADO' }), PAGO, AHORA),
+      );
+
+      expect(pasos[1]).toBe('Pagaste $18.000 con MercadoPago');
+      expect(pasos.slice(-2)).toEqual(['Se canceló el turno', 'Te devolvimos $9.000']);
+    });
+
+    it('uno pendiente queda en curso y uno rechazado, mal', () => {
+      expect(
+        appointmentTimeline(cancelado({ amount: 18000, status: 'PENDIENTE' }), PAGO, AHORA).at(-1),
+      ).toMatchObject({ title: 'Pedimos el reembolso de $18.000', tone: 'current' });
+      expect(
+        appointmentTimeline(cancelado({ amount: 18000, status: 'RECHAZADO' }), PAGO, AHORA).at(-1),
+      ).toMatchObject({ title: 'No se pudo hacer el reembolso de $18.000', tone: 'bad' });
+    });
+
+    it('uno total con el pago reembolsado no repite "te devolvimos el pago"', () => {
+      const pasos = titulos(
+        appointmentTimeline(
+          cancelado({ amount: 18000, status: 'PROCESADO' }),
+          { ...PAGO, status: 'REEMBOLSADO' },
+          AHORA,
+        ),
+      );
+
+      expect(pasos).not.toContain('Te devolvimos el pago');
+      expect(pasos.at(-1)).toBe('Te devolvimos $18.000');
+    });
+
+    it('un cancelado sin pago no muestra nada de reembolso', () => {
+      expect(refundStep(cancelado(null))).toBeNull();
+      expect(titulos(appointmentTimeline(cancelado(null), null, AHORA)).join(' ')).not.toMatch(
+        /reembolso|devolvi/i,
+      );
+    });
   });
 });

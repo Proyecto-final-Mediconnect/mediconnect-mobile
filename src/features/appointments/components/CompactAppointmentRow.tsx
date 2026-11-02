@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Chip } from '../../../shared/ui/Chip';
 import { colors, fonts, fontSize, spacing } from '../../../shared/ui/theme';
 import { dayParts } from '../lib/booking';
+import { refundStep } from '../lib/timeline';
 import { professionalName, statusLabel, statusTone } from '../lib/appointments';
 import type { Appointment } from '../types';
 import { DateBadge } from './DateBadge';
@@ -26,6 +27,8 @@ export function CompactAppointmentRow({
   onPress?: () => void;
 }): React.JSX.Element {
   const dia = dayParts(appointment.date);
+  // Lo que se devolvió de un turno caído se ve sin abrirlo (ENG-174).
+  const reembolso = refundStep(appointment);
 
   const contenido = (
     <>
@@ -37,6 +40,11 @@ export function CompactAppointmentRow({
         <Text style={styles.detalle}>
           {dia.day} {dia.month} · {appointment.startTime}
         </Text>
+        {reembolso ? (
+          <Text style={[styles.reembolso, { color: REFUND_COLOR[reembolso.tone] }]}>
+            {reembolso.title}
+          </Text>
+        ) : null}
       </View>
       <Chip label={statusLabel(appointment.status)} tone={statusTone(appointment.status)} />
       {onPress ? <Ionicons name="chevron-forward" size={16} color={colors.mutedSoft} /> : null}
@@ -69,4 +77,13 @@ const styles = StyleSheet.create({
   nombre: { fontFamily: fonts.bold, fontSize: fontSize.md, color: colors.brandDeep },
   apagado: { color: colors.muted },
   detalle: { fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.muted },
+  reembolso: { fontFamily: fonts.semibold, fontSize: fontSize.sm },
 });
+
+/** El color del reembolso en la fila: igual que su paso en el detalle. */
+const REFUND_COLOR = {
+  done: colors.brandHover,
+  current: colors.warmInk,
+  pending: colors.muted,
+  bad: colors.danger,
+} as const;
