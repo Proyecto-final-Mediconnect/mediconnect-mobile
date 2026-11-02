@@ -76,6 +76,55 @@ export function entryDay(entry: ClinicalEntry): string {
 }
 
 /**
+ * Períodos para filtrar la historia por fecha: los cortos que se usan para
+ * "lo último que me hicieron", y los años para buscar algo viejo ("el estudio
+ * de 2024"). Un año se escribe `A2024`.
+ */
+export type Period = 'TODO' | 'MES' | 'SEMESTRE' | 'ANIO' | `A${string}`;
+
+const PERIOD_LABELS: Record<string, string> = {
+  TODO: 'Todas las fechas',
+  MES: 'Último mes',
+  SEMESTRE: 'Últimos 6 meses',
+  ANIO: 'Último año',
+};
+
+const MESES_ATRAS: Record<string, number> = { MES: 1, SEMESTRE: 6, ANIO: 12 };
+
+export function periodLabel(period: Period): string {
+  return PERIOD_LABELS[period] ?? period.slice(1);
+}
+
+/** Los años con registros, del más nuevo al más viejo. */
+export function yearsPresent(entries: ClinicalEntry[]): string[] {
+  return [...new Set(entries.map((e) => entryDay(e).slice(0, 4)))].sort().reverse();
+}
+
+/**
+ * Las entradas del período, contando en el calendario argentino: "último mes"
+ * es desde el mismo día del mes pasado, no 30 días de 24 horas.
+ */
+export function filterByPeriod(
+  entries: ClinicalEntry[],
+  period: Period,
+  now: Date = new Date(),
+): ClinicalEntry[] {
+  if (period === 'TODO') return entries;
+  // `ANIO` también empieza con A: un año son cuatro dígitos.
+  if (/^A\d{4}$/.test(period)) {
+    const anio = period.slice(1);
+    return entries.filter((e) => entryDay(e).startsWith(anio));
+  }
+  const meses = MESES_ATRAS[period];
+  if (!meses) return entries;
+  const hoy = enArgentina(now).date;
+  const desde = new Date(`${hoy}T12:00:00Z`);
+  desde.setUTCMonth(desde.getUTCMonth() - meses);
+  const corte = desde.toISOString().slice(0, 10);
+  return entries.filter((e) => entryDay(e) >= corte);
+}
+
+/**
  * Las entradas agrupadas por mes, en el orden en que llegan. La historia se lee
  * por meses, como se recuerda: "en agosto me vio la cardióloga".
  */

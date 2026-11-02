@@ -9,7 +9,7 @@ async function abrirHistoria(): Promise<void> {
   await screen.findByText('Enalapril 10 mg');
 }
 
-/** El tipo se elige en la hoja de filtros, como en "Mis turnos". */
+/** El tipo y la fecha se eligen en la hoja de filtros, como en "Mis turnos". */
 async function filtrarPorTipo(tipo: string): Promise<void> {
   fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
   const hoja = await screen.findByRole('dialog');
@@ -65,6 +65,17 @@ describe('Mi historia clínica (ENG-116)', () => {
 
     expect(await screen.findByText('Apixabán 5 mg')).toBeInTheDocument();
     expect(screen.queryByText('Control de presión arterial')).not.toBeInTheDocument();
+  });
+
+  it('filtra por fecha y lo muestra en la franja de filtros', async () => {
+    await abrirHistoria();
+
+    await filtrarPorTipo('Último mes');
+
+    // Los de hace dos semanas quedan; los de hace dos meses, no.
+    expect(await screen.findByText('Control de presión arterial')).toBeInTheDocument();
+    expect(screen.queryByText('Apixabán 5 mg')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Último mes').length).toBeGreaterThan(0);
   });
 
   it('busca en el contenido sin tildes ni mayúsculas', async () => {

@@ -7,9 +7,13 @@ import { useMyClinicalRecord } from '../features/clinical-records/hooks/use-clin
 import {
   byMonth,
   correctionLinks,
+  filterByPeriod,
   newestFirst,
+  periodLabel,
   searchEntries,
   typesPresent,
+  yearsPresent,
+  type Period,
 } from '../features/clinical-records/lib/record-view';
 import { usePullToRefresh } from '../shared/hooks/use-pull-to-refresh';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
@@ -36,7 +40,7 @@ const FILTRO_LABELS: Record<string, string> = {
  *
  * Solo lectura: no hay nada que cree ni edite entradas. Lo más reciente
  * primero y agrupado por mes, con el riel del color de cada tipo; la búsqueda y
- * el filtro por tipo en la misma franja que "Mis turnos"; y el dibujo por
+ * los filtros por tipo y por fecha en la misma franja que "Mis turnos"; y el dibujo por
  * tandas al llegar al final. El detalle de cada registro (con las correcciones
  * vinculadas) va en su pantalla.
  */
@@ -45,6 +49,7 @@ export function ClinicalRecordScreen(): React.JSX.Element {
   const historia = useMyClinicalRecord();
   const tirar = usePullToRefresh(historia.refetch);
   const [filtro, setFiltro] = useState('TODAS');
+  const [periodo, setPeriodo] = useState<Period>('TODO');
   const [busqueda, setBusqueda] = useState('');
   const [verFiltros, setVerFiltros] = useState(false);
   const [visibles, setVisibles] = useState(TANDA);
@@ -55,22 +60,39 @@ export function ClinicalRecordScreen(): React.JSX.Element {
   );
   const vinculos = useMemo(() => correctionLinks(entradas), [entradas]);
   const tipos = useMemo(() => typesPresent(entradas), [entradas]);
+  const anios = useMemo(() => yearsPresent(entradas), [entradas]);
   const filtradas = useMemo(
     () =>
       searchEntries(
-        filtro === 'TODAS' ? entradas : entradas.filter((e) => e.entryType === filtro),
+        filterByPeriod(
+          filtro === 'TODAS' ? entradas : entradas.filter((e) => e.entryType === filtro),
+          periodo,
+        ),
         busqueda,
       ),
-    [entradas, filtro, busqueda],
+    [entradas, filtro, periodo, busqueda],
   );
   const secciones = useMemo(() => byMonth(filtradas.slice(0, visibles)), [filtradas, visibles]);
-  const hayFiltros = filtro !== 'TODAS' || busqueda.trim() !== '';
+  const hayFiltros = filtro !== 'TODAS' || periodo !== 'TODO' || busqueda.trim() !== '';
   const elegirTipo = (tipo: string): void => {
     setFiltro(tipo);
     setVisibles(TANDA);
   };
-  const activos: ActiveFilter[] =
-    filtro !== 'TODAS'
+  const elegirPeriodo = (p: Period): void => {
+    setPeriodo(p);
+    setVisibles(TANDA);
+  };
+  // Los años se ofrecen recién cuando hay más de uno: con un solo año, "Último
+  // año" ya dice lo mismo.
+  const periodos: Period[] = [
+    'TODO',
+    'MES',
+    'SEMESTRE',
+    'ANIO',
+    ...(anios.length > 1 ? anios.map((a): Period => `A${a}`) : []),
+  ];
+  const activos: ActiveFilter[] = [
+    ...(filtro !== 'TODAS'
       ? [
           {
             key: 'tipo',
@@ -78,7 +100,11 @@ export function ClinicalRecordScreen(): React.JSX.Element {
             onRemove: () => elegirTipo('TODAS'),
           },
         ]
-      : [];
+      : []),
+    ...(periodo !== 'TODO'
+      ? [{ key: 'fecha', label: periodLabel(periodo), onRemove: () => elegirPeriodo('TODO') }]
+      : []),
+  ];
 
   const header = <ScreenHeader title="Mi historia clínica" onBack={() => navigation.goBack()} />;
 
@@ -172,7 +198,7 @@ export function ClinicalRecordScreen(): React.JSX.Element {
             <EmptyState
               icon="search-outline"
               title="No hay registros con esos filtros"
-              description="Probá con otras palabras o con otro tipo de registro."
+              description="Probá con otras palabras, otro tipo de registro u otras fechas."
               action={
                 hayFiltros
                   ? {
@@ -180,6 +206,7 @@ export function ClinicalRecordScreen(): React.JSX.Element {
                       onPress: () => {
                         setBusqueda('');
                         elegirTipo('TODAS');
+                        elegirPeriodo('TODO');
                       },
                     }
                   : undefined
@@ -192,8 +219,8 @@ export function ClinicalRecordScreen(): React.JSX.Element {
       <FilterSheet
         visible={verFiltros}
         onDismiss={() => setVerFiltros(false)}
-        groups={
-          tipos.length > 1
+        groups={[
+          ...(tipos.length > 1
             ? [
                 {
                   title: 'Tipo de registro',
@@ -205,12 +232,28 @@ export function ClinicalRecordScreen(): React.JSX.Element {
                   })),
                 },
               ]
-            : []
-        }
+            : []),
+          {
+            title: 'Fecha',
+            options: periodos.map((p) => ({
+              key: p,
+              label: periodLabel(p),
+              selected: periodo === p,
+              onPress: () => elegirPeriodo(p),
+            })),
+          },
+        ]}
         resultLabel={
           filtradas.length === 1 ? 'Ver 1 registro' : `Ver ${filtradas.length} registros`
         }
-        onClear={filtro !== 'TODAS' ? () => elegirTipo('TODAS') : undefined}
+        onClear={
+          filtro !== 'TODAS' || periodo !== 'TODO'
+            ? () => {
+                elegirTipo('TODAS');
+                elegirPeriodo('TODO');
+              }
+            : undefined
+        }
       />
     </Screen>
   );
