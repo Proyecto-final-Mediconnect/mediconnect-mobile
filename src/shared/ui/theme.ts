@@ -23,7 +23,7 @@ export const colors = {
   surface: '#f4f8fa',
   surfaceTeal: '#eef6f5',
   danger: '#d64562',
-  /** El rojo al 10 % sobre blanco: el fondo de lo que no salió ("No publicada"). */
+  /** El rojo al 10 % sobre blanco: el fondo de lo que no salió ("No publicada") y de un error en línea. */
   dangerSoft: '#fbecef',
   /** Fondo de las superficies oscuras: el saludo del inicio y el MediPass. */
   night: '#072d3d',

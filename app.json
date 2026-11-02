@@ -40,6 +40,14 @@
           "color": "#0e7c7b"
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "MediConnect usa la cámara para sacar fotos de tus estudios y documentos médicos.",
+          "photosPermission": "MediConnect abre tus fotos para que elijas un estudio y lo sumes a tus documentos.",
+          "microphonePermission": false
+        }
+      ],
       "@sentry/react-native"
     ],
     "owner": "mediconnecttesis"

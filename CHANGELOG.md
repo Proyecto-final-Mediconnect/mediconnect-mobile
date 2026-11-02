@@ -9,6 +9,15 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Added
 
+- Mis documentos (ENG-164): el paciente sube los estudios y papeles que trae de
+  antes —sacándole una foto con la cámara, desde la galería o como PDF— con
+  tipo, nombre, fecha e institución, los ve con una URL firmada y los retira
+  con confirmación (deja de verse, pero queda registrado). Usa
+  `POST /patients/me/documents`, `GET /patients/me/documents`,
+  `DELETE /patients/me/documents/:id` y `GET /patient-documents/:id/download`.
+  Tipo y tamaño (PDF, JPG o PNG hasta 10 MB) se validan antes de subir. Se llega
+  desde la historia clínica y desde el perfil. El cliente HTTP manda un
+  `FormData` como multipart.
 - Inicio renovado y "Reservar" como tab central. El inicio saluda según la hora
   de Argentina y, debajo de la próxima consulta, muestra los turnos que siguen,
   los profesionales con los que ya se atendió el paciente para volver a

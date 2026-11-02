@@ -6,6 +6,7 @@ import {
   readSessionTokens,
 } from '../../infrastructure/secure-store/session-tokens';
 import { API_URL, server } from '../../test/msw-server';
+import { multipartFields } from '../../test/multipart';
 import { TOKENS } from '../../test/session';
 import { saveSessionTokens } from '../../infrastructure/secure-store/session-tokens';
 import { apiRequest, ApiError, onSessionExpired } from './api-client';
@@ -27,6 +28,27 @@ describe('apiRequest', () => {
     recursoProtegido(TOKENS.accessToken);
 
     await expect(apiRequest('/recurso')).resolves.toEqual({ ok: true });
+  });
+
+  // ENG-164: con un JSON a mano el backend no encuentra el boundary del multipart.
+  it('un FormData viaja como multipart, no como JSON', async () => {
+    await saveSessionTokens(TOKENS);
+    let tipo: string | null = null;
+    let titulo: string | undefined;
+    server.use(
+      http.post(`${API_URL}/archivo`, async ({ request }) => {
+        tipo = request.headers.get('Content-Type');
+        titulo = (await multipartFields(request)).title;
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    const form = new FormData();
+    form.append('title', 'Análisis de sangre');
+
+    await apiRequest('/archivo', { method: 'POST', body: form });
+
+    expect(tipo).toMatch(/^multipart\/form-data; boundary=/);
+    expect(titulo).toBe('Análisis de sangre');
   });
 
   it('las rutas públicas no mandan token', async () => {

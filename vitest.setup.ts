@@ -7,6 +7,8 @@ import { afterAll, afterEach, beforeAll } from 'vitest';
 import { API_URL, server } from './src/test/msw-server';
 // El mismo módulo al que apunta el alias de `expo-secure-store`.
 import { __secureStore } from './test-stubs/expo-secure-store';
+import { __documentos } from './test-stubs/expo-document-picker';
+import { __fotos } from './test-stubs/expo-image-picker';
 import { __abiertas } from './test-stubs/expo-web-browser';
 
 // Los tests montan la app entera con el navegador real, y abrirla ahora incluye
@@ -29,6 +31,8 @@ afterEach(() => {
   // Cada test arranca sin sesión guardada.
   __secureStore.reset();
   __abiertas.length = 0;
+  __fotos.reiniciar();
+  __documentos.reiniciar();
 });
 
 afterAll(() => {

@@ -1,5 +1,7 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
+import type { PickedFile } from '../features/patient-documents/types';
+
 /**
  * Rutas de la app. Con React Navigation se mantienen a mano (ADR-016): agregar
  * una pantalla es sumarla acá y en su navegador.
@@ -37,6 +39,8 @@ export type RootStackParamList = {
   Pago: { appointmentId: string };
   /** El detalle de un turno propio, con lo que pasó desde la reserva. */
   Turno: { appointmentId: string };
+  /** Qué es el archivo recién elegido, antes de subirlo (ENG-164). */
+  SubirDocumento: { file: PickedFile };
 };
 
 // Tipa `useNavigation()` en toda la app sin pasarle el genérico cada vez.

@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { useCallback, useDeferredValue, useMemo, useState } from 'react';
-import { RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Linking, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 
 import { EntryCard } from '../features/clinical-records/components/EntryCard';
 import { useMyClinicalRecord } from '../features/clinical-records/hooks/use-clinical-record';
@@ -16,7 +16,11 @@ import {
   yearsPresent,
   type Period,
 } from '../features/clinical-records/lib/record-view';
+import { MyDocumentsSection } from '../features/patient-documents/components/MyDocumentsSection';
+import { UploadSourceSheet } from '../features/patient-documents/components/UploadSourceSheet';
+import { pickFile, type PickSource } from '../features/patient-documents/lib/pick-file';
 import { usePullToRefresh } from '../shared/hooks/use-pull-to-refresh';
+import { Notice } from '../shared/ui/Notice';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { FilterSheet } from '../shared/ui/FilterSheet';
 import { SearchFilterBar, type ActiveFilter } from '../shared/ui/SearchFilterBar';
@@ -36,6 +40,12 @@ const FILTRO_LABELS: Record<string, string> = {
   CORRECCION: 'Correcciones',
 };
 
+/** Lo que tarda en irse la hoja (`Sheet`): abrir la cámara con un `Modal`
+ *  todavía en pantalla es frágil en iOS, así que se espera a que baje. */
+const ESPERA_HOJA_MS = 250;
+
+type Aviso = { kind: 'denied' | 'invalid' | 'error'; message: string };
+
 /**
  * Mi historia clínica (ENG-116): la línea de tiempo de la web en el celular.
  *
@@ -44,6 +54,10 @@ const FILTRO_LABELS: Record<string, string> = {
  * los filtros por tipo y por fecha en la misma franja que "Mis turnos"; y el dibujo por
  * tandas al llegar al final. El detalle de cada registro (con las correcciones
  * vinculadas) va en su pantalla.
+ *
+ * Arriba de la línea de tiempo, "Mis documentos" (ENG-164): lo que el paciente
+ * trae de antes, como en la web. "Subir" abre una hoja para elegir de dónde
+ * (cámara, galería o PDF) y el formulario se abre como modal.
  */
 export function ClinicalRecordScreen(): React.JSX.Element {
   const navigation = useNavigation();
@@ -54,6 +68,35 @@ export function ClinicalRecordScreen(): React.JSX.Element {
   const [busqueda, setBusqueda] = useState('');
   const [verFiltros, setVerFiltros] = useState(false);
   const [visibles, setVisibles] = useState(TANDA);
+  const [opciones, setOpciones] = useState(false);
+  const [eligiendo, setEligiendo] = useState(false);
+  const [aviso, setAviso] = useState<Aviso | null>(null);
+
+  async function elegir(source: PickSource): Promise<void> {
+    // Un segundo toque mientras se abre la cámara la abriría dos veces.
+    if (eligiendo) return;
+    setEligiendo(true);
+    setAviso(null);
+    setOpciones(false);
+    try {
+      await new Promise((r) => setTimeout(r, ESPERA_HOJA_MS));
+      const resultado = await pickFile(source);
+      if (resultado.status === 'picked') {
+        navigation.navigate('SubirDocumento', { file: resultado.file });
+      } else if (resultado.status !== 'canceled') {
+        setAviso({ kind: resultado.status, message: resultado.message });
+      }
+    } catch {
+      setAviso({ kind: 'error', message: 'No pudimos abrir el selector. Probá de nuevo.' });
+    } finally {
+      setEligiendo(false);
+    }
+  }
+
+  const subir = (): void => {
+    setAviso(null);
+    setOpciones(true);
+  };
 
   const entradas = useMemo(
     () => (historia.data ? newestFirst(historia.data) : []),
@@ -187,12 +230,28 @@ export function ClinicalRecordScreen(): React.JSX.Element {
           />
         }
         ListHeaderComponent={
-          entradas.length > 0 ? (
-            <Text style={styles.aclaracion}>
-              Cada entrada queda sellada y no se puede modificar. Si un profesional necesita
-              corregir algo, agrega una corrección vinculada al registro original.
-            </Text>
-          ) : undefined
+          <View>
+            {aviso ? (
+              <View style={styles.aviso}>
+                <Notice
+                  icon={aviso.kind === 'denied' ? 'camera-outline' : 'alert-circle-outline'}
+                  message={aviso.message}
+                  action={
+                    aviso.kind === 'denied'
+                      ? { label: 'Abrir ajustes', onPress: () => void Linking.openSettings() }
+                      : undefined
+                  }
+                />
+              </View>
+            ) : null}
+            <MyDocumentsSection onUpload={subir} />
+            {entradas.length > 0 ? (
+              <Text style={styles.aclaracion}>
+                Cada entrada queda sellada y no se puede modificar. Si un profesional necesita
+                corregir algo, agrega una corrección vinculada al registro original.
+              </Text>
+            ) : null}
+          </View>
         }
         ListFooterComponent={
           visibles < filtradas.length ? (
@@ -267,6 +326,12 @@ export function ClinicalRecordScreen(): React.JSX.Element {
             : undefined
         }
       />
+
+      <UploadSourceSheet
+        visible={opciones}
+        onDismiss={() => setOpciones(false)}
+        onPick={(source) => void elegir(source)}
+      />
     </Screen>
   );
 }
@@ -279,6 +344,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   item: { paddingBottom: spacing.sm },
+  aviso: { marginBottom: spacing.md },
   seccionTitulo: {
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
