@@ -56,6 +56,12 @@ describe('Mi historia clínica (ENG-116)', () => {
     await filtrarPorTipo('Estudios');
 
     expect(await screen.findByText('Corregida')).toBeInTheDocument();
+    // El lector de pantalla también lo anuncia: el label pisa el texto de la tarjeta.
+    expect(
+      screen.getByRole('button', {
+        name: /^Estudio: Holter de 24 horas\. Tiene una corrección posterior\. .+Firmada por /,
+      }),
+    ).toBeInTheDocument();
   });
 
   it('filtra por tipo', async () => {
@@ -102,7 +108,9 @@ describe('Mi historia clínica (ENG-116)', () => {
   it('abre una entrada completa con todos sus campos', async () => {
     await abrirHistoria();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Consulta: Control de presión arterial' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /^Consulta: Control de presión arterial\. / }),
+    );
 
     const detalle = await screen.findByText(/Registro sellado/);
     expect(detalle).toBeInTheDocument();

@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import { useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useMemo, useState } from 'react';
 import { RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 
 import { EntryCard } from '../features/clinical-records/components/EntryCard';
@@ -11,6 +11,7 @@ import {
   newestFirst,
   periodLabel,
   searchEntries,
+  searchIndex,
   typesPresent,
   yearsPresent,
   type Period,
@@ -61,6 +62,11 @@ export function ClinicalRecordScreen(): React.JSX.Element {
   const vinculos = useMemo(() => correctionLinks(entradas), [entradas]);
   const tipos = useMemo(() => typesPresent(entradas), [entradas]);
   const anios = useMemo(() => yearsPresent(entradas), [entradas]);
+  // El texto normalizado de cada entrada se arma una vez por historia, y la
+  // búsqueda se aplica diferida: el input responde en cada tecla y la lista se
+  // recalcula cuando React tiene tiempo, sin trabar el tipeo en una historia larga.
+  const indice = useMemo(() => searchIndex(entradas), [entradas]);
+  const busquedaAplicada = useDeferredValue(busqueda);
   const filtradas = useMemo(
     () =>
       searchEntries(
@@ -68,9 +74,10 @@ export function ClinicalRecordScreen(): React.JSX.Element {
           filtro === 'TODAS' ? entradas : entradas.filter((e) => e.entryType === filtro),
           periodo,
         ),
-        busqueda,
+        busquedaAplicada,
+        indice,
       ),
-    [entradas, filtro, periodo, busqueda],
+    [entradas, filtro, periodo, busquedaAplicada, indice],
   );
   const secciones = useMemo(() => byMonth(filtradas.slice(0, visibles)), [filtradas, visibles]);
   const hayFiltros = filtro !== 'TODAS' || periodo !== 'TODO' || busqueda.trim() !== '';
@@ -106,6 +113,13 @@ export function ClinicalRecordScreen(): React.JSX.Element {
       : []),
   ];
 
+  // Estable entre renders para que `EntryCard` (memo) no se redibuje al tipear o
+  // al cargar otra tanda.
+  const abrir = useCallback(
+    (id: string): void => navigation.navigate('EntradaHC', { id }),
+    [navigation],
+  );
+
   const header = <ScreenHeader title="Mi historia clínica" onBack={() => navigation.goBack()} />;
 
   if (historia.isPending) {
@@ -123,8 +137,6 @@ export function ClinicalRecordScreen(): React.JSX.Element {
       </Screen>
     );
   }
-
-  const abrir = (id: string): void => navigation.navigate('EntradaHC', { id });
 
   return (
     <Screen scroll={false} padded={false} header={header}>

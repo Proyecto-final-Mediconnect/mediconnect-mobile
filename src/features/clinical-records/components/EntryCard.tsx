@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
+import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { DateBadge } from '../../appointments/components/DateBadge';
+import { formatLongDay } from '../../appointments/lib/appointments';
+import { enArgentina } from '../../../shared/lib/argentina-time';
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
 import { authorName, readEntryFields } from '../lib/clinical-entry';
 import { entryDay } from '../lib/record-view';
@@ -66,14 +69,24 @@ interface EntryCardProps {
  * **El titular es el primer campo del contenido.** Las entradas no tienen campo
  * título; el primer campo de cada tipo es el que la resume.
  */
-export function EntryCard({ entry, corrected, last, onOpen }: EntryCardProps): React.JSX.Element {
+export const EntryCard = memo(function EntryCard({
+  entry,
+  corrected,
+  last,
+  onOpen,
+}: EntryCardProps): React.JSX.Element {
   const titular = readEntryFields(entry)[0]?.value ?? 'Esta entrada no tiene contenido legible.';
   const tono = TONO_TIPO[entry.entryType] ?? TONO_POR_DEFECTO;
-  const hora = new Date(entry.createdAt).toLocaleTimeString('es-AR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'America/Argentina/Buenos_Aires',
-  });
+  const tipo = ENTRY_TYPE_LABELS[entry.entryType] ?? entry.entryType;
+  const dia = entryDay(entry);
+  // La hora con `enArgentina`, como el resto del feature, y no con `Intl`.
+  const hora = enArgentina(new Date(entry.createdAt)).time;
+  // El label pisa el contenido de la tarjeta para el lector de pantalla: tiene
+  // que decir todo lo que se ve, incluida la corrección, que es un dato clínico.
+  const etiqueta =
+    `${tipo}: ${titular}. ` +
+    (corrected ? 'Tiene una corrección posterior. ' : '') +
+    `${formatLongDay(dia)}, ${hora}. Firmada por ${authorName(entry)}.`;
 
   return (
     <View style={styles.fila}>
@@ -86,11 +99,11 @@ export function EntryCard({ entry, corrected, last, onOpen }: EntryCardProps): R
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${ENTRY_TYPE_LABELS[entry.entryType] ?? entry.entryType}: ${titular}`}
+        accessibilityLabel={etiqueta}
         onPress={() => onOpen(entry.id)}
         style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       >
-        <DateBadge date={entryDay(entry)} muted={corrected} />
+        <DateBadge date={dia} muted={corrected} />
         <View style={styles.textos}>
           <Text style={[styles.titular, corrected && styles.titularApagado]} numberOfLines={1}>
             {titular}
@@ -109,7 +122,7 @@ export function EntryCard({ entry, corrected, last, onOpen }: EntryCardProps): R
       </Pressable>
     </View>
   );
-}
+});
 
 const PUNTO = 14;
 

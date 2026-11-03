@@ -52,20 +52,39 @@ function normalizar(texto: string): string {
 }
 
 /**
- * Busca en el contenido, el tipo y el profesional. Cada palabra tiene que
- * aparecer, en cualquier orden: "ibuprofeno garcia".
+ * El texto en el que se busca cada entrada (contenido, tipo y profesional), ya
+ * normalizado. Se arma una vez por historia y no en cada tecla: normalizar todo
+ * el contenido clínico es lo que pesa.
  */
-export function searchEntries(entries: ClinicalEntry[], texto: string): ClinicalEntry[] {
+export function searchIndex(entries: ClinicalEntry[]): Map<string, string> {
+  return new Map(
+    entries.map((entry) => [
+      entry.id,
+      normalizar(
+        [
+          ENTRY_TYPE_LABELS[entry.entryType] ?? entry.entryType,
+          authorName(entry),
+          ...readEntryFields(entry).map((campo) => campo.value),
+        ].join(' '),
+      ),
+    ]),
+  );
+}
+
+/**
+ * Busca en el contenido, el tipo y el profesional. Cada palabra tiene que
+ * aparecer, en cualquier orden: "ibuprofeno garcia". Recibe el índice de
+ * `searchIndex` para no rearmarlo en cada búsqueda.
+ */
+export function searchEntries(
+  entries: ClinicalEntry[],
+  texto: string,
+  indice: Map<string, string> = searchIndex(entries),
+): ClinicalEntry[] {
   const palabras = normalizar(texto).split(/\s+/).filter(Boolean);
   if (palabras.length === 0) return entries;
   return entries.filter((entry) => {
-    const todo = normalizar(
-      [
-        ENTRY_TYPE_LABELS[entry.entryType] ?? entry.entryType,
-        authorName(entry),
-        ...readEntryFields(entry).map((campo) => campo.value),
-      ].join(' '),
-    );
+    const todo = indice.get(entry.id) ?? '';
     return palabras.every((p) => todo.includes(p));
   });
 }
@@ -118,8 +137,11 @@ export function filterByPeriod(
   const meses = MESES_ATRAS[period];
   if (!meses) return entries;
   const hoy = enArgentina(now).date;
-  const desde = new Date(`${hoy}T12:00:00Z`);
-  desde.setUTCMonth(desde.getUTCMonth() - meses);
+  const [y, m, d] = hoy.split('-').map(Number);
+  // Mismo día de hace `meses` meses; si ese mes es más corto, su último día. Con
+  // `setUTCMonth` el 31/03 menos un mes da el 3/03 y quedarían afuera registros.
+  const ultimoDia = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1 - meses + 1, 0)).getUTCDate();
+  const desde = new Date(Date.UTC(y ?? 0, (m ?? 1) - 1 - meses, Math.min(d ?? 1, ultimoDia)));
   const corte = desde.toISOString().slice(0, 10);
   return entries.filter((e) => entryDay(e) >= corte);
 }
