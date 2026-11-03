@@ -1,5 +1,12 @@
 import { apiRequest } from '../../shared/lib/api-client';
-import type { MediPassAccess, MediPassCode, MediPassScope, VitalBlock } from './types';
+import type {
+  EmergencyCardCreated,
+  EmergencyCardStatus,
+  MediPassAccess,
+  MediPassCode,
+  MediPassScope,
+  VitalBlock,
+} from './types';
 
 /* API del MediPass: los mismos endpoints que usa la web. */
 
@@ -51,5 +58,31 @@ export function saveScope(scope: MediPassScope): Promise<MediPassScope> {
     method: 'PUT',
     body: scope,
     fallbackMessage: 'No pudimos guardar el cambio, probá de nuevo.',
+  });
+}
+
+/** `GET /medipass/me/emergency-card`: si hay una tarjeta de emergencia activa (ENG-176). */
+export function fetchEmergencyCard(): Promise<EmergencyCardStatus> {
+  return apiRequest<EmergencyCardStatus>('/medipass/me/emergency-card', {
+    fallbackMessage: 'No pudimos cargar tu tarjeta de emergencia.',
+  });
+}
+
+/**
+ * `POST /medipass/me/emergency-card`: la genera, o una nueva que reemplaza a la
+ * anterior (ENG-176). El token llega una sola vez.
+ */
+export function createEmergencyCard(): Promise<EmergencyCardCreated> {
+  return apiRequest<EmergencyCardCreated>('/medipass/me/emergency-card', {
+    method: 'POST',
+    fallbackMessage: 'No pudimos generar la tarjeta. Probá de nuevo.',
+  });
+}
+
+/** `DELETE /medipass/me/emergency-card`: la desactiva. Idempotente (ENG-176). */
+export function disableEmergencyCard(): Promise<void> {
+  return apiRequest<void>('/medipass/me/emergency-card', {
+    method: 'DELETE',
+    fallbackMessage: 'No pudimos desactivar la tarjeta. Probá de nuevo.',
   });
 }

@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
+  createEmergencyCard,
+  disableEmergencyCard,
+  fetchEmergencyCard,
   fetchAccesses,
   fetchMyCode,
   fetchScope,
@@ -85,5 +88,43 @@ export function useSaveScope() {
     // Al final, falle o no, se relee: si el PUT falló o cambió desde la web, la
     // caché vuelve a ser lo que dice el servidor.
     onSettled: () => queryClient.invalidateQueries({ queryKey: SCOPE_KEY }),
+  });
+}
+
+const TARJETA_KEY = ['medipass', 'emergency-card'] as const;
+
+/** Si hay una tarjeta de emergencia activa (ENG-176). */
+export function useEmergencyCard() {
+  return useQuery({ queryKey: TARJETA_KEY, queryFn: fetchEmergencyCard });
+}
+
+/**
+ * Genera (o regenera) la tarjeta. `gcTime: 0`: el token no se queda en la caché
+ * de mutaciones, vive solo en el componente que lo muestra. Regenerar corta los
+ * accesos abiertos con la anterior, así que también se relee la lista.
+ */
+export function useCreateEmergencyCard() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createEmergencyCard,
+    gcTime: 0,
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: TARJETA_KEY }),
+        queryClient.invalidateQueries({ queryKey: ACCESOS_KEY }),
+      ]),
+  });
+}
+
+/** Desactiva la tarjeta; también corta lo que había abierto. */
+export function useDisableEmergencyCard() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: disableEmergencyCard,
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: TARJETA_KEY }),
+        queryClient.invalidateQueries({ queryKey: ACCESOS_KEY }),
+      ]),
   });
 }

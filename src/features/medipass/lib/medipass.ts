@@ -47,6 +47,15 @@ export function emergencyUrl(webUrl: string, codigo: string): string {
   return `${webUrl}/medipass/emergencia?codigo=${encodeURIComponent(codigo)}`;
 }
 
+/**
+ * La URL del QR de la tarjeta de emergencia (ENG-176). El token va en el
+ * **fragmento** (`#tarjeta=`): el navegador no lo manda a ningún servidor, así
+ * que no queda en logs. A diferencia del código, este token no vence solo.
+ */
+export function emergencyCardUrl(webUrl: string, tarjeta: string): string {
+  return `${webUrl}/medipass/emergencia#tarjeta=${encodeURIComponent(tarjeta)}`;
+}
+
 /** `AB12CD34` → `AB12-CD34`: de a cuatro se lee y se dicta sin errores. */
 export function formatCodigo(codigo: string): string {
   const limpio = codigo.replace(/[^0-9A-Za-z]/g, '').toUpperCase();

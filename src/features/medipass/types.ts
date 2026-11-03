@@ -34,6 +34,20 @@ export interface MediPassAccess {
   /** ISO-8601: cuándo se corta sola (ENG-104). */
   expiraEl: string;
   minutosRestantes: number;
+  /** Por dónde entró: el código o la tarjeta de emergencia (ENG-176). */
+  origen?: 'CODIGO' | 'TARJETA';
+}
+
+/** `GET /medipass/me/emergency-card`: si hay una tarjeta activa. Nunca el token (ENG-176). */
+export interface EmergencyCardStatus {
+  activa: boolean;
+  creadaEl: string | null;
+}
+
+/** `POST /medipass/me/emergency-card`: la tarjeta recién generada. El token llega una sola vez. */
+export interface EmergencyCardCreated {
+  tarjeta: string;
+  creadaEl: string;
 }
 
 /**
