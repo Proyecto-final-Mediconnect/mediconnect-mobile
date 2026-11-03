@@ -6,6 +6,7 @@ import { refundPercentFor } from '../features/cancellation-policy/policy';
 import { matchesSearch } from '../features/catalog/lib/catalog';
 import { disponibilidadDe, ESPECIALIDADES, perfilDe, PROFESIONALES } from '../mocks/catalog';
 import { crearHistoriaDemo } from '../mocks/clinical-record';
+import { accesosDemo, codigoDemo, VITAL_DEMO } from '../mocks/medipass';
 import { PACIENTE_DEMO } from '../mocks/patient';
 import { API_URL, server } from './msw-server';
 
@@ -39,9 +40,36 @@ function cotizar(id: string): { percent: number; amount: number } | null {
   return { percent, amount: (turno.price * percent) / 100 };
 }
 
+/** La ficha que devuelve el backend falso; guardar los datos vitales la cambia. */
+let ficha: PatientProfile = FICHA;
+
+const TODO_VISIBLE = {
+  grupoSanguineo: true,
+  alergias: true,
+  medicacion: true,
+  condiciones: true,
+  contacto: true,
+};
+/** Qué ve un consultante externo (ENG-149); arranca todo visible. */
+let scope = TODO_VISIBLE;
+
 export function servirDatosDelPaciente(): void {
+  ficha = FICHA;
+  scope = TODO_VISIBLE;
   server.use(
     http.get(`${API_URL}/appointments/me`, () => HttpResponse.json(turnosDemo.listar())),
+    http.get(`${API_URL}/medipass/me`, () => HttpResponse.json(codigoDemo())),
+    http.get(`${API_URL}/medipass/me/vital`, () => HttpResponse.json(VITAL_DEMO)),
+    http.get(`${API_URL}/medipass/me/accesses`, () => HttpResponse.json(accesosDemo.listar())),
+    http.get(`${API_URL}/medipass/me/scope`, () => HttpResponse.json(scope)),
+    http.put(`${API_URL}/medipass/me/scope`, async ({ request }) => {
+      scope = (await request.json()) as typeof scope;
+      return HttpResponse.json(scope);
+    }),
+    http.delete(`${API_URL}/medipass/me/accesses/:id`, ({ params }) => {
+      accesosDemo.revocar(String(params.id));
+      return new HttpResponse(null, { status: 204 });
+    }),
     http.get(`${API_URL}/appointments/:id/cancellation-quote`, ({ params }) => {
       const cotizacion = cotizar(String(params.id));
       return cotizacion
@@ -70,7 +98,22 @@ export function servirDatosDelPaciente(): void {
     http.get(`${API_URL}/patients/${PACIENTE_DEMO.id}/clinical-record`, () =>
       HttpResponse.json(crearHistoriaDemo()),
     ),
-    http.get(`${API_URL}/patients/me`, () => HttpResponse.json(FICHA)),
+    http.get(`${API_URL}/patients/me`, () => HttpResponse.json(ficha)),
+    // Reemplaza el bloque vital entero, como el backend (ENG-136).
+    http.put(`${API_URL}/patients/me/vital`, async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>;
+      ficha = {
+        ...FICHA,
+        sex: null,
+        bloodType: null,
+        allergies: null,
+        medications: null,
+        conditions: null,
+        emergencyContact: null,
+        ...body,
+      };
+      return HttpResponse.json(ficha);
+    }),
     // Catálogo y reserva (ENG-132, ENG-133).
     http.get(`${API_URL}/specialties`, () => HttpResponse.json(ESPECIALIDADES)),
     http.get(`${API_URL}/catalog/professionals`, ({ request }) => {

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AccessList } from '../features/medipass/components/AccessList';
@@ -8,14 +9,16 @@ import { useFullBrightness } from '../features/medipass/hooks/use-full-brightnes
 import {
   useAccesses,
   useRevokeAccess,
+  useSaveScope,
+  useScope,
   useVitalBlock,
 } from '../features/medipass/hooks/use-medipass';
-import type { MediPassAccess } from '../features/medipass/types';
+import type { MediPassAccess, VitalBlock } from '../features/medipass/types';
 import { useNow } from '../shared/hooks/use-now';
+import { Button } from '../shared/ui/Button';
 import { ConfirmSheet } from '../shared/ui/ConfirmSheet';
-import { Notice } from '../shared/ui/Notice';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
-import { LoadingState } from '../shared/ui/StatusViews';
+import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, spacing } from '../shared/ui/theme';
 
 /**
@@ -26,13 +29,38 @@ import { colors, fonts, fontSize, spacing } from '../shared/ui/theme';
  * sirve en una guardia—, así que el código va primero y grande, con el brillo al
  * máximo mientras la pantalla está abierta.
  */
+/** Sin nada clínico cargado: el médico solo vería el nombre y la edad (ENG-136). */
+function vitalVacio(vital: VitalBlock): boolean {
+  return (
+    !vital.grupoSanguineo &&
+    !vital.alergias?.length &&
+    !vital.medicacion?.length &&
+    !vital.condiciones?.length &&
+    !vital.contacto
+  );
+}
+
 export function MediPassScreen(): React.JSX.Element {
   useFullBrightness();
+  const navigation = useNavigation();
+  const scope = useScope();
+  const guardarScope = useSaveScope();
   const vital = useVitalBlock();
   const accesos = useAccesses();
   const revocar = useRevokeAccess();
   const ahora = useNow(1000);
   const [aRevocar, setARevocar] = useState<MediPassAccess | null>(null);
+
+  // La pestaña queda montada al cambiar de pestaña: sin esto, lo que el
+  // paciente acaba de editar en su perfil no aparecería acá hasta reabrir la app.
+  const { refetch: refetchVital } = vital;
+  const { refetch: refetchAccesos } = accesos;
+  useFocusEffect(
+    useCallback(() => {
+      void refetchVital();
+      void refetchAccesos();
+    }, [refetchVital, refetchAccesos]),
+  );
 
   const cerrar = (): void => {
     setARevocar(null);
@@ -50,17 +78,13 @@ export function MediPassScreen(): React.JSX.Element {
         />
       }
     >
-      {/* El backend todavía no tiene rutas de MediPass (ENG-117): todo lo de esta
-          pantalla es de ejemplo, y en una app de salud no puede pasar por propio. */}
-      <Notice
-        icon="flask-outline"
-        message="Vista previa con datos de ejemplo: tu MediPass todavía no está disponible."
-      />
       <MediPassCode />
 
       <Text style={styles.seccion}>Accediendo ahora</Text>
       {accesos.data ? (
         <AccessList accesses={accesos.data} now={ahora} onRevoke={setARevocar} />
+      ) : accesos.isError ? (
+        <ErrorState message={accesos.error.message} onRetry={() => void accesos.refetch()} />
       ) : (
         <View style={styles.cargando}>
           <LoadingState />
@@ -69,7 +93,49 @@ export function MediPassScreen(): React.JSX.Element {
 
       <Text style={styles.seccion}>Lo que ve quien lo escanea</Text>
       {vital.data ? (
-        <VitalSummary vital={vital.data} />
+        <>
+          <Text style={styles.ayuda}>
+            Tu nombre y tu edad siempre se ven. Lo demás lo elegís con cada interruptor, y vale
+            también para quien ya está mirando.
+          </Text>
+          <VitalSummary
+            vital={vital.data}
+            scope={scope.data}
+            saving={guardarScope.isPending}
+            onToggle={(bloque) => {
+              if (scope.data) guardarScope.mutate({ ...scope.data, [bloque]: !scope.data[bloque] });
+            }}
+          />
+          {/* Sin el scope no hay interruptores: que se sepa por qué, en vez de
+              dejar creer que todo lo que figura arriba se puede ocultar. */}
+          {scope.isError ? (
+            <View style={styles.scopeError}>
+              <Text accessibilityRole="alert" style={styles.error}>
+                No pudimos cargar qué bloques ve quien escanea, así que por ahora no podés ocultar
+                ninguno.
+              </Text>
+              <Button
+                label={scope.isFetching ? 'Cargando…' : 'Reintentar'}
+                variant="secondary"
+                disabled={scope.isFetching}
+                onPress={() => void scope.refetch()}
+              />
+            </View>
+          ) : null}
+          {guardarScope.isError ? (
+            <Text style={styles.error}>No pudimos guardar el cambio, probá de nuevo.</Text>
+          ) : null}
+          {/* Lo que se edita está en el perfil (ENG-136): desde acá se llega
+              directo, y si está vacío se insiste. */}
+          <Button
+            label={vitalVacio(vital.data) ? 'Cargar mis datos de emergencia' : 'Editar mis datos'}
+            variant={vitalVacio(vital.data) ? 'accent' : 'secondary'}
+            onPress={() => navigation.navigate('DatosEmergencia')}
+            fullWidth
+          />
+        </>
+      ) : vital.isError ? (
+        <ErrorState message={vital.error.message} onRetry={() => void vital.refetch()} />
       ) : (
         <View style={styles.cargando}>
           <LoadingState />
@@ -81,7 +147,7 @@ export function MediPassScreen(): React.JSX.Element {
         title="¿Revocar el acceso?"
         message={
           aRevocar
-            ? `${aRevocar.quien} deja de ver tu MediPass en este momento. Si lo necesita de nuevo, vas a tener que mostrarle el código otra vez.`
+            ? `${aRevocar.consultante} deja de ver tu MediPass en este momento. Si lo necesita de nuevo, vas a tener que mostrarle el código otra vez.`
             : ''
         }
         confirmLabel="Revocar acceso"
@@ -105,4 +171,12 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   cargando: { minHeight: 120 },
+  ayuda: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.xs,
+    lineHeight: 17,
+    color: colors.onNightSoft,
+  },
+  error: { fontFamily: fonts.semibold, fontSize: fontSize.xs, color: colors.danger },
+  scopeError: { gap: spacing.sm, alignItems: 'flex-start' },
 });

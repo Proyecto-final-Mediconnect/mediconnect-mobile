@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider, useSession } from '../features/auth/session';
 import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
 import { ClinicalRecordScreen } from '../screens/ClinicalRecordScreen';
+import { EmergencyDataScreen } from '../screens/EmergencyDataScreen';
 import { EntryDetailScreen } from '../screens/EntryDetailScreen';
 import { LegalConsentScreen } from '../screens/LegalConsentScreen';
 import { AppointmentDetailScreen } from '../screens/AppointmentDetailScreen';
@@ -111,6 +112,7 @@ function RootStack(): React.JSX.Element {
             <Stack.Screen name="Paciente" component={PatientTabs} />
             <Stack.Screen name="HistoriaClinica" component={ClinicalRecordScreen} />
             <Stack.Screen name="EntradaHC" component={EntryDetailScreen} />
+            <Stack.Screen name="DatosEmergencia" component={EmergencyDataScreen} />
             <Stack.Screen name="Profesional" component={ProfessionalProfileScreen} />
             <Stack.Screen name="Reservar" component={BookAppointmentScreen} />
             <Stack.Screen name="Pago" component={PaymentScreen} />

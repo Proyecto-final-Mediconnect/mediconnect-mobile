@@ -27,6 +27,8 @@ export type RootStackParamList = {
   Paciente: NavigatorScreenParams<PatientTabParamList>;
   HistoriaClinica: undefined;
   EntradaHC: { id: string };
+  /** Cargar y editar los datos de emergencia del MediPass (ENG-136). */
+  DatosEmergencia: undefined;
   /** Perfil público de un profesional (ENG-132). */
   Profesional: { id: string };
   /** Disponibilidad y reserva con un profesional (ENG-133). */
