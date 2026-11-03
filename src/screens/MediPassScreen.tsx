@@ -106,6 +106,22 @@ export function MediPassScreen(): React.JSX.Element {
               if (scope.data) guardarScope.mutate({ ...scope.data, [bloque]: !scope.data[bloque] });
             }}
           />
+          {/* Sin el scope no hay interruptores: que se sepa por qué, en vez de
+              dejar creer que todo lo que figura arriba se puede ocultar. */}
+          {scope.isError ? (
+            <View style={styles.scopeError}>
+              <Text accessibilityRole="alert" style={styles.error}>
+                No pudimos cargar qué bloques ve quien escanea, así que por ahora no podés ocultar
+                ninguno.
+              </Text>
+              <Button
+                label={scope.isFetching ? 'Cargando…' : 'Reintentar'}
+                variant="secondary"
+                disabled={scope.isFetching}
+                onPress={() => void scope.refetch()}
+              />
+            </View>
+          ) : null}
           {guardarScope.isError ? (
             <Text style={styles.error}>No pudimos guardar el cambio, probá de nuevo.</Text>
           ) : null}
@@ -162,4 +178,5 @@ const styles = StyleSheet.create({
     color: colors.onNightSoft,
   },
   error: { fontFamily: fonts.semibold, fontSize: fontSize.xs, color: colors.danger },
+  scopeError: { gap: spacing.sm, alignItems: 'flex-start' },
 });

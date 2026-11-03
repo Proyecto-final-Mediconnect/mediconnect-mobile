@@ -17,7 +17,12 @@ const ACCESOS_KEY = ['medipass', 'accesses'] as const;
 /**
  * El código vigente (ENG-72). Se vuelve a pedir justo cuando vence, así el QR
  * nunca muestra uno que ya no sirve. `enabled` en falso mientras está oculto:
- * con la app en segundo plano no hay nada que mostrar ni que renovar.
+ * con la app en segundo plano o en otra pestaña no hay nada que mostrar ni que
+ * renovar.
+ *
+ * El vencimiento se compara con el reloj del teléfono. Los teléfonos lo
+ * sincronizan por red, así que el desfase es de segundos; y quien decide si un
+ * código vale es el backend al canjearlo, no la app.
  */
 export function useMyMediPassCode(enabled: boolean) {
   return useQuery({
@@ -77,5 +82,8 @@ export function useSaveScope() {
       if (contexto?.anterior) queryClient.setQueryData(SCOPE_KEY, contexto.anterior);
     },
     onSuccess: (guardado) => queryClient.setQueryData(SCOPE_KEY, guardado),
+    // Al final, falle o no, se relee: si el PUT falló o cambió desde la web, la
+    // caché vuelve a ser lo que dice el servidor.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: SCOPE_KEY }),
   });
 }

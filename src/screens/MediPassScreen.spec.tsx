@@ -1,7 +1,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import * as Brightness from 'expo-brightness';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { codigoDemo } from '../mocks/medipass';
 import { API_URL } from '../test/msw-server';
@@ -21,6 +21,10 @@ async function abrirMediPass(...respuestas: Parameters<typeof renderApp>): Promi
 }
 
 describe('Mi MediPass (ENG-117)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('ya no es una vista previa: muestra los datos del backend', async () => {
     await abrirMediPass();
 
@@ -129,5 +133,73 @@ describe('Mi MediPass (ENG-117)', () => {
     fireEvent.click(interruptor);
 
     expect(await screen.findByText('No lo ve quien escanea tu código')).toBeInTheDocument();
+  });
+  // Un código vencido no se puede quedar en pantalla porque falló la renovación.
+  it('si al vencer no puede renovar el código, no muestra el viejo y deja reintentar', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let pedidos = 0;
+    await abrirMediPass(
+      http.get(`${API_URL}/medipass/me`, () => {
+        pedidos += 1;
+        if (pedidos === 1) {
+          return HttpResponse.json({
+            codigo: 'AB12CD34',
+            expiraEl: new Date(Date.now() + 2_000).toISOString(),
+          });
+        }
+        if (pedidos === 2) return HttpResponse.json({ message: 'Error' }, { status: 503 });
+        return HttpResponse.json(codigoDemo());
+      }),
+    );
+    expect(await screen.findByText('AB12-CD34')).toBeInTheDocument();
+
+    await act(() => vi.advanceTimersByTimeAsync(6_000));
+
+    expect(await screen.findByText('No pudimos renovar tu código.')).toBeInTheDocument();
+    expect(screen.queryByText('AB12-CD34')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('qr-value')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Probá de nuevo' }));
+
+    expect(await screen.findByTestId('qr-value')).toBeInTheDocument();
+  });
+
+  it('no pide el código mientras está en otra pestaña y lo vuelve a pedir al volver', async () => {
+    let pedidos = 0;
+    await abrirMediPass(
+      http.get(`${API_URL}/medipass/me`, () => {
+        pedidos += 1;
+        return HttpResponse.json(codigoDemo());
+      }),
+    );
+    await screen.findByTestId('qr-value');
+    expect(pedidos).toBe(1);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Turnos' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'MediPass' }));
+
+    await waitFor(() => expect(pedidos).toBe(2));
+    expect(await screen.findByTestId('qr-value')).toBeInTheDocument();
+  });
+
+  it('si no carga el scope lo avisa en vez de mostrar el bloque sin interruptores', async () => {
+    let falla = true;
+    await abrirMediPass(
+      http.get(`${API_URL}/medipass/me/scope`, () =>
+        falla
+          ? HttpResponse.json({ message: 'Error' }, { status: 500 })
+          : HttpResponse.json({ vital: true, medicacion: true, condiciones: true, contacto: true }),
+      ),
+    );
+
+    expect(
+      await screen.findByText(/No pudimos cargar qué bloques ve quien escanea/),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText('Mostrar medicación a quien escanea')).not.toBeInTheDocument();
+
+    falla = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByLabelText('Mostrar medicación a quien escanea')).toBeInTheDocument();
   });
 });

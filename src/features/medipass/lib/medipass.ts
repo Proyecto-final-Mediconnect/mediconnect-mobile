@@ -35,6 +35,13 @@ export function proximaConsultaDelCodigo(expiraEl: string | null, now: Date): nu
  * Lo que va en el QR: la ficha de emergencia de la web con el código. Es la
  * misma URL que arma la web, así que cualquier cámara la abre en el navegador
  * de quien escanea, sin instalar nada.
+ *
+ * El código va en la query string porque es el contrato que ya lee la web
+ * (`EmergencyViewPage`, `?codigo=`). Lo que acota la exposición: vence a los
+ * 5 minutos (rota el servidor), la web lo canjea con `POST /medipass/sessions`
+ * al abrir la ficha y después lo saca de la URL, y sin el nombre de quien mira
+ * no abre nada. Pasarlo al fragmento (`#codigo=`) es un cambio de las dos
+ * puntas a la vez.
  */
 export function emergencyUrl(webUrl: string, codigo: string): string {
   return `${webUrl}/medipass/emergencia?codigo=${encodeURIComponent(codigo)}`;

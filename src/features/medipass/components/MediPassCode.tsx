@@ -1,5 +1,6 @@
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
@@ -20,7 +21,11 @@ import { cuentaRegresiva, emergencyUrl, formatCodigo, msHasta, ROTACION_MS } fro
  * **Si la app pasa a segundo plano, el código se oculta y se descarta**
  * (ENG-117): un teléfono que queda desbloqueado sobre una mesa no tiene que
  * seguir mostrando una llave a la historia clínica, y el código no se guarda en
- * ningún lado. Al tocar "Mostrar código" se pide de nuevo.
+ * ningún lado. Al tocar "Mostrar código" se pide de nuevo. Lo mismo, sin
+ * botón, al irse a otra pestaña: no se piden códigos que nadie mira.
+ *
+ * Un código vencido no se muestra nunca: si la renovación falla, se dice eso y
+ * se ofrece reintentar, en vez de dejar en pantalla uno que ya no sirve.
  *
  * El QR va sobre blanco puro y con margen: es lo que necesita otro teléfono para
  * leerlo con la luz de una guardia.
@@ -32,7 +37,12 @@ export function MediPassCode(): React.JSX.Element {
   const ahora = useNow(1000);
   const [visible, setVisible] = useState(true);
   const estadoPrevio = useRef(AppState.currentState);
-  const codigo = useMyMediPassCode(visible);
+  const enfocada = useIsFocused();
+  const codigo = useMyMediPassCode(visible && enfocada);
+
+  useFocusEffect(
+    useCallback(() => () => queryClient.removeQueries({ queryKey: CODIGO_KEY }), [queryClient]),
+  );
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (siguiente) => {
@@ -84,45 +94,41 @@ export function MediPassCode(): React.JSX.Element {
     );
   }
 
-  if (codigo.isError && !codigo.data) {
+  const { data } = codigo;
+  const restante = data ? msHasta(data.expiraEl, ahora) : 0;
+
+  if (!data || restante === 0) {
     return (
       <View style={styles.card}>
         <View style={styles.oculto}>
-          <ErrorState message={codigo.error.message} onRetry={() => void codigo.refetch()} />
+          {codigo.isError && !codigo.isFetching ? (
+            <ErrorState
+              message={data ? 'No pudimos renovar tu código.' : codigo.error.message}
+              onRetry={() => void codigo.refetch()}
+            />
+          ) : (
+            <LoadingState label={data ? 'Renovando el código…' : 'Generando tu código…'} />
+          )}
         </View>
       </View>
     );
   }
 
-  if (!codigo.data) {
-    return (
-      <View style={styles.card}>
-        <View style={styles.oculto}>
-          <LoadingState label="Generando tu código…" />
-        </View>
-      </View>
-    );
-  }
-
-  const restante = msHasta(codigo.data.expiraEl, ahora);
-  const texto = formatCodigo(codigo.data.codigo);
+  const texto = formatCodigo(data.codigo);
 
   return (
     <View style={styles.card}>
       <View accessibilityRole="image" accessibilityLabel={`Código QR del MediPass ${texto}`}>
         {qr}
       </View>
-      <Text selectable style={styles.codigo}>
-        {texto}
-      </Text>
+      {/* Sin `selectable`: se dicta, no se copia, y el portapapeles lo leen otras apps. */}
+      <Text style={styles.codigo}>{texto}</Text>
       <View style={styles.barra}>
         <View
           style={[styles.relleno, { width: `${Math.min(100, (restante / ROTACION_MS) * 100)}%` }]}
         />
       </View>
-      <Text style={styles.cuenta}>
-        {restante > 0 ? `Se renueva en ${cuentaRegresiva(restante)}` : 'Renovando el código…'}
-      </Text>
+      <Text style={styles.cuenta}>Se renueva en {cuentaRegresiva(restante)}</Text>
     </View>
   );
 }
