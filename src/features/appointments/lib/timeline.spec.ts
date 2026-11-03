@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { mensajesCapturados } from '../../../../test-stubs/sentry-react-native';
 
 import type { Appointment } from '../types';
 import { appointmentTimeline, refundStep } from './timeline';
@@ -110,6 +112,75 @@ describe('appointmentTimeline', () => {
 
       expect(pasos).not.toContain('Te devolvimos el pago');
       expect(pasos.at(-1)).toBe('Te devolvimos $18.000');
+    });
+
+    it('un liberado que estaba pago muestra el pago y lo devuelto', () => {
+      const pasos = titulos(
+        appointmentTimeline(
+          turno('LIBERADO', { refundState: { amount: 18000, status: 'PROCESADO' } }),
+          null,
+          AHORA,
+        ),
+      );
+
+      expect(pasos).toEqual([
+        'Reservaste el turno',
+        'Pagaste $18.000 con MercadoPago',
+        'Se liberó el horario porque no se pagó a tiempo',
+        'Te devolvimos $18.000',
+      ]);
+    });
+
+    it('con un backend anterior (sin refundState) no inventa pago ni reembolso', () => {
+      const pasos = titulos(appointmentTimeline(cancelado(undefined), null, AHORA));
+
+      expect(pasos).toEqual(['Reservaste el turno', 'Se canceló el turno']);
+    });
+
+    it('un refundState residual fuera de cancelado/liberado no agrega "pagaste"', () => {
+      const pasos = titulos(
+        appointmentTimeline(
+          turno('RESERVADO_SIN_PAGAR', { refundState: { amount: 18000, status: 'PROCESADO' } }),
+          null,
+          AHORA,
+        ),
+      );
+
+      expect(pasos.join(' ')).not.toMatch(/Pagaste|devolvi/);
+    });
+
+    it('un monto en 0 no es reembolso y uno roto no se muestra como $NaN', () => {
+      expect(refundStep(cancelado({ amount: 0, status: 'PROCESADO' }))).toBeNull();
+      expect(refundStep(cancelado({ amount: Number.NaN, status: 'PENDIENTE' }))).toEqual({
+        title: 'Pedimos el reembolso',
+        tone: 'current',
+      });
+    });
+
+    it('un parcial con centavos los muestra', () => {
+      expect(refundStep(cancelado({ amount: 9250.5, status: 'PROCESADO' }))?.title).toBe(
+        'Te devolvimos $9.250,50',
+      );
+    });
+
+    describe('un estado desconocido', () => {
+      beforeEach(() => {
+        mensajesCapturados.length = 0;
+      });
+
+      it('no hace desaparecer el reembolso y avisa a Sentry sin el monto', () => {
+        const refund = { amount: 5000, status: 'EN_REVISION' } as unknown as NonNullable<
+          Appointment['refundState']
+        >;
+
+        expect(refundStep(cancelado(refund))).toEqual({
+          title: 'Tenés un reembolso de $5.000 en proceso',
+          tone: 'current',
+        });
+        expect(mensajesCapturados).toHaveLength(1);
+        expect(JSON.stringify(mensajesCapturados[0])).not.toMatch(/5000|5\.000|"t"/);
+        expect(JSON.stringify(mensajesCapturados[0])).toContain('EN_REVISION');
+      });
     });
 
     it('un cancelado sin pago no muestra nada de reembolso', () => {

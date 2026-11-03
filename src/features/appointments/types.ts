@@ -36,6 +36,8 @@ export interface Appointment {
 
 /** El reembolso de un turno, tal como quedó registrado (ENG-174). */
 export interface AppointmentRefundState {
+  /** El total de los reembolsos del turno, en pesos. El backend suma los
+   *  `Decimal` y lo manda ya como número (backend#89), no como string. */
   amount: number;
   status: RefundOutcome;
 }

@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/react-native';
+
 import { enArgentina } from '../../../shared/lib/argentina-time';
 import type { PaymentStatusView } from '../../payments/types';
 import type { Appointment } from '../types';
@@ -36,14 +38,29 @@ function cuando(iso: string | null | undefined): string | null {
 export function refundStep(appointment: Appointment): { title: string; tone: StepTone } | null {
   const refund = appointment.refundState;
   if (!refund) return null;
-  const monto = formatPrice(refund.amount);
+  // `amount` es el total de los reembolsos del turno, ya como número (backend#89).
+  // Un monto roto no se muestra como "$NaN"; uno en 0 es que no hubo nada que devolver.
+  const conMonto = Number.isFinite(refund.amount);
+  if (conMonto && refund.amount <= 0) return null;
+  const de = conMonto ? ` de ${formatPrice(refund.amount)}` : '';
   switch (refund.status) {
     case 'PENDIENTE':
-      return { title: `Pedimos el reembolso de ${monto}`, tone: 'current' };
+      return { title: `Pedimos el reembolso${de}`, tone: 'current' };
     case 'PROCESADO':
-      return { title: `Te devolvimos ${monto}`, tone: 'done' };
+      return {
+        title: conMonto ? `Te devolvimos ${formatPrice(refund.amount)}` : 'Te hicimos el reembolso',
+        tone: 'done',
+      };
     case 'RECHAZADO':
-      return { title: `No se pudo hacer el reembolso de ${monto}`, tone: 'bad' };
+      return { title: `No se pudo hacer el reembolso${de}`, tone: 'bad' };
+    default:
+      // El estado viene del backend: uno nuevo no tiene que hacer desaparecer el
+      // reembolso. Se avisa a Sentry solo con el estado, sin monto ni turno.
+      Sentry.captureMessage('Estado de reembolso desconocido', {
+        level: 'warning',
+        tags: { refundStatus: String(refund.status) },
+      });
+      return { title: `Tenés un reembolso${de} en proceso`, tone: 'current' };
   }
 }
 
@@ -70,7 +87,7 @@ export function appointmentTimeline(
   const reembolso = refundStep(appointment);
   if (
     pago === 'APROBADO' ||
-    (reembolso && pago !== 'RECHAZADO') ||
+    (reembolso && pago !== 'RECHAZADO' && (status === 'CANCELADO' || status === 'LIBERADO')) ||
     (!pago && ['CONFIRMADO', 'COMPLETADO', 'NO_ASISTIO'].includes(status))
   ) {
     pasos.push({

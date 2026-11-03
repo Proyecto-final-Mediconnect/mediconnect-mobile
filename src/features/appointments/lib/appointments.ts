@@ -137,11 +137,18 @@ export function formatMonth(yearMonth: string): string {
   return `${mes.charAt(0).toUpperCase()}${mes.slice(1)} ${y}`;
 }
 
-/** `18500` → `$18.500`. A mano y no con `Intl`, por lo mismo que la hora. */
+/**
+ * `18500` → `$18.500`; `9250.5` → `$9.250,50`. A mano y no con `Intl`, por lo
+ * mismo que la hora. Siempre en pesos: hoy la plataforma cobra solo en ARS (el
+ * `currency` de turnos y pagos es `ARS` por defecto en el backend).
+ */
 export function formatPrice(amount: number): string {
-  return `$${Math.round(amount)
+  const centavos = Math.round(amount * 100);
+  const enteros = Math.trunc(centavos / 100)
     .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const resto = Math.abs(centavos % 100);
+  return resto === 0 ? `$${enteros}` : `$${enteros},${resto.toString().padStart(2, '0')}`;
 }
 
 export function professionalName(appointment: Appointment): string {
