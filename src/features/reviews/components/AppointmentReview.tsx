@@ -13,8 +13,9 @@ import { Stars } from './Stars';
  * La reseña de una consulta que ya se hizo, en el detalle del turno (ENG-80): el
  * botón para dejarla o, si ya la dejó, en qué quedó.
  *
- * Mientras cargan las reseñas, o si fallan, no se muestra nada, igual que en la
- * web: ofrecer "Dejar una reseña" sin saber si ya la dejó terminaría en un 409.
+ * Mientras cargan las reseñas no se muestra nada, y si fallan, un aviso con
+ * "Reintentar" y no el botón: ofrecer "Dejar una reseña" sin saber si ya la dejó
+ * terminaría en un 409.
  */
 export function AppointmentReview({
   appointmentId,
@@ -26,7 +27,26 @@ export function AppointmentReview({
   const mias = useMyReviews();
   const [abierta, setAbierta] = useState(false);
 
-  if (mias.isPending || mias.isError) return null;
+  if (mias.isPending) return null;
+  if (mias.isError) {
+    return (
+      <>
+        <Text style={styles.seccion}>TU RESEÑA</Text>
+        <View style={styles.card}>
+          <Text accessibilityRole="alert" style={styles.motivo}>
+            No pudimos cargar tu reseña.
+          </Text>
+          <Button
+            label={mias.isFetching ? 'Cargando…' : 'Reintentar'}
+            variant="ghost"
+            disabled={mias.isFetching}
+            onPress={() => void mias.refetch()}
+            fullWidth
+          />
+        </View>
+      </>
+    );
+  }
   const resena = mias.data.find((r) => r.appointmentId === appointmentId);
 
   return (

@@ -53,9 +53,21 @@ export function ProfessionalReviews({
         {reviews.map((r, i) => (
           <Resena key={r.id} resena={r} separada={i > 0} />
         ))}
+        {/* Si falla "Ver más", que se sepa: si no, parece que no hay más. */}
+        {resenas.isError && !resenas.isFetchingNextPage ? (
+          <Text accessibilityRole="alert" style={styles.error}>
+            No pudimos cargar más reseñas.
+          </Text>
+        ) : null}
         {resenas.hasNextPage ? (
           <Button
-            label={resenas.isFetchingNextPage ? 'Cargando…' : 'Ver más reseñas'}
+            label={
+              resenas.isFetchingNextPage
+                ? 'Cargando…'
+                : resenas.isError
+                  ? 'Reintentar'
+                  : 'Ver más reseñas'
+            }
             variant="ghost"
             disabled={resenas.isFetchingNextPage}
             onPress={() => void resenas.fetchNextPage()}

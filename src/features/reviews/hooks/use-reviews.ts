@@ -23,7 +23,10 @@ export function useCreateReview(appointmentId: string) {
     mutationFn: (review: NewReview) => createReview(appointmentId, review),
     // Sin reintento: hay una reseña por turno, y un segundo envío daría 409.
     retry: false,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: MY_REVIEWS_KEY }),
+    // También si falla: un 409 es que ya la había dejado (desde otro dispositivo o
+    // la web), y releer `/reviews/me` hace que la tarjeta muestre esa reseña en
+    // vez de seguir ofreciendo dejar una.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: MY_REVIEWS_KEY }),
   });
 }
 
@@ -38,12 +41,22 @@ export function useProfessionalReviews(professionalId: string) {
     queryFn: ({ pageParam }) => fetchProfessionalReviews(professionalId, pageParam),
     initialPageParam: 1,
     getNextPageParam: (ultima) => (ultima.hasMore ? ultima.page + 1 : undefined),
+    // Son públicas y cambian poco: así volver al perfil no vuelve a pedir, en
+    // fila, todas las páginas ya cargadas.
+    staleTime: 5 * 60_000,
   });
 
-  const reviews = useMemo(
-    () => query.data?.pages.flatMap((pagina) => pagina.reviews) ?? [],
-    [query.data],
-  );
+  // La paginación es por número de página: si se aprueba una reseña entre un
+  // "Ver más" y el siguiente, la última de una página vuelve en la otra. Se
+  // descarta la repetida para no mostrarla dos veces (ni repetir la `key`).
+  const reviews = useMemo(() => {
+    const vistas = new Set<string>();
+    return (query.data?.pages.flatMap((pagina) => pagina.reviews) ?? []).filter((r) => {
+      if (vistas.has(r.id)) return false;
+      vistas.add(r.id);
+      return true;
+    });
+  }, [query.data]);
   /** El promedio sale de la primera página: es el mismo en todas. */
   const rating = query.data?.pages[0]?.rating ?? null;
 

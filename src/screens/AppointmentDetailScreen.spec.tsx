@@ -110,6 +110,49 @@ describe('La reseña de una consulta (ENG-80)', () => {
     ).toBeInTheDocument();
   });
 
+  it('con un 409 relee sus reseñas: la tarjeta deja de ofrecer reseñar', async () => {
+    let yaLaDejo = false;
+    await abrirConsultaHecha(
+      http.get(`${API_URL}/reviews/me`, () => HttpResponse.json(yaLaDejo ? [resena()] : [])),
+      http.post(`${API_URL}/appointments/:id/review`, () => {
+        // La había dejado desde la web mientras esta pantalla estaba abierta.
+        yaLaDejo = true;
+        return HttpResponse.json(
+          { message: 'Ya dejaste una reseña para esta consulta.' },
+          { status: 409 },
+        );
+      }),
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Dejar una reseña' }));
+    fireEvent.click(await screen.findByRole('radio', { name: '5 estrellas, Excelente' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar reseña' }));
+
+    expect(
+      await screen.findByText('Ya dejaste una reseña para esta consulta.'),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('En revisión')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dejar una reseña' })).not.toBeInTheDocument();
+  });
+
+  it('si no carga sus reseñas, lo dice y deja reintentar', async () => {
+    let falla = true;
+    await abrirConsultaHecha(
+      http.get(`${API_URL}/reviews/me`, () =>
+        falla ? HttpResponse.json({ message: 'Error' }, { status: 500 }) : HttpResponse.json([]),
+      ),
+    );
+
+    expect(await screen.findByText('No pudimos cargar tu reseña.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dejar una reseña' })).not.toBeInTheDocument();
+
+    falla = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByRole('button', { name: 'Dejar una reseña' })).toBeInTheDocument();
+    expect(screen.queryByText('No pudimos cargar tu reseña.')).not.toBeInTheDocument();
+  });
+
   it('una reseña que no se publicó muestra el estado y el motivo', async () => {
     await abrirConsultaHecha(
       http.get(`${API_URL}/reviews/me`, () =>

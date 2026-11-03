@@ -83,6 +83,43 @@ describe('Las reseñas en el perfil del profesional (ENG-82)', () => {
     expect(paginas).toEqual(['1', '2']);
   });
 
+  it('si falla "Ver más" lo avisa y deja reintentar, sin repetir reseñas', async () => {
+    let fallaLaSegunda = true;
+    await abrirPerfilDeOlivares(
+      http.get(`${API_URL}/professionals/:id/reviews`, ({ request }) => {
+        const page = new URL(request.url).searchParams.get('page');
+        if (page === '1') {
+          return HttpResponse.json({
+            reviews: [resena('r1'), resena('r2', { author: 'Lucía P.' })],
+            rating: RATING,
+            page: 1,
+            hasMore: true,
+          });
+        }
+        if (fallaLaSegunda) return HttpResponse.json({ message: 'Error' }, { status: 500 });
+        // Se aprobó una nueva en el medio: la segunda página repite `r2`.
+        return HttpResponse.json({
+          reviews: [resena('r2', { author: 'Lucía P.' }), resena('r3', { author: 'Sergio M.' })],
+          rating: RATING,
+          page: 2,
+          hasMore: false,
+        });
+      }),
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver más reseñas' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar más reseñas.');
+    expect(screen.getByText('Lucía P.')).toBeInTheDocument();
+
+    fallaLaSegunda = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('Sergio M.')).toBeInTheDocument();
+    expect(screen.getAllByText('Lucía P.')).toHaveLength(1);
+    expect(screen.queryByText('No pudimos cargar más reseñas.')).not.toBeInTheDocument();
+  });
+
   it('sin reseñas lo dice y explica quién puede dejar una', async () => {
     await abrirPerfilDeOlivares();
 
