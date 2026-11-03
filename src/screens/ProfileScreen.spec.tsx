@@ -15,7 +15,9 @@ describe('Mi perfil', () => {
   it('muestra quién tiene la sesión y los datos de su ficha', async () => {
     await abrirPerfil();
 
-    expect(screen.getByText('Marina Sosa')).toBeInTheDocument();
+    // La pestaña monta la pantalla en un tick posterior al click: en un runner
+    // lento, getByText la buscaba antes de que existiera.
+    expect(await screen.findByText('Marina Sosa')).toBeInTheDocument();
     expect(screen.getByText('paciente.demo@mediconnect.test')).toBeInTheDocument();
     expect(await screen.findByText('12 de abril de 1985')).toBeInTheDocument();
     expect(screen.getByText('30.418.992')).toBeInTheDocument();
