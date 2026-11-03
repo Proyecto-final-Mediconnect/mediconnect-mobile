@@ -15,6 +15,7 @@ import { AppointmentDetailScreen } from '../screens/AppointmentDetailScreen';
 import { PaymentScreen } from '../screens/PaymentScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { ProfessionalProfileScreen } from '../screens/ProfessionalProfileScreen';
+import { UploadDocumentScreen } from '../screens/UploadDocumentScreen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors } from '../shared/ui/theme';
 import { PatientTabs } from './PatientTabs';
@@ -117,6 +118,13 @@ function RootStack(): React.JSX.Element {
             <Stack.Screen name="Reservar" component={BookAppointmentScreen} />
             <Stack.Screen name="Pago" component={PaymentScreen} />
             <Stack.Screen name="Turno" component={AppointmentDetailScreen} />
+            {/* El formulario de un documento se abre como modal, igual que el
+                diálogo de la web (ENG-164). */}
+            <Stack.Screen
+              name="SubirDocumento"
+              component={UploadDocumentScreen}
+              options={{ presentation: 'modal' }}
+            />
           </Stack.Group>
         ) : (
           <Stack.Screen

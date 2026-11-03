@@ -57,8 +57,12 @@ async function send(
   path: string,
   { method, body, token }: { method: string; body?: unknown; token?: string },
 ): Promise<Response> {
+  // Un archivo (ENG-164) viaja como multipart y no como JSON. El `Content-Type`
+  // no se pone a mano: lo arma `fetch` con el boundary, y sin él el backend no
+  // sabe dónde termina cada parte.
+  const multipart = typeof FormData !== 'undefined' && body instanceof FormData;
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (body !== undefined && !multipart) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const controller = new AbortController();
@@ -67,7 +71,7 @@ async function send(
     return await fetch(apiUrl(path), {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : multipart ? (body as FormData) : JSON.stringify(body),
       signal: controller.signal,
     });
   } catch (err) {
@@ -179,6 +183,7 @@ async function endSession(generacion: number): Promise<void> {
 
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  /** Se manda como JSON, salvo un `FormData`, que va tal cual como multipart. */
   body?: unknown;
   /** Mensaje si el backend no manda uno propio. */
   fallbackMessage?: string;

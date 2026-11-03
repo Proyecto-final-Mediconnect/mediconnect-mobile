@@ -35,6 +35,9 @@ export default defineConfig({
       { find: /^expo-web-browser$/, replacement: stub('expo-web-browser.ts') },
       // Importa `expo`, que en jsdom no carga. ENG-181.
       { find: /^expo-status-bar$/, replacement: stub('expo-status-bar.tsx') },
+      // La cámara, la galería y el selector de archivos son nativos (ENG-164).
+      { find: /^expo-image-picker$/, replacement: stub('expo-image-picker.ts') },
+      { find: /^expo-document-picker$/, replacement: stub('expo-document-picker.ts') },
     ],
   },
   test: {
