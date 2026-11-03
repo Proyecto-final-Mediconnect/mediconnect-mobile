@@ -57,6 +57,7 @@ export function TextField({
           style={[
             styles.input,
             password && styles.inputPassword,
+            props.multiline && styles.inputMultiline,
             foco && styles.inputFocus,
             !!error && styles.inputError,
           ]}
@@ -103,6 +104,15 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   inputPassword: { paddingRight: 44 },
+  // Un texto largo (el comentario de una reseña): unas cuatro líneas a la vista
+  // y el texto arranca arriba, no centrado como en Android por defecto.
+  inputMultiline: {
+    minHeight: 112,
+    maxHeight: 180,
+    fontSize: fontSize.md,
+    lineHeight: 22,
+    textAlignVertical: 'top',
+  },
   inputFocus: { borderColor: colors.brand },
   inputError: { borderColor: colors.danger },
   toggle: {

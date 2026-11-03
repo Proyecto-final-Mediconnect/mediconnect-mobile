@@ -2,12 +2,13 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, fonts } from './theme';
 
-type Tone = 'ok' | 'warning' | 'neutral';
+type Tone = 'ok' | 'warning' | 'danger' | 'neutral';
 
 /**
  * El estado de un turno: un punto de color y el nombre ("Confirmado", "Sin
  * pagar"), en una píldora suave. El color dice si está todo bien, si falta algo
  * o si ya no está vigente; el texto lo confirma para quien no distingue colores.
+ * `danger` es para lo que se rechazó, como una reseña que no se publicó.
  */
 export function Chip({
   label,
@@ -42,17 +43,20 @@ const styles = StyleSheet.create({
 const fondos = StyleSheet.create({
   ok: { backgroundColor: colors.surfaceTeal },
   warning: { backgroundColor: colors.warm },
+  danger: { backgroundColor: colors.dangerSoft },
   neutral: { backgroundColor: colors.lineSoft },
 });
 
 const puntos = StyleSheet.create({
   ok: { backgroundColor: colors.brand },
   warning: { backgroundColor: colors.warmDot },
+  danger: { backgroundColor: colors.danger },
   neutral: { backgroundColor: colors.mutedSoft },
 });
 
 const textos = StyleSheet.create({
   ok: { color: colors.brandHover },
   warning: { color: colors.warmInk },
+  danger: { color: colors.danger },
   neutral: { color: colors.muted },
 });

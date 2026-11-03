@@ -1,4 +1,5 @@
 import type { CancellationPolicy } from '../cancellation-policy/policy';
+import type { RatingSummary } from '../reviews/types';
 
 /* Tipos del catálogo de profesionales: los mismos que la web (ENG-49, ENG-50). */
 
@@ -18,6 +19,11 @@ export interface ProfessionalCard {
   /** `null` mientras el profesional no publicó su precio. */
   price: number | null;
   currency: string;
+  /**
+   * El promedio de sus reseñas aprobadas (ENG-82); `null` sin reseñas.
+   * Opcional para tolerar un backend anterior a backend#92.
+   */
+  rating?: RatingSummary | null;
 }
 
 export interface Education {
@@ -44,6 +50,8 @@ export interface PublicProfessionalProfile {
    * backend anterior.
    */
   cancellationPolicy?: CancellationPolicy;
+  /** Como en el catálogo: opcional para un backend anterior a backend#92. */
+  rating?: RatingSummary | null;
 }
 
 export interface ProfessionalsPage {

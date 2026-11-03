@@ -6,6 +6,9 @@ import { ProfessionalAvatar } from '../features/catalog/components/ProfessionalA
 import { describePolicy } from '../features/cancellation-policy/policy';
 import { usePublicProfile } from '../features/catalog/hooks/use-catalog';
 import { fullName } from '../features/catalog/lib/catalog';
+import { ProfessionalReviews } from '../features/reviews/components/ProfessionalReviews';
+import { RatingPill } from '../features/reviews/components/RatingPill';
+import { hasRating } from '../features/reviews/lib/reviews';
 import type { RootStackParamList } from '../navigation/types';
 import { Button } from '../shared/ui/Button';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
@@ -58,6 +61,11 @@ export function ProfessionalProfileScreen(): React.JSX.Element {
             <Text style={styles.precio}>
               {p.price === null ? 'Precio a confirmar' : formatPrice(p.price)}
             </Text>
+            {hasRating(p.rating) ? (
+              <View style={styles.calificacion}>
+                <RatingPill rating={p.rating} />
+              </View>
+            ) : null}
           </View>
         </View>
         {/* Sin precio el backend no deja reservar (`appointments.price` es NOT
@@ -105,6 +113,9 @@ export function ProfessionalProfileScreen(): React.JSX.Element {
           ))}
         </View>
       ) : null}
+
+      {/* Al final: primero quién es y cuánto sale, después qué dicen los demás. */}
+      <ProfessionalReviews professionalId={p.id} />
     </Screen>
   );
 }
@@ -133,6 +144,7 @@ const styles = StyleSheet.create({
     color: colors.brandHover,
   },
   precio: { fontFamily: fonts.display, fontSize: fontSize.xxl, color: colors.brandDeep },
+  calificacion: { marginTop: spacing.xs },
   seccion: {
     gap: spacing.sm,
     backgroundColor: colors.white,

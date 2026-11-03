@@ -22,6 +22,7 @@ import { joinStateOf } from '../features/appointments/lib/join-window';
 import { appointmentTimeline, type TimelineStep } from '../features/appointments/lib/timeline';
 import { ProfessionalAvatar } from '../features/catalog/components/ProfessionalAvatar';
 import { getPaymentStatus } from '../features/payments/api';
+import { AppointmentReview } from '../features/reviews/components/AppointmentReview';
 import { canPay } from '../features/payments/lib/payment';
 import { JoinConsultationButton } from '../features/video/components/JoinConsultationButton';
 import type { RootStackParamList } from '../navigation/types';
@@ -137,6 +138,12 @@ export function AppointmentDetailScreen(): React.JSX.Element {
           </View>
         ) : null}
       </View>
+
+      {/* Solo una consulta que ya se hizo se puede reseñar (ENG-80): el backend
+          rechaza las demás con 409. */}
+      {turno.status === 'COMPLETADO' ? (
+        <AppointmentReview appointmentId={turno.id} professionalName={professionalName(turno)} />
+      ) : null}
 
       <Text style={styles.seccion}>QUÉ PASÓ</Text>
       <View style={[styles.card, styles.historia]}>
