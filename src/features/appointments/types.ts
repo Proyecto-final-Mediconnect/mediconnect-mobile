@@ -29,6 +29,17 @@ export interface Appointment {
    */
   createdAt?: string | null;
   cancelledAt?: string | null;
+  /** En qué quedó el reembolso de un turno cancelado o liberado que estaba pago
+   *  (ENG-174). `null` si no hubo; falta con un backend anterior. */
+  refundState?: AppointmentRefundState | null;
+}
+
+/** El reembolso de un turno, tal como quedó registrado (ENG-174). */
+export interface AppointmentRefundState {
+  /** El total de los reembolsos del turno, en pesos. El backend suma los
+   *  `Decimal` y lo manda ya como número (backend#89), no como string. */
+  amount: number;
+  status: RefundOutcome;
 }
 
 /* Disponibilidad y reserva (ENG-133): `GET /professionals/:id/availability` y `POST /appointments`. */

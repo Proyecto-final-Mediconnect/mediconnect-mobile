@@ -123,4 +123,10 @@ describe('formatPrice', () => {
     expect(formatPrice(18500)).toBe('$18.500');
     expect(formatPrice(950)).toBe('$950');
   });
+
+  it('muestra los centavos solo si los hay', () => {
+    expect(formatPrice(9250.5)).toBe('$9.250,50');
+    expect(formatPrice(9250.05)).toBe('$9.250,05');
+    expect(formatPrice(9250.0)).toBe('$9.250');
+  });
 });

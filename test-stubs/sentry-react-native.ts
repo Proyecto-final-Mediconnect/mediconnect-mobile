@@ -1,7 +1,7 @@
 /*
  * Stub de `@sentry/react-native` para Vitest: el SDK real carga módulos nativos
  * que en jsdom no existen. Registra las llamadas a `init` para que los tests
- * puedan verificar si se inicializó y con qué opciones.
+ * puedan verificar si se inicializó y con qué opciones, y los mensajes capturados.
  */
 export const llamadasAInit: unknown[] = [];
 
@@ -11,4 +11,11 @@ export function init(options: unknown): void {
 
 export function wrap<T>(componente: T): T {
   return componente;
+}
+
+export const mensajesCapturados: { message: string; context: unknown }[] = [];
+
+export function captureMessage(message: string, context?: unknown): string {
+  mensajesCapturados.push({ message, context });
+  return 'evento';
 }

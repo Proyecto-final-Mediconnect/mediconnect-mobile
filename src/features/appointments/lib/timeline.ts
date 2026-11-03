@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/react-native';
+
 import { enArgentina } from '../../../shared/lib/argentina-time';
 import type { PaymentStatusView } from '../../payments/types';
 import type { Appointment } from '../types';
@@ -29,6 +31,39 @@ function cuando(iso: string | null | undefined): string | null {
   return formatShortDay(date, time).replace(/^\S+ /, '');
 }
 
+/**
+ * En qué quedó el reembolso de un turno que se cayó (ENG-174). `null` si no hubo
+ * reembolso. Lo usan el detalle y la fila de "Mis turnos".
+ */
+export function refundStep(appointment: Appointment): { title: string; tone: StepTone } | null {
+  const refund = appointment.refundState;
+  if (!refund) return null;
+  // `amount` es el total de los reembolsos del turno, ya como número (backend#89).
+  // Un monto roto no se muestra como "$NaN"; uno en 0 es que no hubo nada que devolver.
+  const conMonto = Number.isFinite(refund.amount);
+  if (conMonto && refund.amount <= 0) return null;
+  const de = conMonto ? ` de ${formatPrice(refund.amount)}` : '';
+  switch (refund.status) {
+    case 'PENDIENTE':
+      return { title: `Pedimos el reembolso${de}`, tone: 'current' };
+    case 'PROCESADO':
+      return {
+        title: conMonto ? `Te devolvimos ${formatPrice(refund.amount)}` : 'Te hicimos el reembolso',
+        tone: 'done',
+      };
+    case 'RECHAZADO':
+      return { title: `No se pudo hacer el reembolso${de}`, tone: 'bad' };
+    default:
+      // El estado viene del backend: uno nuevo no tiene que hacer desaparecer el
+      // reembolso. Se avisa a Sentry solo con el estado, sin monto ni turno.
+      Sentry.captureMessage('Estado de reembolso desconocido', {
+        level: 'warning',
+        tags: { refundStatus: String(refund.status) },
+      });
+      return { title: `Tenés un reembolso${de} en proceso`, tone: 'current' };
+  }
+}
+
 export function appointmentTimeline(
   appointment: Appointment,
   payment: PaymentStatusView | null,
@@ -45,9 +80,14 @@ export function appointmentTimeline(
   const { status } = appointment;
 
   // El pago. Sin dato del pago, se deduce del estado: un turno confirmado se pagó.
+  // Con un reembolso registrado (ENG-174) también se pagó, y lo que se devolvió
+  // va en su propio paso después de la cancelación: así un parcial no se lee
+  // como "te devolvimos el pago" ni uno pendiente desaparece.
   const pago = payment?.status;
+  const reembolso = refundStep(appointment);
   if (
     pago === 'APROBADO' ||
+    (reembolso && pago !== 'RECHAZADO' && (status === 'CANCELADO' || status === 'LIBERADO')) ||
     (!pago && ['CONFIRMADO', 'COMPLETADO', 'NO_ASISTIO'].includes(status))
   ) {
     pasos.push({
@@ -76,6 +116,7 @@ export function appointmentTimeline(
       when: cuando(appointment.cancelledAt),
       tone: 'bad',
     });
+    if (reembolso) pasos.push({ key: 'reembolso', when: null, ...reembolso });
     return pasos;
   }
   if (status === 'LIBERADO') {
@@ -85,6 +126,7 @@ export function appointmentTimeline(
       when: null,
       tone: 'bad',
     });
+    if (reembolso) pasos.push({ key: 'reembolso', when: null, ...reembolso });
     return pasos;
   }
 
