@@ -52,7 +52,7 @@ describe('Ingresar a la sala (ENG-131)', () => {
 
   it('si no hay navegador in-app, la abre con el del sistema', async () => {
     salaQueResponde(() => HttpResponse.json(acceso()));
-    const sistema = vi.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const sistema = vi.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
     __control.fallarProxima = true;
     await montar();
 

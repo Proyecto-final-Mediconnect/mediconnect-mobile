@@ -10,6 +10,8 @@ const stub = (archivo: string): string =>
 // mapeando `react-native` -> `react-native-web`, el target web oficial de Expo.
 export default defineConfig({
   plugins: [react()],
+  // Lo define Metro en la app; desde el SDK 58 `expo` lo lee al importarse.
+  define: { __DEV__: 'true' },
   resolve: {
     alias: [
       { find: /^react-native$/, replacement: 'react-native-web' },
@@ -31,6 +33,8 @@ export default defineConfig({
       { find: /^@sentry\/react-native$/, replacement: stub('sentry-react-native.ts') },
       { find: /^react-native-svg$/, replacement: stub('react-native-svg.tsx') },
       { find: /^expo-web-browser$/, replacement: stub('expo-web-browser.ts') },
+      // Importa `expo`, que en jsdom no carga. ENG-181.
+      { find: /^expo-status-bar$/, replacement: stub('expo-status-bar.tsx') },
     ],
   },
   test: {

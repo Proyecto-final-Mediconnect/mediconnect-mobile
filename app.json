@@ -26,6 +26,20 @@
       "expo-status-bar",
       "expo-font",
       "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "MediConnect usa la cámara para sacar fotos de tus estudios y documentos médicos.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0e7c7b"
+        }
+      ],
       "@sentry/react-native"
     ],
     "owner": "mediconnecttesis"

@@ -1,0 +1,56 @@
+# Alertas y PRs de actualización de dependencias (Sprint 0 §5.5.5, ENG-166).
+# Semanal para no inundar de PRs; las de seguridad las abre GitHub igual, apenas
+# sale el aviso.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # Las versiones de Expo, React, React Native y las librerías nativas las fija
+    # el SDK, no semver: un salto de estas rompe Expo Go y EAS. Se suben juntas
+    # con `npx expo install --fix` al cambiar de SDK (ENG-181). Los parches siguen
+    # llegando y las alertas de seguridad se ven igual en la pestaña Security.
+    ignore:
+      - dependency-name: 'expo'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: 'expo-*'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: '@expo/*'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: 'react'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: 'react-dom'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: '@types/react'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: 'react-native'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: '@react-native/*'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: 'react-native-web'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: 'react-native-screens'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: 'react-native-safe-area-context'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: 'react-native-svg'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+      - dependency-name: '@sentry/react-native'
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
+    groups:
+      # React, ReactDOM y sus tipos van siempre juntos: un PR con uno solo no
+      # instala.
+      react:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - '@types/react'
+      # Las de desarrollo juntas en un solo PR: no llegan a producción.
+      desarrollo:
+        dependency-type: development
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

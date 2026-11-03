@@ -166,7 +166,7 @@ export function ProfessionalsScreen(): React.JSX.Element {
         ListFooterComponent={
           catalogo.isFetchingNextPage || completandoBusqueda ? (
             <ActivityIndicator color={colors.brand} style={styles.masCarga} />
-          ) : null
+          ) : undefined
         }
         refreshControl={
           <RefreshControl
@@ -177,7 +177,7 @@ export function ProfessionalsScreen(): React.JSX.Element {
           />
         }
         ListEmptyComponent={
-          completandoBusqueda ? null : (
+          completandoBusqueda ? undefined : (
             <EmptyState
               icon="search-outline"
               title="No hay profesionales con esos filtros"

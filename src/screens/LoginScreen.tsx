@@ -10,7 +10,8 @@ import {
   StyleSheet,
   Text,
   View,
-  type TextInput,
+  type ScrollViewInstance,
+  type TextInputInstance,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Polyline } from 'react-native-svg';
@@ -59,9 +60,9 @@ export function LoginScreen(): React.JSX.Element {
   const [errores, setErrores] = useState<LoginErrors>({});
   const [falla, setFalla] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const passwordRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
   const insets = useSafeAreaInsets();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const { abierto: teclado, margen: margenTeclado } = useKeyboardHeight();
 
   // Con el teclado arriba la franja queda solo con el logo y el formulario sube
