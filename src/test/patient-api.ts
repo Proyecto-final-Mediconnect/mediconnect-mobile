@@ -57,10 +57,14 @@ let scope = TODO_VISIBLE;
 let tarjetaActiva: string | null = null;
 export const TARJETA_DEMO = 'Ab3_-Ab3_-Ab3_-Ab3_-Ab3_-Ab3_-Ab3_-Ab3_-Ab3';
 
+/** Recordatorios por email del paciente de ejemplo (ENG-86): arrancan prendidos. */
+let recordatorios = true;
+
 export function servirDatosDelPaciente(): void {
   ficha = FICHA;
   scope = TODO_VISIBLE;
   tarjetaActiva = null;
+  recordatorios = true;
   server.use(
     http.get(`${API_URL}/medipass/me/emergency-card`, () =>
       HttpResponse.json({ activa: tarjetaActiva !== null, creadaEl: tarjetaActiva }),
@@ -72,6 +76,20 @@ export function servirDatosDelPaciente(): void {
     http.delete(`${API_URL}/medipass/me/emergency-card`, () => {
       tarjetaActiva = null;
       return new HttpResponse(null, { status: 204 });
+    }),
+    http.get(`${API_URL}/me/preferences`, () =>
+      HttpResponse.json({ recordatoriosPorEmail: recordatorios }),
+    ),
+    http.put(`${API_URL}/me/preferences`, async ({ request }) => {
+      recordatorios = ((await request.json()) as { recordatoriosPorEmail: boolean })
+        .recordatoriosPorEmail;
+      return HttpResponse.json({ recordatoriosPorEmail: recordatorios });
+    }),
+    http.delete(`${API_URL}/me`, async ({ request }) => {
+      const { confirmacion } = (await request.json()) as { confirmacion?: string };
+      return confirmacion === 'ELIMINAR MI CUENTA'
+        ? new HttpResponse(null, { status: 204 })
+        : HttpResponse.json({ message: 'Falta la frase.' }, { status: 400 });
     }),
     http.get(`${API_URL}/appointments/me`, () => HttpResponse.json(turnosDemo.listar())),
     http.get(`${API_URL}/medipass/me`, () => HttpResponse.json(codigoDemo())),

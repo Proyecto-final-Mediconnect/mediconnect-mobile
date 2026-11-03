@@ -31,6 +31,8 @@ export type RootStackParamList = {
   EntradaHC: { id: string };
   /** Cargar y editar los datos de emergencia del MediPass (ENG-136). */
   DatosEmergencia: undefined;
+  /** Los derechos ARCO de la Ley 25.326 (ENG-86). */
+  Privacidad: undefined;
   /** Perfil público de un profesional (ENG-132). */
   Profesional: { id: string };
   /** Disponibilidad y reserva con un profesional (ENG-133). */

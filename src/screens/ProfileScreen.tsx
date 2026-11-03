@@ -157,6 +157,13 @@ export function ProfileScreen(): React.JSX.Element {
           ultima
         />
       </View>
+      {/* Los derechos ARCO (ENG-86): descargar, oponerse y dar de baja. */}
+      <Button
+        label="Privacidad y datos"
+        variant="secondary"
+        onPress={() => navigation.navigate('Privacidad')}
+        fullWidth
+      />
 
       {/* Con confirmación: un toque de más en el perfil no puede obligar a
           volver a escribir la contraseña. */}
