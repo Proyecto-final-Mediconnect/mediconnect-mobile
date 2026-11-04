@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider, useSession } from '../features/auth/session';
 import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
 import { ClinicalRecordScreen } from '../screens/ClinicalRecordScreen';
+import { ConversationScreen } from '../screens/ConversationScreen';
 import { EmergencyDataScreen } from '../screens/EmergencyDataScreen';
 import { PrivacyScreen } from '../screens/PrivacyScreen';
 import { EntryDetailScreen } from '../screens/EntryDetailScreen';
@@ -15,6 +16,7 @@ import { LegalConsentScreen } from '../screens/LegalConsentScreen';
 import { AppointmentDetailScreen } from '../screens/AppointmentDetailScreen';
 import { PaymentScreen } from '../screens/PaymentScreen';
 import { LoginScreen } from '../screens/LoginScreen';
+import { MessagesScreen } from '../screens/MessagesScreen';
 import { ProfessionalProfileScreen } from '../screens/ProfessionalProfileScreen';
 import { UploadDocumentScreen } from '../screens/UploadDocumentScreen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
@@ -120,6 +122,8 @@ function RootStack(): React.JSX.Element {
             <Stack.Screen name="Reservar" component={BookAppointmentScreen} />
             <Stack.Screen name="Pago" component={PaymentScreen} />
             <Stack.Screen name="Turno" component={AppointmentDetailScreen} />
+            <Stack.Screen name="Mensajes" component={MessagesScreen} />
+            <Stack.Screen name="Conversacion" component={ConversationScreen} />
             {/* El formulario de un documento se abre como modal, igual que el
                 diálogo de la web (ENG-164). */}
             <Stack.Screen

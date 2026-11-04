@@ -41,6 +41,13 @@ export type RootStackParamList = {
   Pago: { appointmentId: string };
   /** El detalle de un turno propio, con lo que pasó desde la reserva. */
   Turno: { appointmentId: string };
+  /** La bandeja del chat con los profesionales (ENG-152). */
+  Mensajes: undefined;
+  /**
+   * Una conversación (ENG-152). Sin `conversationId` es un chat nuevo: se crea
+   * con el primer mensaje.
+   */
+  Conversacion: { contraparteId: string; nombre: string; conversationId?: string };
   /** Qué es el archivo recién elegido, antes de subirlo (ENG-164). */
   SubirDocumento: { file: PickedFile };
 };
