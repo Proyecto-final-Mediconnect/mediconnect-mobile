@@ -53,10 +53,26 @@ const TODO_VISIBLE = {
 /** Qué ve un consultante externo (ENG-149); arranca todo visible. */
 let scope = TODO_VISIBLE;
 
+/** La tarjeta de emergencia del paciente de ejemplo (ENG-176): arranca sin ninguna. */
+let tarjetaActiva: string | null = null;
+export const TARJETA_DEMO = 'Ab3_-Ab3_-Ab3_-Ab3_-Ab3_-Ab3_-Ab3_-Ab3_-Ab3';
+
 export function servirDatosDelPaciente(): void {
   ficha = FICHA;
   scope = TODO_VISIBLE;
+  tarjetaActiva = null;
   server.use(
+    http.get(`${API_URL}/medipass/me/emergency-card`, () =>
+      HttpResponse.json({ activa: tarjetaActiva !== null, creadaEl: tarjetaActiva }),
+    ),
+    http.post(`${API_URL}/medipass/me/emergency-card`, () => {
+      tarjetaActiva = '2026-11-04T15:00:00.000Z';
+      return HttpResponse.json({ tarjeta: TARJETA_DEMO, creadaEl: tarjetaActiva }, { status: 201 });
+    }),
+    http.delete(`${API_URL}/medipass/me/emergency-card`, () => {
+      tarjetaActiva = null;
+      return new HttpResponse(null, { status: 204 });
+    }),
     http.get(`${API_URL}/appointments/me`, () => HttpResponse.json(turnosDemo.listar())),
     http.get(`${API_URL}/medipass/me`, () => HttpResponse.json(codigoDemo())),
     http.get(`${API_URL}/medipass/me/vital`, () => HttpResponse.json(VITAL_DEMO)),

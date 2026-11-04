@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AccessList } from '../features/medipass/components/AccessList';
+import { EmergencyCardSection } from '../features/medipass/components/EmergencyCardSection';
 import { MediPassCode } from '../features/medipass/components/MediPassCode';
 import { VitalSummary } from '../features/medipass/components/VitalSummary';
 import { useFullBrightness } from '../features/medipass/hooks/use-full-brightness';
@@ -141,6 +142,9 @@ export function MediPassScreen(): React.JSX.Element {
           <LoadingState />
         </View>
       )}
+
+      <Text style={styles.seccion}>Tarjeta de emergencia</Text>
+      <EmergencyCardSection nombre={vital.data?.nombre ?? ''} />
 
       <ConfirmSheet
         visible={aRevocar !== null}

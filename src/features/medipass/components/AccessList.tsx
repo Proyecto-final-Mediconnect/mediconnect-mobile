@@ -38,7 +38,7 @@ export function AccessList({ accesses, now, onRevoke }: AccessListProps): React.
             <View style={styles.textos}>
               <Text style={styles.quien}>{acceso.consultante}</Text>
               <Text style={styles.contexto}>
-                Entró con tu código
+                {acceso.origen === 'TARJETA' ? 'Entró con tu tarjeta' : 'Entró con tu código'}
                 {acceso.matricula ? ` · Matrícula ${acceso.matricula}` : ''}
               </Text>
               <Text style={styles.vence}>Se corta sola en {cuentaRegresiva(resta)}</Text>
