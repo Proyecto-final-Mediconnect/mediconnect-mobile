@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { POLL_INTERVAL_MS } from '../features/chat/hooks/use-chat';
 import { CONVERSACION_GARCIA, chatDemo } from '../mocks/chat';
@@ -26,10 +26,6 @@ async function abrirConversacionConGarcia(): Promise<void> {
   // El primer mensaje de hoy: el último también está en la vista previa de la bandeja.
   await screen.findByText('Los vi, está todo bien.');
 }
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 describe('Mensajes (ENG-152)', () => {
   it('el inicio avisa cuántos mensajes hay sin leer', async () => {
@@ -131,19 +127,36 @@ describe('Una conversación (ENG-152)', () => {
     expect(campo).toHaveValue('Una pregunta');
   });
 
-  it('trae sola la respuesta de la profesional, sin recargar', async () => {
-    await abrirConversacionConGarcia();
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+  it(
+    'trae sola la respuesta de la profesional, sin recargar',
+    async () => {
+      await abrirConversacionConGarcia();
 
-    chatDemo.recibir(CONVERSACION_GARCIA, '¿Cómo seguiste con la presión?');
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS + 100);
+      chatDemo.recibir(CONVERSACION_GARCIA, '¿Cómo seguiste con la presión?');
+
+      // Con relojes reales: el intervalo de la consulta periódica ya está
+      // corriendo cuando llega el mensaje, así que se espera un ciclo entero.
+      // Aparece en la conversación y, al refrescarse, en la vista previa de la
+      // bandeja de atrás.
+      await waitFor(
+        () =>
+          expect(screen.getAllByText('¿Cómo seguiste con la presión?').length).toBeGreaterThan(0),
+        { timeout: POLL_INTERVAL_MS + 2_000 },
+      );
+    },
+    POLL_INTERVAL_MS + 6_000,
+  );
+
+  it('al volver de segundo plano trae enseguida lo que llegó', async () => {
+    await abrirConversacionConGarcia();
+    chatDemo.recibir(CONVERSACION_GARCIA, 'Te mandé la receta.');
+
+    // React Native Web arma `AppState` con la visibilidad de la página.
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
     });
 
-    // Aparece en la conversación y, al refrescarse, en la vista previa de la bandeja de atrás.
-    expect((await screen.findAllByText('¿Cómo seguiste con la presión?')).length).toBeGreaterThan(
-      0,
-    );
+    expect((await screen.findAllByText('Te mandé la receta.')).length).toBeGreaterThan(0);
   });
 
   it('un chat nuevo se crea con el primer mensaje', async () => {
