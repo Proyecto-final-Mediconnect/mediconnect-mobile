@@ -187,7 +187,7 @@ describe('La reseña de una consulta (ENG-80)', () => {
 });
 
 describe('Probar cámara y micrófono desde el turno', () => {
-  it('está en una consulta por venir y no en una que ya pasó', async () => {
+  it('está en una consulta todavía no abierta (TOO_EARLY), donde no se puede entrar', async () => {
     await renderApp();
     fireEvent.click(screen.getByRole('tab', { name: 'Turnos' }));
     const lista = within(await screen.findByTestId('lista-turnos'));
@@ -198,6 +198,7 @@ describe('Probar cámara y micrófono desde el turno', () => {
     await screen.findByText('Tu turno');
 
     expect(screen.getByRole('button', { name: 'Probar cámara y micrófono' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ingresar a la sala' })).not.toBeInTheDocument();
   });
 
   it('no aparece en una consulta completada', async () => {

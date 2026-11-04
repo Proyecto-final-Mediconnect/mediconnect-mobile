@@ -1,11 +1,22 @@
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { ApiError } from '../../../shared/lib/api-client';
 import { Button } from '../../../shared/ui/Button';
 import { colors, fonts, fontSize, spacing } from '../../../shared/ui/theme';
 import { createTestRoom } from '../api';
 import { openRoom } from '../hooks/use-join-consultation';
+
+/** Entre dos pedidos de sala pasan al menos estos ms: cada toque pedido de más se factura. */
+const COOLDOWN_MS = 10_000;
+
+/** Un 5xx trae texto de infraestructura del backend: al paciente se le muestra esto. */
+const MENSAJE_SERVIDOR = 'No pudimos preparar la prueba. Intentá de nuevo.';
+
+function mensajeDe(error: Error): string {
+  return error instanceof ApiError && error.status >= 500 ? MENSAJE_SERVIDOR : error.message;
+}
 
 /**
  * "Probar cámara y micrófono": abre una sala de Daily para una sola persona, en
@@ -23,8 +34,13 @@ import { openRoom } from '../hooks/use-join-consultation';
 export function DeviceCheckButton(): React.JSX.Element {
   const [errorApertura, setErrorApertura] = useState<string | null>(null);
   const crear = useMutation({ mutationFn: createTestRoom, gcTime: 0 });
+  const ultimoPedido = useRef<number | null>(null);
 
   function probar(): void {
+    const ahora = Date.now();
+    if (ultimoPedido.current !== null && ahora - ultimoPedido.current < COOLDOWN_MS) return;
+    ultimoPedido.current = ahora;
+
     setErrorApertura(null);
     crear.mutate(undefined, {
       onSuccess: (sala) => {
@@ -35,7 +51,7 @@ export function DeviceCheckButton(): React.JSX.Element {
     });
   }
 
-  const error = crear.isError ? crear.error.message : errorApertura;
+  const error = crear.isError ? mensajeDe(crear.error) : errorApertura;
 
   return (
     <View style={styles.contenedor}>
