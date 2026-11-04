@@ -18,7 +18,7 @@ import type { VideoConsultationAccess } from '../types';
  * Si no se puede abrir de ninguna forma, tira: el botón lo muestra en vez de
  * dejar un toque que no hace nada a minutos de la consulta.
  */
-export async function openRoom(access: VideoConsultationAccess): Promise<void> {
+export async function openRoom(access: Pick<VideoConsultationAccess, 'roomUrl'>): Promise<void> {
   try {
     await WebBrowser.openBrowserAsync(access.roomUrl, {
       // Pantalla completa y sin barra de lectura: es una llamada, no un artículo.

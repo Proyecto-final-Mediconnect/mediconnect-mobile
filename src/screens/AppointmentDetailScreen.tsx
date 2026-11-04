@@ -24,6 +24,7 @@ import { ProfessionalAvatar } from '../features/catalog/components/ProfessionalA
 import { getPaymentStatus } from '../features/payments/api';
 import { AppointmentReview } from '../features/reviews/components/AppointmentReview';
 import { canPay } from '../features/payments/lib/payment';
+import { DeviceCheckButton } from '../features/video/components/DeviceCheckButton';
 import { JoinConsultationButton } from '../features/video/components/JoinConsultationButton';
 import type { RootStackParamList } from '../navigation/types';
 import { refundOutcomeText } from '../features/cancellation-policy/policy';
@@ -95,7 +96,11 @@ export function AppointmentDetailScreen(): React.JSX.Element {
   }
 
   const pasos = appointmentTimeline(turno, pago.data ?? null, ahora);
-  const salaAbierta = joinStateOf(turno, ahora).kind === 'OPEN';
+  const sala = joinStateOf(turno, ahora).kind;
+  const salaAbierta = sala === 'OPEN';
+  // Con la consulta por delante —abierta o por abrirse— se puede probar la
+  // cámara y el micrófono antes, en una sala aparte.
+  const puedeProbar = sala === 'OPEN' || sala === 'TOO_EARLY';
   const profesional = turno.professional;
 
   return (
@@ -137,6 +142,8 @@ export function AppointmentDetailScreen(): React.JSX.Element {
             )}
           </View>
         ) : null}
+
+        {puedeProbar ? <DeviceCheckButton /> : null}
       </View>
 
       {/* Solo una consulta que ya se hizo se puede reseñar (ENG-80): el backend
