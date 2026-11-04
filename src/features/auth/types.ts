@@ -33,6 +33,16 @@ export interface MobileSession {
 }
 
 /**
+ * La respuesta del login cuando la cuenta tiene activa la verificación en dos
+ * pasos (ENG-88): todavía no hay sesión, solo el token para mandar con el código.
+ */
+export interface MobileMfaRequired {
+  user: { id: string; email?: string };
+  mfaRequired: true;
+  mfaToken: string;
+}
+
+/**
  * Nombre completo, con el email de respaldo: entre el registro y el alta de la
  * ficha el perfil todavía no tiene nombre. Mismo criterio que la web.
  */

@@ -1,17 +1,30 @@
 import { apiRequest } from '../../shared/lib/api-client';
-import type { LoginInput, MobileSession, SessionUser } from './types';
+import type { LoginInput, MobileMfaRequired, MobileSession, SessionUser } from './types';
 
 /**
  * `POST /auth/mobile/login`: la ruta de login de la app, que devuelve los tokens
  * en el body (la de la web los deja en cookies httpOnly). Credenciales
  * inválidas y email sin confirmar dan el mismo 401 genérico.
  */
-export function login(input: LoginInput): Promise<MobileSession> {
-  return apiRequest<MobileSession>('/auth/mobile/login', {
+export function login(input: LoginInput): Promise<MobileSession | MobileMfaRequired> {
+  return apiRequest<MobileSession | MobileMfaRequired>('/auth/mobile/login', {
     method: 'POST',
     body: { email: input.email.trim(), password: input.password },
     auth: false,
     fallbackMessage: 'No se pudo iniciar sesión. Intentá de nuevo.',
+  });
+}
+
+/**
+ * `POST /auth/mobile/mfa/verify` (ENG-88): el segundo paso del ingreso. Cambia
+ * el token del primer paso y el código de la app autenticadora por la sesión.
+ */
+export function verifyMfa(mfaToken: string, code: string): Promise<MobileSession> {
+  return apiRequest<MobileSession>('/auth/mobile/mfa/verify', {
+    method: 'POST',
+    body: { mfaToken, code },
+    auth: false,
+    fallbackMessage: 'No pudimos verificar el código. Intentá de nuevo.',
   });
 }
 
