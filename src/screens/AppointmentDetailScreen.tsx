@@ -47,6 +47,12 @@ type IconName = ComponentProps<typeof Ionicons>['name'];
  * El turno sale de la lista de "Mis turnos", que ya está en caché; el pago se
  * consulta aparte y, si falla, la historia se arma igual sin ese dato.
  */
+/**
+ * Turnos que habilitan el chat con el profesional: los pagos, hayan pasado o no.
+ * Es `CHAT_ENABLING_STATUSES` del backend, que rechaza el resto con 403.
+ */
+const HABILITAN_CHAT = new Set(['CONFIRMADO', 'COMPLETADO', 'NO_ASISTIO']);
+
 export function AppointmentDetailScreen(): React.JSX.Element {
   const navigation = useNavigation();
   const { params } = useRoute<RouteProp<RootStackParamList, 'Turno'>>();
@@ -157,6 +163,19 @@ export function AppointmentDetailScreen(): React.JSX.Element {
           <Button
             label={`Volver a reservar con ${profesional.firstName}`}
             onPress={() => navigation.navigate('Profesional', { id: profesional.id })}
+            fullWidth
+          />
+        ) : null}
+        {profesional && HABILITAN_CHAT.has(turno.status) ? (
+          <Button
+            label={`Escribirle a ${profesional.firstName}`}
+            variant="secondary"
+            onPress={() =>
+              navigation.navigate('Conversacion', {
+                contraparteId: profesional.id,
+                nombre: `${profesional.firstName} ${profesional.lastName}`.trim(),
+              })
+            }
             fullWidth
           />
         ) : null}
