@@ -230,7 +230,9 @@ describe('sesión del paciente', () => {
     it('si no se pueden borrar los tokens, no dice que cerró sesión', async () => {
       await iniciarSesionGuardada();
       await abrirApp();
-      await screen.findByRole('heading', { name: /^(Buen día|Buenas tardes|Buenas noches), Marina$/ });
+      await screen.findByRole('heading', {
+        name: /^(Buen día|Buenas tardes|Buenas noches), Marina$/,
+      });
       __secureStore.failDeletesOf('mediconnect.session.refreshToken');
 
       fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));

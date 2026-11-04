@@ -1,5 +1,5 @@
 import { enArgentina } from '../../../shared/lib/argentina-time';
-import type { ChatMessage } from '../types';
+import type { ChatAttachment, ChatMessage } from '../types';
 
 /**
  * Lógica del chat sin pantalla: unir mensajes, agruparlos y poner fechas.
@@ -133,9 +133,19 @@ export function totalUnread(conversations: { noLeidos: number }[]): number {
   return conversations.reduce((total, c) => total + c.noLeidos, 0);
 }
 
-/** El último mensaje para la bandeja: "Vos: …" si lo mandé yo. */
+/** "Foto" o "PDF": cómo se nombra un archivo del chat (ENG-102). */
+export function attachmentKind(attachment: Pick<ChatAttachment, 'tipo'>): string {
+  return attachment.tipo.startsWith('image/') ? 'Foto' : 'PDF';
+}
+
+/**
+ * El último mensaje para la bandeja: "Vos: …" si lo mandé yo. Uno que es solo
+ * un archivo dice qué es: "📎 Foto".
+ */
 export function previewOf(message: ChatMessage | null, myId: string): string {
   if (!message) return 'Todavía no hay mensajes';
-  const texto = message.contenido.replace(/\s+/g, ' ').trim();
+  const texto =
+    message.contenido.replace(/\s+/g, ' ').trim() ||
+    (message.adjunto ? `📎 ${attachmentKind(message.adjunto)}` : '');
   return message.autorId === myId ? `Vos: ${texto}` : texto;
 }

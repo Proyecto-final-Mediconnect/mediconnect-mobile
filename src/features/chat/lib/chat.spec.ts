@@ -116,6 +116,20 @@ describe('bandeja', () => {
     expect(previewOf(null, YO)).toBe('Todavía no hay mensajes');
   });
 
+  it('un mensaje que es solo un archivo dice qué es (ENG-102)', () => {
+    const foto = msg('1', ELLA, AHORA.toISOString(), {
+      contenido: '',
+      adjunto: { tipo: 'image/png', tamano: 10 },
+    });
+    const pdf = msg('2', YO, AHORA.toISOString(), {
+      contenido: '',
+      adjunto: { tipo: 'application/pdf', tamano: 10 },
+    });
+
+    expect(previewOf(foto, YO)).toBe('📎 Foto');
+    expect(previewOf(pdf, YO)).toBe('Vos: 📎 PDF');
+  });
+
   it('las iniciales son la primera y la última palabra', () => {
     expect(initialsOf('Ana María García')).toBe('AG');
     expect(initialsOf('valeria')).toBe('V');

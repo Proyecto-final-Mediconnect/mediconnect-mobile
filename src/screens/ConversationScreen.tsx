@@ -16,14 +16,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSessionUser } from '../features/auth/session';
 import { Avatar } from '../features/chat/components/Avatar';
+import { MessageAttachment } from '../features/chat/components/MessageAttachment';
 import {
   useConversations,
   useMarkConversationRead,
   useMessages,
+  useSendAttachment,
   useSendMessage,
   useStartConversation,
 } from '../features/chat/hooks/use-chat';
 import { formatHour, layoutMessages, type MessageRow } from '../features/chat/lib/chat';
+import { UploadSourceSheet } from '../features/patient-documents/components/UploadSourceSheet';
+import { formatSize } from '../features/patient-documents/lib/document-file';
+import { pickFile, type PickSource } from '../features/patient-documents/lib/pick-file';
+import type { PickedFile } from '../features/patient-documents/types';
 import type { RootStackParamList } from '../navigation/types';
 import { useKeyboardHeight } from '../shared/hooks/use-keyboard-height';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
@@ -87,6 +93,7 @@ function Conversation({
 }): React.JSX.Element {
   const mensajes = useMessages(conversationId);
   const enviar = useSendMessage(conversationId);
+  const enviarArchivo = useSendAttachment(conversationId);
   const marcarLeido = useMarkConversationRead(conversationId, myId);
 
   // Cuando hay algo de la otra persona sin leer —al abrir, o porque llegó con la
@@ -122,11 +129,26 @@ function Conversation({
       onLlegarAlPrincipio={() => {
         if (mensajes.hasNextPage && !mensajes.isFetchingNextPage) void mensajes.fetchNextPage();
       }}
-      enviando={enviar.isPending}
-      error={enviar.isError ? enviar.error.message : null}
-      onEnviar={(texto, limpiar) => enviar.mutate(texto, { onSuccess: limpiar })}
+      conversationId={conversationId}
+      enviando={enviar.isPending || enviarArchivo.isPending}
+      error={
+        enviar.isError
+          ? enviar.error.message
+          : enviarArchivo.isError
+            ? enviarArchivo.error.message
+            : null
+      }
+      onEnviar={(texto, limpiar) => {
+        enviarArchivo.reset();
+        enviar.mutate(texto, { onSuccess: limpiar });
+      }}
+      onAdjuntar={(file, texto, limpiar) => {
+        enviar.reset();
+        enviarArchivo.mutate({ file, contenido: texto || undefined }, { onSuccess: limpiar });
+      }}
       onEscribir={() => {
         if (enviar.isError) enviar.reset();
+        if (enviarArchivo.isError) enviarArchivo.reset();
       }}
     />
   );
@@ -188,7 +210,14 @@ interface ChatProps {
   error: string | null;
   /** Manda el texto. `limpiar` vacía el campo: solo se llama si el envío salió. */
   onEnviar: (texto: string, limpiar: () => void) => void;
+  /**
+   * Manda una foto o un PDF con el texto como comentario (ENG-102). Sin esto no
+   * hay botón de adjuntar: un chat nuevo arranca con texto.
+   */
+  onAdjuntar?: (file: PickedFile, texto: string, limpiar: () => void) => void;
   onEscribir: () => void;
+  /** Para pedir los archivos de los mensajes. Sin conversación todavía, no hay. */
+  conversationId?: string;
 }
 
 /** La lista de mensajes y el campo para escribir, sin saber si la conversación ya existe. */
@@ -200,18 +229,41 @@ function Chat({
   enviando,
   error,
   onEnviar,
+  onAdjuntar,
   onEscribir,
+  conversationId,
 }: ChatProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const { abierto: tecladoAbierto, margen } = useKeyboardHeight();
   const [texto, setTexto] = useState('');
+  const [archivo, setArchivo] = useState<PickedFile | null>(null);
+  const [eligiendo, setEligiendo] = useState(false);
+  const [problemaArchivo, setProblemaArchivo] = useState<string | null>(null);
   const limpio = texto.trim();
-  const puedeEnviar = limpio.length > 0 && limpio.length <= MESSAGE_MAX_LENGTH && !enviando;
+  const puedeEnviar =
+    (limpio.length > 0 || archivo !== null) && limpio.length <= MESSAGE_MAX_LENGTH && !enviando;
 
   const mandar = (): void => {
     if (!puedeEnviar) return;
-    onEnviar(limpio, () => setTexto(''));
+    if (archivo && onAdjuntar) {
+      onAdjuntar(archivo, limpio, () => {
+        setTexto('');
+        setArchivo(null);
+      });
+    } else {
+      onEnviar(limpio, () => setTexto(''));
+    }
   };
+
+  async function elegir(source: PickSource): Promise<void> {
+    setEligiendo(false);
+    setProblemaArchivo(null);
+    const resultado = await pickFile(source);
+    if (resultado.status === 'picked') setArchivo(resultado.file);
+    else if (resultado.status !== 'canceled') setProblemaArchivo(resultado.message);
+  }
+
+  const aviso = problemaArchivo ?? error;
 
   return (
     // En iOS el teclado tapa la pantalla y el campo sube con él; en Android lo
@@ -224,7 +276,7 @@ function Chat({
           inverted
           data={filas}
           keyExtractor={(fila) => fila.message.id}
-          renderItem={({ item }) => <Burbuja fila={item} />}
+          renderItem={({ item }) => <Burbuja fila={item} conversationId={conversationId} />}
           contentContainerStyle={styles.lista}
           onEndReached={onLlegarAlPrincipio}
           onEndReachedThreshold={0.3}
@@ -244,10 +296,36 @@ function Chat({
           { paddingBottom: (tecladoAbierto ? 0 : insets.bottom) + spacing.sm },
         ]}
       >
-        {error ? (
+        {aviso ? (
           <Text accessibilityRole="alert" style={styles.error}>
-            {error}
+            {aviso}
           </Text>
+        ) : null}
+        {archivo ? (
+          <View style={styles.adjunto}>
+            <Ionicons
+              name={
+                archivo.mimeType === 'application/pdf' ? 'document-text-outline' : 'image-outline'
+              }
+              size={16}
+              color={colors.brandHover}
+            />
+            <Text style={styles.adjuntoNombre} numberOfLines={1}>
+              {archivo.name}
+            </Text>
+            {archivo.sizeBytes !== null ? (
+              <Text style={styles.adjuntoTamano}>{formatSize(archivo.sizeBytes)}</Text>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Quitar ${archivo.name}`}
+              hitSlop={spacing.sm}
+              disabled={enviando}
+              onPress={() => setArchivo(null)}
+            >
+              <Ionicons name="close" size={18} color={colors.muted} />
+            </Pressable>
+          </View>
         ) : null}
         {limpio.length >= MOSTRAR_CONTADOR_DESDE ? (
           <Text
@@ -257,9 +335,20 @@ function Chat({
           </Text>
         ) : null}
         <View style={styles.compositorFila}>
+          {onAdjuntar ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Adjuntar una foto o un PDF"
+              disabled={enviando}
+              onPress={() => setEligiendo(true)}
+              style={({ pressed }) => [styles.clip, pressed && styles.clipPresionado]}
+            >
+              <Ionicons name="attach" size={22} color={colors.muted} />
+            </Pressable>
+          ) : null}
           <TextInput
             accessibilityLabel="Mensaje"
-            placeholder="Escribí un mensaje"
+            placeholder={archivo ? 'Agregá un comentario (opcional)' : 'Escribí un mensaje'}
             placeholderTextColor={colors.mutedSoft}
             value={texto}
             onChangeText={(valor) => {
@@ -289,11 +378,27 @@ function Chat({
           </Pressable>
         </View>
       </View>
+
+      {onAdjuntar ? (
+        <UploadSourceSheet
+          visible={eligiendo}
+          title="Mandar un archivo"
+          description="Una foto o un PDF de hasta 10 MB: un estudio, una receta, una foto de lo que te pasa. Solo lo ven vos y tu profesional."
+          onDismiss={() => setEligiendo(false)}
+          onPick={(source) => void elegir(source)}
+        />
+      ) : null}
     </Animated.View>
   );
 }
 
-function Burbuja({ fila }: { fila: MessageRow }): React.JSX.Element {
+function Burbuja({
+  fila,
+  conversationId,
+}: {
+  fila: MessageRow;
+  conversationId?: string;
+}): React.JSX.Element {
   const { message, mine, dayLabel, groupStart, groupEnd } = fila;
 
   return (
@@ -307,9 +412,26 @@ function Burbuja({ fila }: { fila: MessageRow }): React.JSX.Element {
       ) : null}
       <View style={[styles.burbujaFila, mine ? styles.derecha : styles.izquierda]}>
         <View style={[styles.burbuja, mine ? styles.mia : styles.suya]}>
-          <Text style={[styles.contenido, mine && styles.contenidoMio]} selectable>
-            {message.contenido}
-          </Text>
+          {message.adjunto && conversationId ? (
+            <MessageAttachment
+              conversationId={conversationId}
+              messageId={message.id}
+              attachment={message.adjunto}
+              mine={mine}
+            />
+          ) : null}
+          {message.contenido ? (
+            <Text
+              style={[
+                styles.contenido,
+                mine && styles.contenidoMio,
+                message.adjunto ? styles.conAdjunto : null,
+              ]}
+              selectable
+            >
+              {message.contenido}
+            </Text>
+          ) : null}
         </View>
         {groupEnd ? (
           <Text style={[styles.meta, mine && styles.metaMia]}>
@@ -378,6 +500,35 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   contenidoMio: { color: colors.white },
+  conAdjunto: { marginTop: spacing.sm },
+  adjunto: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+  },
+  adjuntoNombre: {
+    flexShrink: 1,
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.sm,
+    color: colors.ink,
+  },
+  adjuntoTamano: { fontFamily: fonts.medium, fontSize: fontSize.xs, color: colors.muted },
+  clip: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clipPresionado: { backgroundColor: colors.surface },
   meta: {
     marginTop: 3,
     marginHorizontal: spacing.xs,
