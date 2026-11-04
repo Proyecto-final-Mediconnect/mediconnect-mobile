@@ -96,6 +96,8 @@ export function LoginScreen(): React.JSX.Element {
       // desmonta: no hay nada más que hacer acá.
     } catch (err) {
       if (err instanceof MfaRequiredError) {
+        // La contraseña ya no hace falta: no se deja en memoria mientras dura el paso del código.
+        setPassword('');
         setMfaToken(err.mfaToken);
         setEnviando(false);
         return;
@@ -112,15 +114,28 @@ export function LoginScreen(): React.JSX.Element {
     try {
       await signInWithCode(mfaToken, codigo);
     } catch (err) {
+      // 401: el token del primer paso venció o ya no sirve, y reintentar el código no
+      // lo arregla. Se vuelve al email y la contraseña con un aviso claro.
+      if (err instanceof ApiError && err.status === 401) {
+        setEnviando(false);
+        volverAlPrimerPaso('Tu verificación venció. Ingresá de nuevo con tu email y contraseña.');
+        return;
+      }
       setFalla(mensajeDe(err));
       setEnviando(false);
     }
   }
 
-  function volver(): void {
+  /** Vuelve al paso 1 con un aviso opcional. La contraseña se borra: hay que escribirla de nuevo. */
+  function volverAlPrimerPaso(mensaje: string | null): void {
     setMfaToken(null);
     setCodigo('');
-    setFalla(null);
+    setPassword('');
+    setFalla(mensaje);
+  }
+
+  function volver(): void {
+    volverAlPrimerPaso(null);
   }
 
   return (

@@ -195,6 +195,30 @@ describe('sesión del paciente', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Volver' }));
 
       expect(screen.getByLabelText('Email')).toBeVisible();
+      // La contraseña no queda cargada al volver: hay que escribirla de nuevo.
+      expect(screen.getByLabelText('Contraseña')).toHaveValue('');
+    });
+
+    it('si el token del primer paso venció, vuelve al email y la contraseña con un aviso', async () => {
+      loginConCodigo();
+      server.use(
+        http.post(`${API_URL}/auth/mobile/mfa/verify`, () =>
+          HttpResponse.json({ message: 'Token inválido o expirado.' }, { status: 401 }),
+        ),
+      );
+      await abrirApp();
+
+      completarYEnviar('paciente.demo@mediconnect.test', 'Password1');
+      fireEvent.change(await screen.findByLabelText('Código'), { target: { value: '123456' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Verificar e ingresar' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Tu verificación venció. Ingresá de nuevo con tu email y contraseña.',
+      );
+      expect(screen.queryByRole('heading', { name: 'Verificación en dos pasos' })).toBeNull();
+      expect(screen.getByLabelText('Email')).toHaveValue('paciente.demo@mediconnect.test');
+      expect(screen.getByLabelText('Contraseña')).toHaveValue('');
+      expect(await readSessionTokens()).toBeNull();
     });
   });
 
