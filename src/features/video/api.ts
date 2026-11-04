@@ -1,5 +1,5 @@
 import { apiRequest } from '../../shared/lib/api-client';
-import type { VideoConsultationAccess } from './types';
+import type { TestRoom, VideoConsultationAccess } from './types';
 
 /**
  * `POST /appointments/:id/video`: entra a la videoconsulta del turno y devuelve
@@ -11,4 +11,15 @@ export function joinVideoConsultation(appointmentId: string): Promise<VideoConsu
     `/appointments/${encodeURIComponent(appointmentId)}/video`,
     { method: 'POST', fallbackMessage: 'No se pudo abrir la videoconsulta.' },
   );
+}
+
+/**
+ * `POST /video/test-room`: una sala de Daily para una sola persona, para probar
+ * cámara y micrófono en cualquier momento, sin turno.
+ */
+export function createTestRoom(): Promise<TestRoom> {
+  return apiRequest<TestRoom>('/video/test-room', {
+    method: 'POST',
+    fallbackMessage: 'No pudimos preparar la prueba. Intentá de nuevo.',
+  });
 }
