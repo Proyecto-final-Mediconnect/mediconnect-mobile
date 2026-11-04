@@ -4,7 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { POLL_INTERVAL_MS } from '../features/chat/hooks/use-chat';
 import { CONVERSACION_GARCIA, chatDemo } from '../mocks/chat';
+import { __abiertas } from '../../test-stubs/expo-web-browser';
+import { __fotos } from '../../test-stubs/expo-image-picker';
 import { API_URL } from '../test/msw-server';
+import { multipartFields } from '../test/multipart';
 import { renderApp } from '../test/render-app';
 
 /** El chat con los profesionales desde la app (ENG-152). */
@@ -168,5 +171,68 @@ describe('Una conversación (ENG-152)', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Escribirle a Ana' }));
 
     expect(await screen.findByText('Los vi, está todo bien.')).toBeInTheDocument();
+  });
+});
+
+describe('Archivos en el chat (ENG-102)', () => {
+  it('manda un PDF con un comentario: se ve en la conversación y el campo queda limpio', async () => {
+    let campos: Record<string, string> = {};
+    await renderApp(
+      http.post(`${API_URL}/conversations/:id/attachments`, async ({ params, request }) => {
+        campos = await multipartFields(request);
+        const enviado = chatDemo.enviarArchivo(
+          String(params.id),
+          { tipo: 'application/pdf', tamano: 245_000 },
+          campos.contenido ?? '',
+        );
+        return HttpResponse.json(enviado, { status: 201 });
+      }),
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Mensajes' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Conversación con Ana García/ }));
+    await screen.findByText('Los vi, está todo bien.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Adjuntar una foto o un PDF' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Elegir un PDF' }));
+    expect(await screen.findByText('Hemograma_marzo.pdf')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Mensaje'), { target: { value: 'El hemograma' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar' }));
+
+    expect(await screen.findByRole('button', { name: 'Abrir pdf (239 KB)' })).toBeInTheDocument();
+    expect(screen.getByText('El hemograma')).toBeInTheDocument();
+    expect(screen.queryByText('Hemograma_marzo.pdf')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Mensaje')).toHaveValue('');
+    expect(campos.contenido).toBe('El hemograma');
+  });
+
+  it('un archivo que no se puede mandar avisa antes de subirlo', async () => {
+    await abrirConversacionConGarcia();
+    __fotos.proxima = {
+      uri: 'file:///cache/foto.heic',
+      width: 1,
+      height: 1,
+      fileName: 'foto.heic',
+      mimeType: 'image/heic',
+    };
+
+    fireEvent.click(screen.getByRole('button', { name: 'Adjuntar una foto o un PDF' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Elegir de la galería' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/HEIC/);
+    expect(screen.getByRole('button', { name: 'Enviar' })).toBeDisabled();
+  });
+
+  it('una foto de la profesional se ve en miniatura y al tocarla se abre', async () => {
+    await renderApp();
+    // Después de montar: `renderApp` arranca con el chat de ejemplo recién armado.
+    const id = chatDemo.recibirFoto(CONVERSACION_GARCIA)!;
+    fireEvent.click(await screen.findByRole('button', { name: 'Mensajes' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Conversación con Ana García/ }));
+
+    const foto = await screen.findByRole('button', { name: 'Abrir foto (340 KB)' });
+    fireEvent.click(foto);
+
+    await waitFor(() => expect(__abiertas.at(-1)).toBe(`https://storage.test/${id}`));
   });
 });

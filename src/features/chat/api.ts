@@ -1,5 +1,13 @@
-import { apiRequest } from '../../shared/lib/api-client';
-import type { ChatMessage, ConversationInbox, ConversationSummary, MessagesPage } from './types';
+import { ApiError, apiRequest } from '../../shared/lib/api-client';
+import { MENSAJE_TAMANO } from '../patient-documents/lib/document-file';
+import type { PickedFile } from '../patient-documents/types';
+import type {
+  AttachmentUrl,
+  ChatMessage,
+  ConversationInbox,
+  ConversationSummary,
+  MessagesPage,
+} from './types';
 
 /** Las mismas rutas que usa la web (ENG-70). El backend sirve a los dos clientes. */
 
@@ -46,4 +54,41 @@ export function markConversationRead(id: string): Promise<void> {
     method: 'PATCH',
     fallbackMessage: 'No pudimos marcar los mensajes como leídos.',
   });
+}
+
+/**
+ * `POST /conversations/:id/attachments` (ENG-102): una foto o un PDF de hasta
+ * 10 MB, con un texto opcional.
+ *
+ * Como en los documentos (ENG-164), en React Native el archivo va como
+ * `{ uri, name, type }`: el `FormData` nativo lo lee del disco al mandar, sin
+ * pasar los bytes por JavaScript.
+ */
+export async function sendAttachment(
+  id: string,
+  file: PickedFile,
+  contenido?: string,
+): Promise<ChatMessage> {
+  const form = new FormData();
+  form.append('file', { uri: file.uri, name: file.name, type: file.mimeType } as unknown as Blob);
+  if (contenido) form.append('contenido', contenido);
+  try {
+    return await apiRequest<ChatMessage>(conversationPath(id, '/attachments'), {
+      method: 'POST',
+      body: form,
+      fallbackMessage: 'No pudimos mandar el archivo.',
+    });
+  } catch (err) {
+    // El 413 lo corta Multer antes del controller, sin un mensaje para el paciente.
+    if (err instanceof ApiError && err.status === 413) throw new ApiError(413, MENSAJE_TAMANO);
+    throw err;
+  }
+}
+
+/** Una URL firmada de cinco minutos para abrir el archivo de un mensaje. */
+export function getAttachmentUrl(id: string, messageId: string): Promise<AttachmentUrl> {
+  return apiRequest<AttachmentUrl>(
+    conversationPath(id, `/messages/${encodeURIComponent(messageId)}/attachment`),
+    { fallbackMessage: 'No pudimos abrir el archivo.' },
+  );
 }

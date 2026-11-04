@@ -41,17 +41,19 @@ export function UploadSourceSheet({
   visible,
   onDismiss,
   onPick,
+  title = 'Subir un documento',
+  description = 'Un estudio, informe o receta que traés de otro lugar. Lo ven los profesionales que te atienden.',
 }: {
   visible: boolean;
   onDismiss: () => void;
   onPick: (source: PickSource) => void;
+  /** El chat (ENG-102) la reusa con su propio título y bajada. */
+  title?: string;
+  description?: string;
 }): React.JSX.Element {
   return (
-    <Sheet visible={visible} title="Subir un documento" onDismiss={onDismiss}>
-      <Text style={styles.bajada}>
-        Un estudio, informe o receta que traés de otro lugar. Lo ven los profesionales que te
-        atienden.
-      </Text>
+    <Sheet visible={visible} title={title} onDismiss={onDismiss}>
+      <Text style={styles.bajada}>{description}</Text>
       <View accessibilityLabel="Cómo querés subirlo">
         {OPCIONES.map((opcion, i) => (
           <Pressable
