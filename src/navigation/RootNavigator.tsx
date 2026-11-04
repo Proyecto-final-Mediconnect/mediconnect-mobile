@@ -1,7 +1,7 @@
 import { DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -22,6 +22,7 @@ import { UploadDocumentScreen } from '../screens/UploadDocumentScreen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors } from '../shared/ui/theme';
 import { PatientTabs } from './PatientTabs';
+import { navigationRef, usePushNotifications } from './push-routing';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -68,6 +69,15 @@ export function RootNavigator(): React.JSX.Element {
 function RootStack(): React.JSX.Element {
   const { state, retry } = useSession();
   const queryClient = useQueryClient();
+  const [navigationReady, setNavigationReady] = useState(false);
+  const conContenedor = state.status !== 'restoring' && state.status !== 'unreachable';
+
+  // Push por mensajes nuevos (ENG-71): con la sesión iniciada y los textos
+  // legales aceptados, que es cuando la app existe.
+  usePushNotifications(
+    state.status === 'signedIn' && state.user.legalAccepted !== false,
+    navigationReady && conContenedor,
+  );
 
   // Al cerrar sesión —o cuando vence— se tira la caché: el próximo que ingrese
   // en este celular no puede ver ni por un instante los turnos o la historia
@@ -103,7 +113,7 @@ function RootStack(): React.JSX.Element {
   }
 
   return (
-    <NavigationContainer theme={tema}>
+    <NavigationContainer theme={tema} ref={navigationRef} onReady={() => setNavigationReady(true)}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {state.status === 'signedIn' && state.user.legalAccepted === false ? (
           // Sin la aceptación vigente el backend responde 403 a todo lo del

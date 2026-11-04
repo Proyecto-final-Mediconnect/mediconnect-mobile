@@ -14,6 +14,7 @@ import {
   readSessionTokens,
   saveSessionTokens,
 } from '../../infrastructure/secure-store/session-tokens';
+import { unregisterFromPush } from '../../infrastructure/notifications/push';
 import { ApiError, onSessionExpired } from '../../shared/lib/api-client';
 import { LEGAL_VERSION } from '../legal/legal';
 import { acceptLegal as postLegalAcceptance, fetchMe, login } from './api';
@@ -143,6 +144,10 @@ export function SessionProvider({ children }: { children: ReactNode }): React.JS
     // mostraría sus turnos y su historia clínica. En un celular compartido eso
     // es exposición de datos de salud, así que el error sube a la pantalla y
     // la sesión sigue abierta hasta que el borrado funcione.
+    //
+    // El token de push se borra antes, con la sesión todavía válida: sin el
+    // access token el backend no sabe de quién es (ENG-71). No frena el cierre.
+    await unregisterFromPush();
     await clearSessionTokens();
     setState({ status: 'signedOut' });
   }, []);
