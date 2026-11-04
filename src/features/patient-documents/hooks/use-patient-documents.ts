@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRef } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import { Linking } from 'react-native';
 
 import { useSessionUser } from '../../auth/session';
 import { fetchDocumentDownload, fetchMyDocuments, retireDocument, uploadDocument } from '../api';
+import type { UploadDocumentInput } from '../types';
 
 /** Con el id de la sesión, como el resto: el próximo que ingrese no hereda la lista. */
 function useDocumentsKey() {
@@ -16,13 +18,26 @@ export function useMyDocuments() {
   return useQuery({ queryKey, queryFn: fetchMyDocuments });
 }
 
+/**
+ * La subida, con `cancelar()` para cortarla a mitad de camino. La lista se
+ * refresca pase lo que pase: un corte (o un timeout) puede llegar cuando el
+ * servidor ya guardó el archivo.
+ */
 export function useUploadDocument() {
   const queryClient = useQueryClient();
   const queryKey = useDocumentsKey();
-  return useMutation({
-    mutationFn: uploadDocument,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+  const envio = useRef<AbortController | null>(null);
+  const mutation = useMutation({
+    mutationFn: (input: UploadDocumentInput) => {
+      envio.current = new AbortController();
+      return uploadDocument(input, envio.current.signal);
+    },
+    onSettled: () => {
+      envio.current = null;
+      return queryClient.invalidateQueries({ queryKey });
+    },
   });
+  return { ...mutation, cancelar: () => envio.current?.abort() };
 }
 
 export function useRetireDocument() {
@@ -30,7 +45,8 @@ export function useRetireDocument() {
   const queryKey = useDocumentsKey();
   return useMutation({
     mutationFn: retireDocument,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    // También tras un error: la lista que quedó en pantalla puede estar vieja.
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 }
 

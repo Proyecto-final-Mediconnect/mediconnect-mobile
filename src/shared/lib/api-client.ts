@@ -35,6 +35,8 @@ export class ApiError extends Error {
 
 const MENSAJE_SIN_CONEXION = 'No pudimos conectarnos. Revisá tu conexión e intentá de nuevo.';
 const MENSAJE_GENERICO = 'Ocurrió un error inesperado. Intentá de nuevo.';
+/** El request se cortó desde la app (el paciente canceló una subida). */
+export const MENSAJE_CANCELADO = 'Cancelaste el envío.';
 
 /**
  * El backend gratis de Render se duerme y tarda hasta un minuto en despertar:
@@ -55,7 +57,13 @@ function apiUrl(path: string): string {
 
 async function send(
   path: string,
-  { method, body, token }: { method: string; body?: unknown; token?: string },
+  {
+    method,
+    body,
+    token,
+    timeoutMs = TIMEOUT_MS,
+    signal,
+  }: { method: string; body?: unknown; token?: string; timeoutMs?: number; signal?: AbortSignal },
 ): Promise<Response> {
   // Un archivo (ENG-164) viaja como multipart y no como JSON. El `Content-Type`
   // no se pone a mano: lo arma `fetch` con el boundary, y sin él el backend no
@@ -66,7 +74,11 @@ async function send(
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  // La señal de afuera (un "Cancelar") corta el mismo request que el timeout.
+  const cancelar = (): void => controller.abort();
+  if (signal?.aborted) controller.abort();
+  signal?.addEventListener('abort', cancelar);
   try {
     return await fetch(apiUrl(path), {
       method,
@@ -76,9 +88,10 @@ async function send(
     });
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    throw new ApiError(0, MENSAJE_SIN_CONEXION);
+    throw new ApiError(0, signal?.aborted ? MENSAJE_CANCELADO : MENSAJE_SIN_CONEXION);
   } finally {
     clearTimeout(timer);
+    signal?.removeEventListener('abort', cancelar);
   }
 }
 
@@ -198,6 +211,13 @@ export interface RequestOptions {
    * el usuario no es paciente, no queda nada en el dispositivo.
    */
   token?: string;
+  /**
+   * Cuánto esperar antes de cortar. Por defecto el minuto que tarda Render en
+   * despertar; una subida de 10 MB por datos móviles necesita más.
+   */
+  timeoutMs?: number;
+  /** Para cortar el request desde la pantalla, como el "Cancelar" de una subida. */
+  signal?: AbortSignal;
 }
 
 /**
@@ -205,10 +225,11 @@ export interface RequestOptions {
  * del backend, que ya viene en castellano y pensado para mostrarse.
  */
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, fallbackMessage, auth = true, token } = options;
+  const { method = 'GET', body, fallbackMessage, auth = true, token, timeoutMs, signal } = options;
+  const envio = { method, body, timeoutMs, signal };
 
   if (!auth || token) {
-    const response = await send(path, { method, body, token });
+    const response = await send(path, { ...envio, token });
     if (!response.ok) throw await toApiError(response, fallbackMessage);
     return parse<T>(response);
   }
@@ -223,7 +244,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     throw new ApiError(401, 'Tu sesión terminó. Iniciá sesión de nuevo.');
   }
 
-  let response = await send(path, { method, body, token: tokens.accessToken });
+  let response = await send(path, { ...envio, token: tokens.accessToken });
 
   if (response.status === 401) {
     // Otro request pudo haber renovado mientras este viajaba: si el token
@@ -241,7 +262,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     }
 
     const renovados = await readSessionTokens();
-    response = await send(path, { method, body, token: renovados?.accessToken });
+    response = await send(path, { ...envio, token: renovados?.accessToken });
 
     // Recién renovado y otra vez 401: el problema no es el vencimiento.
     if (response.status === 401) {
