@@ -1,11 +1,12 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { http, HttpResponse } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { PatientDocument } from '../features/patient-documents/types';
 import { API_URL, server } from '../test/msw-server';
 import { multipartFields } from '../test/multipart';
 import { renderApp } from '../test/render-app';
+import { __disco } from '../../test-stubs/expo-file-system';
 import { __fotos } from '../../test-stubs/expo-image-picker';
 import { __abiertas } from '../../test-stubs/expo-web-browser';
 
@@ -144,6 +145,23 @@ describe('Mis documentos en la historia clínica (ENG-164)', () => {
       origen: 'camera',
       opciones: { quality: 0.7, mediaTypes: ['images'] },
     });
+    // La copia del caché no queda en el teléfono después de subirla.
+    expect(__disco.borrados).toEqual(['file:///cache/ImagePicker/estudio.jpg']);
+  });
+
+  it('pide la lista entera, que con el tope de 50 vigentes entra en una página', async () => {
+    let pedido = '';
+    servirDocumentos();
+    server.use(
+      http.get(`${API_URL}/patients/me/documents`, ({ request }) => {
+        pedido = new URL(request.url).search;
+        return HttpResponse.json([HEMOGRAMA]);
+      }),
+    );
+    await abrirDocumentos();
+
+    await screen.findByText('Hemograma completo');
+    expect(pedido).toBe('?limit=50');
   });
 
   it('un PDF propone su nombre como título y los opcionales no se mandan vacíos', async () => {
@@ -194,6 +212,25 @@ describe('Mis documentos en la historia clínica (ENG-164)', () => {
 
     expect(await screen.findByText('El archivo no puede pasar los 10 MB.')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Subir documento' })).not.toBeInTheDocument();
+  });
+
+  it('si el picker no informa el tamaño, lo lee del disco y corta igual', async () => {
+    servirDocumentos([]);
+    __fotos.proxima = {
+      uri: 'file:///cache/ImagePicker/sin-tamano.jpg',
+      width: 4000,
+      height: 3000,
+      fileName: 'sin-tamano.jpg',
+      mimeType: 'image/jpeg',
+    };
+    __disco.tamanos.set('file:///cache/ImagePicker/sin-tamano.jpg', 11 * 1024 * 1024);
+    await abrirDocumentos();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Subir documento' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Elegir de la galería' }));
+
+    expect(await screen.findByText('El archivo no puede pasar los 10 MB.')).toBeInTheDocument();
+    expect(__disco.borrados).toEqual(['file:///cache/ImagePicker/sin-tamano.jpg']);
   });
 
   it('corta un tipo que no se acepta', async () => {
@@ -266,6 +303,64 @@ describe('Mis documentos en la historia clínica (ENG-164)', () => {
     expect(await screen.findByText('El archivo no puede pasar los 10 MB.')).toBeInTheDocument();
   });
 
+  it('un 422 dice que llegó al tope y qué hacer', async () => {
+    servirDocumentos([]);
+    await abrirDocumentos();
+    server.use(
+      http.post(`${API_URL}/patients/me/documents`, () =>
+        HttpResponse.json(
+          { message: 'Llegaste al máximo de 50 documentos. Retirá alguno para subir otro.' },
+          { status: 422 },
+        ),
+      ),
+    );
+    await sacarFoto();
+    await screen.findByRole('heading', { name: 'Subir documento' });
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Radiografía' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Subir' }));
+
+    expect(
+      await screen.findByText(
+        'Llegaste al máximo de 50 documentos. Retirá alguno para subir otro.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('un 400 sin mensaje dice qué tipos se aceptan', async () => {
+    servirDocumentos([]);
+    await abrirDocumentos();
+    server.use(
+      http.post(`${API_URL}/patients/me/documents`, () => new HttpResponse(null, { status: 400 })),
+    );
+    await sacarFoto();
+    await screen.findByRole('heading', { name: 'Subir documento' });
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Radiografía' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Subir' }));
+
+    expect(await screen.findByText('Solo se pueden subir PDF, JPG o PNG.')).toBeInTheDocument();
+  });
+
+  it('una subida se puede cancelar y deja volver a intentar', async () => {
+    servirDocumentos([]);
+    await abrirDocumentos();
+    server.use(
+      http.post(`${API_URL}/patients/me/documents`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({});
+      }),
+    );
+    await sacarFoto();
+    await screen.findByRole('heading', { name: 'Subir documento' });
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Radiografía' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Subir' }));
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancelar envío' }));
+
+    expect(await screen.findByText('Cancelaste el envío.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Subir' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Cancelar envío' })).not.toBeInTheDocument();
+  });
+
   it('retirar pide confirmación, llama al DELETE y lo saca de la lista', async () => {
     const recibido = servirDocumentos();
     await abrirDocumentos();
@@ -278,6 +373,25 @@ describe('Mis documentos en la historia clínica (ENG-164)', () => {
     await waitFor(() => expect(screen.queryByText('Hemograma completo')).not.toBeInTheDocument());
     expect(recibido.retirados).toEqual(['doc-1']);
     expect(screen.getByText('+ Subir el primero')).toBeInTheDocument();
+  });
+
+  it('si ya estaba retirado (404), cierra la hoja y actualiza la lista', async () => {
+    servirDocumentos();
+    await abrirDocumentos();
+    // Lo retiraron desde la web: el DELETE da 404 y la lista ya no lo trae.
+    server.use(
+      http.delete(`${API_URL}/patients/me/documents/:id`, () =>
+        HttpResponse.json({ message: 'No encontramos ese documento.' }, { status: 404 }),
+      ),
+      http.get(`${API_URL}/patients/me/documents`, () => HttpResponse.json([])),
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Retirar Hemograma completo' }));
+    const hoja = await screen.findByRole('alert');
+    fireEvent.click(within(hoja).getByRole('button', { name: 'Sí, retirarlo' }));
+
+    await waitFor(() => expect(screen.queryByText('Hemograma completo')).not.toBeInTheDocument());
+    expect(screen.queryByText('No encontramos ese documento.')).not.toBeInTheDocument();
   });
 
   it('ver pide la URL firmada y la abre', async () => {

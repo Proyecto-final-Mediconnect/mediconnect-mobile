@@ -8,6 +8,7 @@ import { API_URL, server } from './src/test/msw-server';
 // El mismo módulo al que apunta el alias de `expo-secure-store`.
 import { __secureStore } from './test-stubs/expo-secure-store';
 import { __documentos } from './test-stubs/expo-document-picker';
+import { __disco } from './test-stubs/expo-file-system';
 import { __fotos } from './test-stubs/expo-image-picker';
 import { __abiertas } from './test-stubs/expo-web-browser';
 
@@ -33,6 +34,7 @@ afterEach(() => {
   __abiertas.length = 0;
   __fotos.reiniciar();
   __documentos.reiniciar();
+  __disco.reiniciar();
 });
 
 afterAll(() => {

@@ -38,6 +38,7 @@ export default defineConfig({
       // La cámara, la galería y el selector de archivos son nativos (ENG-164).
       { find: /^expo-image-picker$/, replacement: stub('expo-image-picker.ts') },
       { find: /^expo-document-picker$/, replacement: stub('expo-document-picker.ts') },
+      { find: /^expo-file-system$/, replacement: stub('expo-file-system.ts') },
     ],
   },
   test: {

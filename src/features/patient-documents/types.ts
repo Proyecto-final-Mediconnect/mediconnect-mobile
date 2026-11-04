@@ -50,7 +50,7 @@ export interface PickedFile {
   uri: string;
   name: string;
   mimeType: string;
-  /** `null` si el picker no lo informa: lo valida el backend. */
+  /** `null` si ni el picker ni el disco lo informan: ahí lo valida el backend. */
   sizeBytes: number | null;
 }
 
