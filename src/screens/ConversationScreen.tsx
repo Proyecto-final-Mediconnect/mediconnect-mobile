@@ -99,7 +99,13 @@ function Conversation({
   useEffect(() => {
     if (!ultimoSinLeer || ultimoMarcado.current === ultimoSinLeer) return;
     ultimoMarcado.current = ultimoSinLeer;
-    marcar();
+    // Si el PATCH falla se libera la marca: se reintenta al reabrir la pantalla
+    // o cuando llegue otro mensaje (sin bucle de reintentos inmediatos).
+    marcar(undefined, {
+      onError: () => {
+        ultimoMarcado.current = null;
+      },
+    });
   }, [ultimoSinLeer, marcar]);
 
   // La lista va invertida —el último mensaje abajo y pegado al teclado—, así que

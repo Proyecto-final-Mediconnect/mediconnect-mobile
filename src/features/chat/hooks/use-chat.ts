@@ -83,13 +83,20 @@ export function useMessages(conversationId: string | undefined) {
 
   useEffect(() => {
     if (!conversationId) return;
+    let detenido = false;
+    // Un 403/404 persistente (conversación ajena o borrada) no se arregla
+    // esperando: se corta la consulta periódica en vez de repetirla cada 4 s.
+    const alFallar = () => {
+      detenido = true;
+      clearInterval(timer);
+    };
     const timer = setInterval(() => {
-      if (appActive()) reconcileLatest(queryClient, conversationId);
+      if (appActive()) reconcileLatest(queryClient, conversationId, alFallar);
     }, POLL_INTERVAL_MS);
     // Al volver a primer plano no se espera al próximo ciclo: lo que llegó
     // mientras el teléfono estaba bloqueado aparece apenas se lo desbloquea.
     const alVolver = AppState.addEventListener('change', (estado) => {
-      if (estado === 'active') reconcileLatest(queryClient, conversationId);
+      if (estado === 'active' && !detenido) reconcileLatest(queryClient, conversationId, alFallar);
     });
     return () => {
       clearInterval(timer);
@@ -112,7 +119,11 @@ export function useMessages(conversationId: string | undefined) {
  */
 const inFlight = new Map<string, { again: boolean }>();
 
-function reconcileLatest(queryClient: QueryClient, conversationId: string): void {
+function reconcileLatest(
+  queryClient: QueryClient,
+  conversationId: string,
+  onFatal: () => void,
+): void {
   const running = inFlight.get(conversationId);
   if (running) {
     running.again = true;
@@ -134,10 +145,16 @@ function reconcileLatest(queryClient: QueryClient, conversationId: string): void
       }
     })
     // Un fallo de red no pisa lo que ya se ve: se reintenta en el próximo ciclo.
-    .catch(() => {})
+    // Un 403/404 no es de red: la conversación ya no es accesible y se corta.
+    .catch((error: unknown) => {
+      if (error instanceof ApiError && (error.status === 403 || error.status === 404)) {
+        state.again = false;
+        onFatal();
+      }
+    })
     .finally(() => {
       inFlight.delete(conversationId);
-      if (state.again) reconcileLatest(queryClient, conversationId);
+      if (state.again) reconcileLatest(queryClient, conversationId, onFatal);
     });
 }
 
@@ -152,6 +169,14 @@ function addToCache(
     (data) => {
       if (!data || data.pages.length === 0) return data;
       const [latest, ...older] = data.pages;
+      // Sin mensajes nuevos ni cambios de lectura se devuelve la misma
+      // referencia: React Query no notifica y no hay re-render ni reorden.
+      const actuales = new Map(latest!.mensajes.map((m) => [m.id, m]));
+      const hayCambios = incoming.some((m) => {
+        const actual = actuales.get(m.id);
+        return !actual || actual.leidoEl !== m.leidoEl;
+      });
+      if (!hayCambios) return data;
       return {
         ...data,
         pages: [{ ...latest!, mensajes: mergeMessages(latest!.mensajes, incoming) }, ...older],
@@ -204,6 +229,10 @@ export function useMarkConversationRead(conversationId: string, myId: string) {
  * Arranca una conversación con el primer mensaje: recién ahí se crea en el
  * backend, así abrir el chat con alguien y arrepentirse no deja una conversación
  * vacía en ninguna de las dos bandejas. Es el mismo criterio que la web.
+ *
+ * Limitación conocida: son dos pedidos (abrir y enviar). Si el segundo falla,
+ * la conversación ya existe en el backend y queda vacía en la bandeja; al
+ * reintentar, `openConversation` devuelve la misma, así que no se duplica.
  */
 export function useStartConversation() {
   const queryClient = useQueryClient();
