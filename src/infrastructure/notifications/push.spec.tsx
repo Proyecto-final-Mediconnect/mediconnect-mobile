@@ -84,8 +84,22 @@ describe('Notificaciones push (ENG-71)', () => {
     expect(__secureStore.items.get('push-permiso-explicado')).toBe('1');
   });
 
+  it('en Android 13+ el permiso arranca en "denied" pero se puede pedir: lo explica y lo pide', async () => {
+    __notifications.state.status = 'denied';
+    __notifications.state.canAskAgain = true;
+    const explicacion = contestarExplicacion('Activar');
+    const backend = backendDeTokens();
+
+    await renderApp();
+
+    await waitFor(() => expect(backend.registrados).toHaveLength(1));
+    expect(explicacion).toHaveBeenCalledTimes(1);
+    expect(__notifications.state.requested).toBe(1);
+  });
+
   it('si el permiso está denegado, la app anda igual y no registra nada', async () => {
     __notifications.state.status = 'denied';
+    __notifications.state.canAskAgain = false;
     const explicacion = contestarExplicacion('Activar');
     const backend = backendDeTokens();
 
@@ -97,6 +111,7 @@ describe('Notificaciones push (ENG-71)', () => {
 
   it('tocar el aviso abre esa conversación', async () => {
     __notifications.state.status = 'denied';
+    __notifications.state.canAskAgain = false;
 
     await renderApp();
     act(() => __notifications.tap(AVISO));
@@ -106,6 +121,7 @@ describe('Notificaciones push (ENG-71)', () => {
 
   it('el aviso que abrió la app lleva a su conversación al terminar de cargar', async () => {
     __notifications.state.status = 'denied';
+    __notifications.state.canAskAgain = false;
     __notifications.state.lastResponse = {
       notification: { request: { content: { data: AVISO } } },
     };

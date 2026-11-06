@@ -91,13 +91,19 @@ export async function registerForPush(): Promise<void> {
   try {
     await ensureChannel();
 
-    let { status } = await Notifications.getPermissionsAsync();
-    if (status === 'undetermined') {
+    // Android 13+ da `denied` con `canAskAgain` antes de la primera pregunta,
+    // no `undetermined`: lo que dice si todavía se puede pedir es `canAskAgain`.
+    const actual = await Notifications.getPermissionsAsync();
+    let { status } = actual;
+    if (status !== 'granted' && actual.canAskAgain) {
       // Se explica una sola vez. Si dijo "Ahora no", puede activarlo después
       // desde los ajustes del celular.
       if ((await SecureStore.getItemAsync(ASKED_KEY)) === '1') return;
+      // La marca va después de la respuesta: si la app se cierra con el cartel
+      // abierto, la próxima vez se vuelve a explicar.
+      const quiere = await explain();
       await SecureStore.setItemAsync(ASKED_KEY, '1');
-      if (!(await explain())) return;
+      if (!quiere) return;
       ({ status } = await Notifications.requestPermissionsAsync());
     }
     if (status !== 'granted') return;

@@ -38,3 +38,6 @@ yarn-error.*
 .DS_Store
 Thumbs.db
 *.tsbuildinfo
+
+# Firebase (ENG-71): trae una API key de Google. En EAS va como variable de tipo archivo.
+google-services.json

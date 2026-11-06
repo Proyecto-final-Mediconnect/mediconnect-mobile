@@ -21,6 +21,8 @@ type Handler = {
 
 const state = {
   status: 'undetermined' as PermissionStatus,
+  /** Android 13+ arranca en `denied` pero con `canAskAgain`: se puede preguntar. */
+  canAskAgain: true,
   /** Lo que el usuario contesta al diálogo del sistema. */
   answer: 'granted' as PermissionStatus,
   token: 'ExponentPushToken[test-token-123]',
@@ -36,6 +38,7 @@ export const __notifications = {
   state,
   reset(): void {
     state.status = 'undetermined';
+    state.canAskAgain = true;
     state.answer = 'granted';
     state.token = 'ExponentPushToken[test-token-123]';
     state.tokenError = null;
@@ -65,13 +68,17 @@ export async function setNotificationChannelAsync(
   state.channels.push({ id, config });
 }
 
-export async function getPermissionsAsync(): Promise<{ status: PermissionStatus }> {
-  return { status: state.status };
+export async function getPermissionsAsync(): Promise<{
+  status: PermissionStatus;
+  canAskAgain: boolean;
+}> {
+  return { status: state.status, canAskAgain: state.canAskAgain };
 }
 
 export async function requestPermissionsAsync(): Promise<{ status: PermissionStatus }> {
   state.requested++;
   state.status = state.answer;
+  state.canAskAgain = state.answer !== 'denied';
   return { status: state.status };
 }
 
