@@ -17,8 +17,8 @@ import {
 import { unregisterFromPush } from '../../infrastructure/notifications/push';
 import { ApiError, onSessionExpired } from '../../shared/lib/api-client';
 import { LEGAL_VERSION } from '../legal/legal';
-import { acceptLegal as postLegalAcceptance, fetchMe, login } from './api';
-import type { LoginInput, SessionUser } from './types';
+import { acceptLegal as postLegalAcceptance, fetchMe, login, verifyMfa } from './api';
+import type { LoginInput, MobileSession, SessionUser } from './types';
 
 /**
  * Estado de la sesión. Los tokens **no** están acá: viven en
@@ -40,8 +40,13 @@ export type SessionState =
 
 interface SessionContextValue {
   state: SessionState;
-  /** Tira `ApiError` o `NotPatientError`; la pantalla de login decide el mensaje. */
+  /**
+   * Tira `ApiError` o `NotPatientError`; la pantalla de login decide el mensaje.
+   * Con la verificación en dos pasos activa tira `MfaRequiredError` (ENG-88).
+   */
   signIn: (input: LoginInput) => Promise<void>;
+  /** El segundo paso del ingreso: el token de `MfaRequiredError` y el código. */
+  signInWithCode: (mfaToken: string, code: string) => Promise<void>;
   signOut: () => Promise<void>;
   /**
    * Acepta los textos legales vigentes (ENG-140) y actualiza el usuario de la
@@ -57,6 +62,18 @@ export class NotPatientError extends Error {
   constructor() {
     super('La app de MediConnect es para pacientes. Si sos profesional, ingresá desde la web.');
     this.name = 'NotPatientError';
+  }
+}
+
+/**
+ * La contraseña está bien, pero la cuenta tiene activa la verificación en dos
+ * pasos (ENG-88): falta el código de la app autenticadora. Lleva el token del
+ * primer paso, que no se guarda en el dispositivo.
+ */
+export class MfaRequiredError extends Error {
+  constructor(readonly mfaToken: string) {
+    super('Falta el código de la verificación en dos pasos.');
+    this.name = 'MfaRequiredError';
   }
 }
 
@@ -129,10 +146,12 @@ export function SessionProvider({ children }: { children: ReactNode }): React.JS
     [],
   );
 
-  const signIn = useCallback(async (input: LoginInput): Promise<void> => {
-    const session = await login(input);
-    // El rol se consulta con el token recién emitido y antes de guardarlo: si no
-    // es un paciente, la sesión no llega a existir en el dispositivo.
+  /**
+   * Abre la sesión con un par de tokens recién emitidos. El rol se consulta con
+   * ese token y antes de guardarlo: si no es un paciente, la sesión no llega a
+   * existir en el dispositivo.
+   */
+  const open = useCallback(async (session: MobileSession): Promise<void> => {
     const user = await fetchMe(session.accessToken);
     if (user.role !== 'PACIENTE') throw new NotPatientError();
 
@@ -142,6 +161,22 @@ export function SessionProvider({ children }: { children: ReactNode }): React.JS
     });
     setState({ status: 'signedIn', user });
   }, []);
+
+  const signIn = useCallback(
+    async (input: LoginInput): Promise<void> => {
+      const respuesta = await login(input);
+      if ('mfaRequired' in respuesta) throw new MfaRequiredError(respuesta.mfaToken);
+      await open(respuesta);
+    },
+    [open],
+  );
+
+  const signInWithCode = useCallback(
+    async (mfaToken: string, code: string): Promise<void> => {
+      await open(await verifyMfa(mfaToken, code));
+    },
+    [open],
+  );
 
   const signOut = useCallback(async (): Promise<void> => {
     // Sin `finally` a propósito: si el borrado falla, los tokens siguen en el
@@ -169,8 +204,8 @@ export function SessionProvider({ children }: { children: ReactNode }): React.JS
   }, []);
 
   const value = useMemo(
-    () => ({ state, signIn, signOut, acceptLegal, retry }),
-    [state, signIn, signOut, acceptLegal, retry],
+    () => ({ state, signIn, signInWithCode, signOut, acceptLegal, retry }),
+    [state, signIn, signInWithCode, signOut, acceptLegal, retry],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
