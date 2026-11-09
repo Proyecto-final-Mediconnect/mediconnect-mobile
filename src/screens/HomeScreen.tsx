@@ -15,6 +15,8 @@ import { greeting, laterAppointments, pastProfessionals } from '../features/appo
 import { joinStateOf, timeUntilOpen } from '../features/appointments/lib/join-window';
 import type { Appointment } from '../features/appointments/types';
 import { PastProfessionalCard } from '../features/catalog/components/PastProfessionalCard';
+import { useConversations } from '../features/chat/hooks/use-chat';
+import { totalUnread } from '../features/chat/lib/chat';
 import { useNow } from '../shared/hooks/use-now';
 import { Notice } from '../shared/ui/Notice';
 import { QuickTile } from '../shared/ui/QuickTile';
@@ -31,7 +33,7 @@ import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
  * 2. Lo pendiente: el turno que falta pagar.
  * 3. Los turnos que siguen, en una línea cada uno.
  * 4. Los profesionales con los que ya se atendió, para volver a reservar.
- * 5. Su historia clínica y su MediPass.
+ * 5. Su historia clínica, su MediPass y los mensajes con sus profesionales.
  *
  * Reservar no está acá como botón: es la tab central, a un toque desde
  * cualquier pantalla.
@@ -44,6 +46,8 @@ export function HomeScreen(): React.JSX.Element {
   const navigation = useNavigation();
   const { firstName } = useSessionUser();
   const turnos = useMyAppointments();
+  const bandeja = useConversations();
+  const sinLeer = bandeja.data ? totalUnread(bandeja.data.conversaciones) : 0;
   // Cada 15 segundos: alcanza para que el botón de la sala aparezca a tiempo
   // sin redibujar la pantalla a cada segundo.
   const ahora = useNow(15_000);
@@ -149,6 +153,16 @@ export function HomeScreen(): React.JSX.Element {
             title="MediPass"
             caption="Tu código para una emergencia"
             onPress={() => navigation.navigate('Paciente', { screen: 'MediPass' })}
+          />
+          <QuickTile
+            icon={sinLeer > 0 ? 'chatbubbles' : 'chatbubbles-outline'}
+            title="Mensajes"
+            caption={
+              sinLeer > 0
+                ? `${sinLeer} ${sinLeer === 1 ? 'mensaje sin leer' : 'mensajes sin leer'}`
+                : 'Escribile a tu profesional'
+            }
+            onPress={() => navigation.navigate('Mensajes')}
           />
         </View>
       </View>
