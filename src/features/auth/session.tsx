@@ -113,6 +113,12 @@ export function SessionProvider({ children }: { children: ReactNode }): React.JS
 
   // El cliente HTTP avisa cuando una sesión en uso se vence y no se puede
   // renovar: la app vuelve al login desde cualquier pantalla.
+  //
+  // Deuda (ENG-71): acá el token de push queda en el backend. El cliente ya
+  // borró los tokens y el refresh no sirve, así que no hay con qué autenticar el
+  // `DELETE /push-tokens`. El celular sigue recibiendo "X te escribió" hasta que
+  // alguien ingrese (el backend reasigna el token). La solución es del backend:
+  // descartar los tokens de push de una sesión vencida.
   useEffect(
     () =>
       onSessionExpired(() => {
