@@ -1,4 +1,5 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { Alert } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -7,8 +8,11 @@ import { __notifications } from '../../../test-stubs/expo-notifications';
 import { __secureStore } from '../../../test-stubs/expo-secure-store';
 import { CONVERSACION_GARCIA, GARCIA_CHAT } from '../../mocks/chat';
 import { isViewingConversation } from '../../navigation/push-routing';
+import { RootNavigator } from '../../navigation/RootNavigator';
 import { API_URL, server } from '../../test/msw-server';
+import { servirDatosDelPaciente } from '../../test/patient-api';
 import { renderApp } from '../../test/render-app';
+import { PACIENTE } from '../../test/session';
 import { messagePushData } from './push';
 
 /*
@@ -37,6 +41,14 @@ function backendDeTokens(): { registrados: unknown[]; borrados: string[] } {
     }),
   );
   return registro;
+}
+
+/** Cierra sesión desde el perfil y espera el ingreso. */
+async function cerrarSesion(): Promise<void> {
+  fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Sí, cerrar sesión' }));
+  await screen.findByRole('heading', { name: 'Ingresá a tu cuenta' });
 }
 
 /** Contesta el diálogo que explica el permiso con el botón `respuesta`. */
@@ -140,12 +152,68 @@ describe('Notificaciones push (ENG-71)', () => {
     await renderApp();
     await waitFor(() => expect(backend.registrados).toHaveLength(1));
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Sí, cerrar sesión' }));
-    await screen.findByRole('heading', { name: 'Ingresá a tu cuenta' });
+    await cerrarSesion();
 
     await waitFor(() => expect(backend.borrados).toEqual(['ExponentPushToken[test-token-123]']));
+  });
+
+  it('si el registro falló al abrir la app, cerrar sesión igual borra el token del celular', async () => {
+    // El backend puede tener el token de una sesión anterior en este celular.
+    __notifications.state.status = 'granted';
+    const backend = backendDeTokens();
+    server.use(http.post(`${API_URL}/push-tokens`, () => HttpResponse.error()));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await renderApp();
+    await cerrarSesion();
+
+    await waitFor(() => expect(backend.borrados).toEqual(['ExponentPushToken[test-token-123]']));
+  });
+
+  it('sin el permiso concedido, cerrar sesión no le pide nada al backend', async () => {
+    __notifications.state.status = 'denied';
+    __notifications.state.canAskAgain = false;
+    const backend = backendDeTokens();
+
+    await renderApp();
+    await cerrarSesion();
+
+    expect(backend.borrados).toEqual([]);
+  });
+
+  it('el aviso de una sesión anterior no lleva al próximo que ingresa a esa conversación', async () => {
+    __notifications.state.status = 'denied';
+    __notifications.state.canAskAgain = false;
+    // La app se abre desde el aviso, pero no hay sesión guardada.
+    __notifications.state.lastResponse = {
+      notification: { request: { content: { data: AVISO } } },
+    };
+    servirDatosDelPaciente();
+    server.use(
+      http.post(`${API_URL}/auth/mobile/login`, () =>
+        HttpResponse.json({
+          user: { id: PACIENTE.id, email: PACIENTE.email },
+          accessToken: 'access-login',
+          refreshToken: 'refresh-login',
+        }),
+      ),
+      http.get(`${API_URL}/me`, () => HttpResponse.json(PACIENTE)),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RootNavigator />
+      </QueryClientProvider>,
+    );
+
+    await screen.findByRole('heading', { name: 'Ingresá a tu cuenta' });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: PACIENTE.email } });
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'Password1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ingresar' }));
+
+    await screen.findByRole('heading', { name: /^Buen/ });
+    expect(screen.queryByRole('heading', { name: 'Ana García' })).not.toBeInTheDocument();
+    expect(__notifications.state.lastResponse).toBeNull();
   });
 });
 

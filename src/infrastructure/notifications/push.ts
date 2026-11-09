@@ -22,9 +22,6 @@ export const MESSAGES_CHANNEL_ID = 'mensajes';
 /** Para no volver a explicar el permiso en cada inicio si el paciente dijo "Ahora no". */
 const ASKED_KEY = 'push-permiso-explicado';
 
-/** El token registrado en el backend con esta sesión, para borrarlo al salir. */
-let registeredToken: string | null = null;
-
 /** Lo que el backend pone en `data` del push de un mensaje nuevo. */
 export interface MessagePushData {
   tipo: 'NUEVO_MENSAJE';
@@ -82,6 +79,14 @@ function explain(): Promise<boolean> {
   });
 }
 
+/** El token de Expo de este celular, con el `projectId` de EAS. */
+async function deviceToken(): Promise<string> {
+  const projectId = (Constants.expoConfig?.extra?.eas as { projectId?: string } | undefined)
+    ?.projectId;
+  const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+  return data;
+}
+
 /**
  * Pide el permiso si hace falta y registra el token en el backend. Se llama con
  * la sesión iniciada. **Nunca tira**: sin push la app funciona igual, y el
@@ -108,16 +113,13 @@ export async function registerForPush(): Promise<void> {
     }
     if (status !== 'granted') return;
 
-    const projectId = (Constants.expoConfig?.extra?.eas as { projectId?: string } | undefined)
-      ?.projectId;
-    const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
+    const token = await deviceToken();
 
     await apiRequest<void>('/push-tokens', {
       method: 'POST',
       body: { token, platform: Platform.OS === 'ios' ? 'ios' : 'android' },
       fallbackMessage: 'No pudimos activar los avisos.',
     });
-    registeredToken = token;
   } catch (err) {
     // Emulador sin Google Play, sin credenciales de FCM en EAS, sin red…
     console.warn('No se pudieron activar las notificaciones push.', err);
@@ -134,10 +136,12 @@ export async function unregisterFromPush(): Promise<void> {
   // La explicación del permiso es de esta persona: el próximo que ingrese en el
   // celular la ve de nuevo, y en el dispositivo no queda nada de la sesión.
   await SecureStore.deleteItemAsync(ASKED_KEY).catch(() => {});
-  const token = registeredToken;
-  registeredToken = null;
-  if (!token) return;
   try {
+    // El token se le pide al sistema, no a lo que registró esta sesión: si el
+    // registro al abrir la app falló (sin red), el backend puede tener el token
+    // de una sesión anterior y el celular seguiría recibiendo los avisos.
+    if ((await Notifications.getPermissionsAsync()).status !== 'granted') return;
+    const token = await deviceToken();
     await apiRequest<void>(`/push-tokens/${encodeURIComponent(token)}`, {
       method: 'DELETE',
       fallbackMessage: 'No pudimos desactivar los avisos.',
