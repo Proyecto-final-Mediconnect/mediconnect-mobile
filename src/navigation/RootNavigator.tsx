@@ -77,6 +77,7 @@ function RootStack(): React.JSX.Element {
   usePushNotifications(
     state.status === 'signedIn' && state.user.legalAccepted !== false,
     navigationReady && conContenedor,
+    state.status === 'signedOut',
   );
 
   // Al cerrar sesión —o cuando vence— se tira la caché: el próximo que ingrese

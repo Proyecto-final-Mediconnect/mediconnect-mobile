@@ -57,13 +57,23 @@ Notifications.setNotificationHandler({
  *
  * El toque puede llegar antes de que haya sesión o de que el navegador esté
  * listo (la app arranca desde el aviso): queda pendiente y se usa apenas se
- * pueda. Sin sesión no se navega: después del ingreso sí.
+ * pueda. Mientras la sesión se restaura no se navega: después del ingreso sí.
+ *
+ * Con `signedOut` (nadie ingresado) el aviso se descarta: era de la sesión
+ * anterior, y el próximo que ingrese en el celular no tiene que terminar en esa
+ * conversación.
  */
-export function usePushNotifications(signedIn: boolean, navigationReady: boolean): void {
+export function usePushNotifications(
+  signedIn: boolean,
+  navigationReady: boolean,
+  signedOut: boolean,
+): void {
   const pending = useRef<MessagePushData | null>(null);
   // Los listeners se instalan una vez: leen el estado actual por estos refs.
   const listo = useRef(false);
   listo.current = signedIn && navigationReady;
+  const sinSesion = useRef(false);
+  sinSesion.current = signedOut;
 
   const openPending = useRef(() => {
     const data = pending.current;
@@ -82,6 +92,10 @@ export function usePushNotifications(signedIn: boolean, navigationReady: boolean
     let vigente = true;
     const recibir = (response: Notifications.NotificationResponse | null): void => {
       if (!vigente || !response) return;
+      if (sinSesion.current) {
+        void Notifications.clearLastNotificationResponseAsync();
+        return;
+      }
       pending.current = messagePushData(response.notification.request.content.data);
       openPending();
     };
@@ -92,6 +106,14 @@ export function usePushNotifications(signedIn: boolean, navigationReady: boolean
       subscription.remove();
     };
   }, [openPending]);
+
+  // Al cerrar sesión —o si la que se restauraba ya no vale— se olvida el aviso
+  // pendiente, también el que abrió la app: si no, el próximo arranque lo usaría.
+  useEffect(() => {
+    if (!signedOut) return;
+    pending.current = null;
+    void Notifications.clearLastNotificationResponseAsync();
+  }, [signedOut]);
 
   // Recién con sesión y navegador listos se abre lo que quedó pendiente.
   useEffect(() => {
