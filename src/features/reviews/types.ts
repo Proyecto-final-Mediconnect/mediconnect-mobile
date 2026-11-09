@@ -46,3 +46,10 @@ export interface ProfessionalReviewsPage {
   page: number;
   hasMore: boolean;
 }
+
+/** Un turno que el paciente puede reseñar y todavía no reseñó (ENG-190). */
+export interface PendingReview {
+  appointmentId: string;
+  scheduledAt: string;
+  professional: { id: string; firstName: string; lastName: string; photoUrl: string | null };
+}

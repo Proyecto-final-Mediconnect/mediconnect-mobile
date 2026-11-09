@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { navigationRef } from '../../../navigation/push-routing';
 import { Button } from '../../../shared/ui/Button';
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
 import { openRoom, useJoinConsultation } from '../hooks/use-join-consultation';
@@ -36,6 +37,18 @@ export function JoinConsultationButton({
       await openRoom(acceso);
     } catch {
       setErrorApertura('No pudimos abrir el navegador. Probá de nuevo.');
+      return;
+    }
+    // Volvió de la sala: la pantalla de cierre le pide la reseña ahí mismo
+    // (ENG-190). Por la ref y no por `useNavigation` porque el botón también
+    // se usa fuera de una pantalla (las tarjetas del inicio y de "Turnos").
+    if (acceso.role === 'PACIENTE' && navigationRef.isReady()) {
+      navigationRef.navigate('CierreConsulta', {
+        appointmentId: acceso.appointmentId,
+        professionalName: acceso.counterpart
+          ? `${acceso.counterpart.firstName} ${acceso.counterpart.lastName}`
+          : 'tu profesional',
+      });
     }
   }
 

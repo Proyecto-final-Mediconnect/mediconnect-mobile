@@ -229,6 +229,12 @@ export function servirDatosDelPaciente(): void {
     // Reseñas (ENG-80, ENG-82): por defecto la paciente no dejó ninguna y los
     // profesionales no tienen; los tests de reseñas declaran las suyas.
     http.get(`${API_URL}/reviews/me`, () => HttpResponse.json([])),
+    // ENG-190: sin consultas para calificar, salvo que el test diga otra cosa.
+    http.get(`${API_URL}/reviews/pending`, () => HttpResponse.json([])),
+    http.post(
+      `${API_URL}/reviews/pending/:id/dismiss`,
+      () => new HttpResponse(null, { status: 204 }),
+    ),
     http.get(`${API_URL}/professionals/:id/reviews`, () =>
       HttpResponse.json({ reviews: [], rating: null, page: 1, hasMore: false }),
     ),

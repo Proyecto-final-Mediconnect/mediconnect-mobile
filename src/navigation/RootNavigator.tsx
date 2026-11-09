@@ -14,6 +14,7 @@ import { PrivacyScreen } from '../screens/PrivacyScreen';
 import { EntryDetailScreen } from '../screens/EntryDetailScreen';
 import { LegalConsentScreen } from '../screens/LegalConsentScreen';
 import { AppointmentDetailScreen } from '../screens/AppointmentDetailScreen';
+import { ConsultationClosingScreen } from '../screens/ConsultationClosingScreen';
 import { PaymentScreen } from '../screens/PaymentScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { MessagesScreen } from '../screens/MessagesScreen';
@@ -133,6 +134,7 @@ function RootStack(): React.JSX.Element {
             <Stack.Screen name="Reservar" component={BookAppointmentScreen} />
             <Stack.Screen name="Pago" component={PaymentScreen} />
             <Stack.Screen name="Turno" component={AppointmentDetailScreen} />
+            <Stack.Screen name="CierreConsulta" component={ConsultationClosingScreen} />
             <Stack.Screen name="Mensajes" component={MessagesScreen} />
             <Stack.Screen name="Conversacion" component={ConversationScreen} />
             {/* El formulario de un documento se abre como modal, igual que el

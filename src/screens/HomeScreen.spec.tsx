@@ -95,4 +95,41 @@ describe('Inicio', () => {
       expect(__abiertas).toEqual(['https://mediconnect.daily.co/turno-sala?t=token']),
     );
   });
+
+  describe('pedido de reseña (ENG-190)', () => {
+    const PENDIENTE = {
+      appointmentId: '3f2b8c1a-5d4e-4f6a-9b7c-1e2d3c4b5a69',
+      scheduledAt: '2026-11-20T15:00:00.000Z',
+      professional: { id: 'pro-1', firstName: 'Ana', lastName: 'García', photoUrl: null },
+    };
+
+    it('muestra la tarjeta y la cruz la descarta', async () => {
+      let pendientes = [PENDIENTE];
+      let descartado: string | null = null;
+      await renderApp(
+        http.get(`${API_URL}/reviews/pending`, () => HttpResponse.json(pendientes)),
+        http.post(`${API_URL}/reviews/pending/:id/dismiss`, ({ params }) => {
+          descartado = String(params.id);
+          pendientes = [];
+          return new HttpResponse(null, { status: 204 });
+        }),
+      );
+
+      expect(await screen.findByText('¿Cómo fue tu consulta con Ana García?')).toBeInTheDocument();
+      fireEvent.click(
+        screen.getByRole('button', { name: 'No calificar la consulta con Ana García' }),
+      );
+
+      await waitFor(() =>
+        expect(screen.queryByText('¿Cómo fue tu consulta con Ana García?')).not.toBeInTheDocument(),
+      );
+      expect(descartado).toBe(PENDIENTE.appointmentId);
+    });
+
+    it('sin pendientes no muestra nada', async () => {
+      await renderApp();
+      await screen.findByText('DESPUÉS');
+      expect(screen.queryByText(/cómo fue tu consulta/i)).not.toBeInTheDocument();
+    });
+  });
 });
