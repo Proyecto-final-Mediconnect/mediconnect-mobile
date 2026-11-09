@@ -185,3 +185,27 @@ describe('La reseña de una consulta (ENG-80)', () => {
     expect(screen.queryByText('TU RESEÑA')).not.toBeInTheDocument();
   });
 });
+
+describe('Probar cámara y micrófono desde el turno', () => {
+  it('está en una consulta todavía no abierta (TOO_EARLY), donde no se puede entrar', async () => {
+    await renderApp();
+    fireEvent.click(screen.getByRole('tab', { name: 'Turnos' }));
+    const lista = within(await screen.findByTestId('lista-turnos'));
+    const porVenir = lista
+      .getAllByRole('button', { name: 'Ver el turno con Martín Olivares' })
+      .find((b) => within(b).queryByText('Confirmado'))!;
+    fireEvent.click(porVenir);
+    await screen.findByText('Tu turno');
+
+    expect(screen.getByRole('button', { name: 'Probar cámara y micrófono' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ingresar a la sala' })).not.toBeInTheDocument();
+  });
+
+  it('no aparece en una consulta completada', async () => {
+    await abrirConsultaHecha();
+
+    expect(
+      screen.queryByRole('button', { name: 'Probar cámara y micrófono' }),
+    ).not.toBeInTheDocument();
+  });
+});
