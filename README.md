@@ -80,6 +80,49 @@ npm run web      # abre la app en el navegador (react-native-web)
 
 Escaneá el QR con la app **Expo Go** para correr en un dispositivo físico.
 
+## Build interno (APK de demo, ENG-119)
+
+La app no se publica en Google Play ni en App Store (Planning del 15/08/2026).
+Se distribuye como APK con el perfil `preview` de EAS: link de descarga
+interno, sin cuenta de desarrollador ni revisión de la store.
+
+### Antes de generar
+
+- La versión sale de `version` en `app.json` (Semantic Versioning). Subila
+  antes de un build nuevo para la defensa; el `versionCode` lo numera EAS
+  (`appVersionSource: remote`).
+- Las variables del entorno `preview` de EAS quedan **fijas dentro del APK**.
+  Nunca una IP local: el APK solo andaría en la red de quien lo generó.
+
+| Variable (entorno `preview` de EAS) | Valor                                                                  |
+| ----------------------------------- | ---------------------------------------------------------------------- |
+| `EXPO_PUBLIC_API_URL`               | `https://mediconnect-backend-smss.onrender.com`                        |
+| `EXPO_PUBLIC_ENV`                   | `production`                                                           |
+| `EXPO_PUBLIC_SENTRY_DSN`            | DSN del proyecto mobile en Sentry                                      |
+| `GOOGLE_SERVICES_JSON`              | `google-services.json` de Firebase, como variable secreta tipo archivo |
+| `SENTRY_ORG` / `SENTRY_PROJECT`     | Para subir los source maps                                             |
+| `SENTRY_AUTH_TOKEN`                 | Secreta                                                                |
+
+`EXPO_PUBLIC_WEB_URL` puede faltar: usa la web publicada en Render. Sin
+`GOOGLE_SERVICES_JSON` el APK compila igual pero no recibe push (ENG-71). Para
+revisar lo cargado: `npx eas-cli env:list --environment preview`.
+
+### Generar
+
+```bash
+npx eas-cli build --profile preview --platform android
+```
+
+Corre en la nube de EAS (unos 15 minutos) y al terminar da un link y un QR.
+El link vence a los 14 días: guardá el `.apk` aparte si hace falta después.
+
+### Instalar
+
+1. Abrí el link o escaneá el QR desde el celular Android y descargá el `.apk`.
+2. Abrilo. Android pide permitir la instalación desde esa app (el navegador o
+   Archivos) la primera vez; no hace falta el modo desarrollador.
+3. Si ya había otra versión instalada con otra firma, desinstalala antes.
+
 ## Tests
 
 ```bash
