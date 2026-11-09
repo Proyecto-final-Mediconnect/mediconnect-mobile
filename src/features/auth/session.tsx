@@ -14,6 +14,7 @@ import {
   readSessionTokens,
   saveSessionTokens,
 } from '../../infrastructure/secure-store/session-tokens';
+import { unregisterFromPush } from '../../infrastructure/notifications/push';
 import { ApiError, onSessionExpired } from '../../shared/lib/api-client';
 import { LEGAL_VERSION } from '../legal/legal';
 import { acceptLegal as postLegalAcceptance, fetchMe, login } from './api';
@@ -112,6 +113,12 @@ export function SessionProvider({ children }: { children: ReactNode }): React.JS
 
   // El cliente HTTP avisa cuando una sesión en uso se vence y no se puede
   // renovar: la app vuelve al login desde cualquier pantalla.
+  //
+  // Deuda (ENG-71): acá el token de push queda en el backend. El cliente ya
+  // borró los tokens y el refresh no sirve, así que no hay con qué autenticar el
+  // `DELETE /push-tokens`. El celular sigue recibiendo "X te escribió" hasta que
+  // alguien ingrese (el backend reasigna el token). La solución es del backend:
+  // descartar los tokens de push de una sesión vencida.
   useEffect(
     () =>
       onSessionExpired(() => {
@@ -143,6 +150,10 @@ export function SessionProvider({ children }: { children: ReactNode }): React.JS
     // mostraría sus turnos y su historia clínica. En un celular compartido eso
     // es exposición de datos de salud, así que el error sube a la pantalla y
     // la sesión sigue abierta hasta que el borrado funcione.
+    //
+    // El token de push se borra antes, con la sesión todavía válida: sin el
+    // access token el backend no sabe de quién es (ENG-71). No frena el cierre.
+    await unregisterFromPush();
     await clearSessionTokens();
     setState({ status: 'signedOut' });
   }, []);
