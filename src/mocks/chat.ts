@@ -143,6 +143,29 @@ export const chatDemo = {
     c.mensajes.push(nuevo);
     return { ...nuevo };
   },
+  /** Un archivo que manda la paciente (ENG-102). El tipo y el tamaño, como los guarda el backend. */
+  enviarArchivo(
+    id: string,
+    adjunto: { tipo: string; tamano: number },
+    contenido: string,
+  ): ChatMessage | null {
+    const c = conversaciones.find((x) => x.id === id);
+    if (!c) return null;
+    const nuevo = { ...mensaje(id, PACIENTE_DEMO.id, contenido, new Date(), false), adjunto };
+    c.mensajes.push(nuevo);
+    return { ...nuevo };
+  },
+  /** Una foto que manda la profesional, para ver cómo se muestra (ENG-102). */
+  recibirFoto(id: string): string | null {
+    const c = conversaciones.find((x) => x.id === id);
+    if (!c) return null;
+    const nuevo = {
+      ...mensaje(id, c.contraparte.id, '', new Date(), false),
+      adjunto: { tipo: 'image/jpeg', tamano: 340 * 1024 },
+    };
+    c.mensajes.push(nuevo);
+    return nuevo.id;
+  },
   /** Lo que mandaría la otra persona, para probar que la app lo trae sola. */
   recibir(id: string, contenido: string): void {
     const c = conversaciones.find((x) => x.id === id);
