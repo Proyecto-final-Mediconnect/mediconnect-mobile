@@ -115,13 +115,13 @@ describe('Inicio', () => {
         }),
       );
 
-      expect(await screen.findByText('¿Cómo fue tu consulta con Ana García?')).toBeInTheDocument();
+      expect(await screen.findByText('CALIFICÁ TU CONSULTA')).toBeInTheDocument();
       fireEvent.click(
         screen.getByRole('button', { name: 'No calificar la consulta con Ana García' }),
       );
 
       await waitFor(() =>
-        expect(screen.queryByText('¿Cómo fue tu consulta con Ana García?')).not.toBeInTheDocument(),
+        expect(screen.queryByText('CALIFICÁ TU CONSULTA')).not.toBeInTheDocument(),
       );
       expect(descartado).toBe(PENDIENTE.appointmentId);
     });
@@ -129,7 +129,7 @@ describe('Inicio', () => {
     it('sin pendientes no muestra nada', async () => {
       await renderApp();
       await screen.findByText('DESPUÉS');
-      expect(screen.queryByText(/cómo fue tu consulta/i)).not.toBeInTheDocument();
+      expect(screen.queryByText('CALIFICÁ TU CONSULTA')).not.toBeInTheDocument();
     });
   });
 });

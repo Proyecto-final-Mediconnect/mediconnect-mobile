@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
+import { ProfessionalAvatar } from '../../catalog/components/ProfessionalAvatar';
 import { useDismissPendingReview, usePendingReviews } from '../hooks/use-reviews';
 import type { PendingReview } from '../types';
 import { ReviewSheet } from './ReviewSheet';
@@ -11,13 +12,15 @@ import { StarInput } from './Stars';
 const FECHA = new Intl.DateTimeFormat('es-AR', {
   timeZone: 'America/Argentina/Buenos_Aires',
   day: 'numeric',
-  month: 'long',
+  month: 'short',
 });
 
 /**
- * "¿Cómo fue tu consulta con…?" en el inicio (ENG-190), una tarjeta por turno
- * que falta reseñar. Las estrellas abren la hoja de reseña con esa
- * calificación; la cruz la descarta y no vuelve, tampoco en la web.
+ * "Calificá tu consulta" en el inicio (ENG-190): una tarjeta por turno que falta
+ * reseñar, con el mismo lenguaje que el resto del inicio —rótulo de sección,
+ * tarjeta blanca, avatar del profesional—. Las estrellas abren la hoja de
+ * reseña con esa calificación; la cruz la descarta y no vuelve, tampoco en la
+ * web.
  *
  * Si la lista no carga no muestra nada: es una invitación, no algo que el
  * paciente esté esperando.
@@ -31,15 +34,21 @@ export function PendingReviewCards(): React.JSX.Element | null {
   if (lista.length === 0) return null;
 
   return (
-    <View style={styles.lista}>
+    <View style={styles.seccion}>
+      <Text style={styles.seccionTitulo}>CALIFICÁ TU CONSULTA</Text>
       {lista.map((p) => {
         const nombre = `${p.professional.firstName} ${p.professional.lastName}`;
         return (
-          <View key={p.appointmentId} style={styles.tarjeta}>
-            <View style={styles.cabecera}>
+          <View key={p.appointmentId} style={styles.card}>
+            <View style={styles.fila}>
+              <ProfessionalAvatar professional={p.professional} size={44} />
               <View style={styles.textos}>
-                <Text style={styles.titulo}>¿Cómo fue tu consulta con {nombre}?</Text>
-                <Text style={styles.fecha}>{FECHA.format(new Date(p.scheduledAt))}</Text>
+                <Text style={styles.nombre} numberOfLines={1}>
+                  {nombre}
+                </Text>
+                <Text style={styles.detalle}>
+                  ¿Cómo te fue? · {FECHA.format(new Date(p.scheduledAt)).replace('.', '')}
+                </Text>
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -47,11 +56,14 @@ export function PendingReviewCards(): React.JSX.Element | null {
                 hitSlop={spacing.sm}
                 disabled={descartar.isPending}
                 onPress={() => descartar.mutate(p.appointmentId)}
+                style={({ pressed }) => [styles.cerrar, pressed && styles.cerrarPresionado]}
               >
-                <Ionicons name="close" size={20} color={colors.muted} />
+                <Ionicons name="close" size={18} color={colors.mutedSoft} />
               </Pressable>
             </View>
-            <StarInput value={0} onChange={(rating) => setAbierta({ review: p, rating })} />
+            <View style={styles.estrellas}>
+              <StarInput value={0} onChange={(rating) => setAbierta({ review: p, rating })} />
+            </View>
           </View>
         );
       })}
@@ -72,17 +84,37 @@ export function PendingReviewCards(): React.JSX.Element | null {
 }
 
 const styles = StyleSheet.create({
-  lista: { gap: spacing.sm },
-  tarjeta: {
-    gap: spacing.sm,
+  seccion: { gap: spacing.sm, marginTop: spacing.sm },
+  seccionTitulo: {
+    marginLeft: spacing.xs,
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    letterSpacing: 1,
+    color: colors.mutedSoft,
+  },
+  card: {
+    gap: spacing.md,
     backgroundColor: colors.white,
-    borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.line,
+    borderRadius: radius.card,
     padding: spacing.md,
   },
-  cabecera: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  fila: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   textos: { flex: 1, gap: 2 },
-  titulo: { fontFamily: fonts.semibold, fontSize: fontSize.md, color: colors.ink },
-  fecha: { fontFamily: fonts.medium, fontSize: fontSize.xs, color: colors.muted },
+  nombre: { fontFamily: fonts.bold, fontSize: fontSize.md, color: colors.brandDeep },
+  detalle: { fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.muted },
+  cerrar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cerrarPresionado: { backgroundColor: colors.surface },
+  estrellas: {
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
+  },
 });
