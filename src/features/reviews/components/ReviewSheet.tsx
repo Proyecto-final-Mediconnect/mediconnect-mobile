@@ -15,6 +15,10 @@ interface ReviewSheetProps {
   appointmentId: string;
   professionalName: string;
   onDismiss: () => void;
+  /** Las estrellas que ya tocó en la tarjeta del inicio o en el cierre (ENG-190). */
+  initialRating?: number;
+  /** Si se pasa, se llama al enviar bien en lugar de `onDismiss`. */
+  onSent?: () => void;
 }
 
 /**
@@ -27,6 +31,8 @@ export function ReviewSheet({
   appointmentId,
   professionalName,
   onDismiss,
+  initialRating = 0,
+  onSent,
 }: ReviewSheetProps): React.JSX.Element {
   const crear = useCreateReview(appointmentId);
   const [rating, setRating] = useState(0);
@@ -38,7 +44,7 @@ export function ReviewSheet({
   // que se cerró sin mandar no es lo que el paciente quiere decir ahora.
   useEffect(() => {
     if (!visible) return;
-    setRating(0);
+    setRating(initialRating);
     setComment('');
     setFalta(false);
     crear.reset();
@@ -64,7 +70,7 @@ export function ReviewSheet({
     }
     if (enviando.current) return;
     enviando.current = true;
-    crear.mutate({ rating, comment }, { onSuccess: onDismiss });
+    crear.mutate({ rating, comment }, { onSuccess: onSent ?? onDismiss });
   };
 
   return (

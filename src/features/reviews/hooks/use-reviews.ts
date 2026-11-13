@@ -2,7 +2,13 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { useMemo } from 'react';
 
 import { useSessionUser } from '../../auth/session';
-import { createReview, fetchMyReviews, fetchProfessionalReviews } from '../api';
+import {
+  createReview,
+  dismissPendingReview,
+  fetchMyReviews,
+  fetchPendingReviews,
+  fetchProfessionalReviews,
+} from '../api';
 import type { NewReview } from '../types';
 
 /**
@@ -11,6 +17,9 @@ import type { NewReview } from '../types';
  * siguiente aunque el `clear()` del cierre de sesión llegue tarde.
  */
 export const MY_REVIEWS_KEY = ['reviews', 'me'] as const;
+
+/** Los turnos que falta reseñar (ENG-190). */
+export const PENDING_REVIEWS_KEY = ['reviews', 'pending'] as const;
 
 export function useMyReviews(enabled = true) {
   const { id } = useSessionUser();
@@ -26,7 +35,30 @@ export function useCreateReview(appointmentId: string) {
     // También si falla: un 409 es que ya la había dejado (desde otro dispositivo o
     // la web), y releer `/reviews/me` hace que la tarjeta muestre esa reseña en
     // vez de seguir ofreciendo dejar una.
-    onSettled: () => queryClient.invalidateQueries({ queryKey: MY_REVIEWS_KEY }),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: MY_REVIEWS_KEY }),
+        queryClient.invalidateQueries({ queryKey: PENDING_REVIEWS_KEY }),
+      ]),
+  });
+}
+
+/** Los turnos que falta reseñar, para la tarjeta del inicio (ENG-190). */
+export function usePendingReviews(enabled = true) {
+  const { id } = useSessionUser();
+  return useQuery({
+    queryKey: [...PENDING_REVIEWS_KEY, id],
+    queryFn: fetchPendingReviews,
+    enabled,
+  });
+}
+
+/** Descarta el pedido de un turno: tampoco vuelve en la web. */
+export function useDismissPendingReview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: dismissPendingReview,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: PENDING_REVIEWS_KEY }),
   });
 }
 

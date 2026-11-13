@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as WebBrowser from 'expo-web-browser';
-import { Linking } from 'react-native';
+import { AppState, Linking } from 'react-native';
 
 import { MY_APPOINTMENTS_KEY } from '../../appointments/hooks/use-appointments';
 import { joinVideoConsultation } from '../api';
@@ -20,20 +20,43 @@ import type { VideoConsultationAccess } from '../types';
  */
 export async function openRoom(access: Pick<VideoConsultationAccess, 'roomUrl'>): Promise<void> {
   try {
-    await WebBrowser.openBrowserAsync(access.roomUrl, {
+    const result = await WebBrowser.openBrowserAsync(access.roomUrl, {
       // Pantalla completa y sin barra de lectura: es una llamada, no un artículo.
       presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
       readerMode: false,
       enableBarCollapsing: false,
       dismissButtonStyle: 'close',
     });
+    // En iOS la promesa se resuelve al cerrar el navegador. En Android, apenas
+    // se abre (`opened`): la vuelta se detecta cuando la app vuelve al frente.
+    if (result.type === WebBrowser.WebBrowserResultType.OPENED) await untilAppReturns();
   } catch {
     // En Android falla si no hay Custom Tabs (Chrome deshabilitado, por
     // ejemplo) o si ya hay otro navegador in-app abierto. Se prueba con el
     // navegador del sistema; si eso también falla, el error le llega a quien
     // llamó y se lo muestra al paciente.
     await Linking.openURL(access.roomUrl);
+    await untilAppReturns();
   }
+}
+
+/**
+ * Se resuelve cuando la app vuelve al frente después de haber salido: es la
+ * señal de que el paciente cerró la sala (ENG-190). Espera la salida primero
+ * porque el evento `active` puede llegar antes de que el navegador tape la app.
+ */
+function untilAppReturns(): Promise<void> {
+  return new Promise((resolve) => {
+    let salio = AppState.currentState !== 'active';
+    const sub = AppState.addEventListener('change', (estado) => {
+      if (estado !== 'active') {
+        salio = true;
+      } else if (salio) {
+        sub.remove();
+        resolve();
+      }
+    });
+  });
 }
 
 /**

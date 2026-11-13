@@ -15,6 +15,7 @@ import { greeting, laterAppointments, pastProfessionals } from '../features/appo
 import { joinStateOf, timeUntilOpen } from '../features/appointments/lib/join-window';
 import type { Appointment } from '../features/appointments/types';
 import { PastProfessionalCard } from '../features/catalog/components/PastProfessionalCard';
+import { PendingReviewCards } from '../features/reviews/components/PendingReviewCards';
 import { useConversations } from '../features/chat/hooks/use-chat';
 import { totalUnread } from '../features/chat/lib/chat';
 import { useNow } from '../shared/hooks/use-now';
@@ -97,6 +98,8 @@ export function HomeScreen(): React.JSX.Element {
           }}
         />
       ) : null}
+
+      <PendingReviewCards />
 
       {siguientes.length > 0 ? (
         <View style={styles.seccion}>
