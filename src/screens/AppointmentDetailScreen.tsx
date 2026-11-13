@@ -24,6 +24,7 @@ import { ProfessionalAvatar } from '../features/catalog/components/ProfessionalA
 import { getPaymentStatus } from '../features/payments/api';
 import { AppointmentReview } from '../features/reviews/components/AppointmentReview';
 import { canPay } from '../features/payments/lib/payment';
+import { DeviceCheckButton } from '../features/video/components/DeviceCheckButton';
 import { JoinConsultationButton } from '../features/video/components/JoinConsultationButton';
 import type { RootStackParamList } from '../navigation/types';
 import { refundOutcomeText } from '../features/cancellation-policy/policy';
@@ -47,6 +48,12 @@ type IconName = ComponentProps<typeof Ionicons>['name'];
  * El turno sale de la lista de "Mis turnos", que ya está en caché; el pago se
  * consulta aparte y, si falla, la historia se arma igual sin ese dato.
  */
+/**
+ * Turnos que habilitan el chat con el profesional: los pagos, hayan pasado o no.
+ * Es `CHAT_ENABLING_STATUSES` del backend, que rechaza el resto con 403.
+ */
+const HABILITAN_CHAT = new Set(['CONFIRMADO', 'COMPLETADO', 'NO_ASISTIO']);
+
 export function AppointmentDetailScreen(): React.JSX.Element {
   const navigation = useNavigation();
   const { params } = useRoute<RouteProp<RootStackParamList, 'Turno'>>();
@@ -95,7 +102,11 @@ export function AppointmentDetailScreen(): React.JSX.Element {
   }
 
   const pasos = appointmentTimeline(turno, pago.data ?? null, ahora);
-  const salaAbierta = joinStateOf(turno, ahora).kind === 'OPEN';
+  const sala = joinStateOf(turno, ahora).kind;
+  const salaAbierta = sala === 'OPEN';
+  // Con la consulta por delante —abierta o por abrirse— se puede probar la
+  // cámara y el micrófono antes, en una sala aparte.
+  const puedeProbar = sala === 'OPEN' || sala === 'TOO_EARLY';
   const profesional = turno.professional;
 
   return (
@@ -137,6 +148,8 @@ export function AppointmentDetailScreen(): React.JSX.Element {
             )}
           </View>
         ) : null}
+
+        {puedeProbar ? <DeviceCheckButton /> : null}
       </View>
 
       {/* Solo una consulta que ya se hizo se puede reseñar (ENG-80): el backend
@@ -157,6 +170,19 @@ export function AppointmentDetailScreen(): React.JSX.Element {
           <Button
             label={`Volver a reservar con ${profesional.firstName}`}
             onPress={() => navigation.navigate('Profesional', { id: profesional.id })}
+            fullWidth
+          />
+        ) : null}
+        {profesional && HABILITAN_CHAT.has(turno.status) ? (
+          <Button
+            label={`Escribirle a ${profesional.firstName}`}
+            variant="secondary"
+            onPress={() =>
+              navigation.navigate('Conversacion', {
+                contraparteId: profesional.id,
+                nombre: `${profesional.firstName} ${profesional.lastName}`.trim(),
+              })
+            }
             fullWidth
           />
         ) : null}

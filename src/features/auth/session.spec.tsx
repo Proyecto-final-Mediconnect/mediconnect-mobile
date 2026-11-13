@@ -128,6 +128,100 @@ describe('sesión del paciente', () => {
     });
   });
 
+  describe('verificación en dos pasos (ENG-88)', () => {
+    /** Login que pide el código, y el segundo paso que emite `NUEVOS` con el código correcto. */
+    function loginConCodigo(): { codigos: string[] } {
+      const codigos: string[] = [];
+      loginQueResponde();
+      server.use(
+        http.post(`${API_URL}/auth/mobile/login`, () =>
+          HttpResponse.json({
+            user: { id: PACIENTE.id, email: PACIENTE.email },
+            mfaRequired: true,
+            mfaToken: 'token-primer-paso',
+          }),
+        ),
+        http.post(`${API_URL}/auth/mobile/mfa/verify`, async ({ request }) => {
+          const { mfaToken, code } = (await request.json()) as { mfaToken: string; code: string };
+          codigos.push(code);
+          return mfaToken === 'token-primer-paso' && code === '123456'
+            ? HttpResponse.json({ user: { id: PACIENTE.id }, ...NUEVOS })
+            : HttpResponse.json(
+                { message: 'El código no es válido o ya venció.' },
+                { status: 400 },
+              );
+        }),
+      );
+      return { codigos };
+    }
+
+    it('pide el código y recién con él entra y guarda la sesión', async () => {
+      const { codigos } = loginConCodigo();
+      await abrirApp();
+
+      completarYEnviar('paciente.demo@mediconnect.test', 'Password1');
+
+      expect(
+        await screen.findByRole('heading', { name: 'Verificación en dos pasos' }),
+      ).toBeVisible();
+      // Sin el código no hay nada guardado en el dispositivo.
+      expect(await readSessionTokens()).toBeNull();
+
+      fireEvent.change(screen.getByLabelText('Código'), { target: { value: '123 456' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Verificar e ingresar' }));
+
+      expect(await screen.findByRole('heading', { name: /, Marina$/ })).toBeVisible();
+      expect(await readSessionTokens()).toEqual(NUEVOS);
+      expect(codigos).toEqual(['123456']);
+    });
+
+    it('un código equivocado lo dice y no guarda nada', async () => {
+      loginConCodigo();
+      await abrirApp();
+
+      completarYEnviar('paciente.demo@mediconnect.test', 'Password1');
+      fireEvent.change(await screen.findByLabelText('Código'), { target: { value: '000000' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Verificar e ingresar' }));
+
+      expect(await screen.findByText('El código no es válido o ya venció.')).toBeVisible();
+      expect(await readSessionTokens()).toBeNull();
+    });
+
+    it('"Volver" regresa al email y la contraseña', async () => {
+      loginConCodigo();
+      await abrirApp();
+
+      completarYEnviar('paciente.demo@mediconnect.test', 'Password1');
+      fireEvent.click(await screen.findByRole('button', { name: 'Volver' }));
+
+      expect(screen.getByLabelText('Email')).toBeVisible();
+      // La contraseña no queda cargada al volver: hay que escribirla de nuevo.
+      expect(screen.getByLabelText('Contraseña')).toHaveValue('');
+    });
+
+    it('si el token del primer paso venció, vuelve al email y la contraseña con un aviso', async () => {
+      loginConCodigo();
+      server.use(
+        http.post(`${API_URL}/auth/mobile/mfa/verify`, () =>
+          HttpResponse.json({ message: 'Token inválido o expirado.' }, { status: 401 }),
+        ),
+      );
+      await abrirApp();
+
+      completarYEnviar('paciente.demo@mediconnect.test', 'Password1');
+      fireEvent.change(await screen.findByLabelText('Código'), { target: { value: '123456' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Verificar e ingresar' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Tu verificación venció. Ingresá de nuevo con tu email y contraseña.',
+      );
+      expect(screen.queryByRole('heading', { name: 'Verificación en dos pasos' })).toBeNull();
+      expect(screen.getByLabelText('Email')).toHaveValue('paciente.demo@mediconnect.test');
+      expect(screen.getByLabelText('Contraseña')).toHaveValue('');
+      expect(await readSessionTokens()).toBeNull();
+    });
+  });
+
   describe('al volver a abrir la app', () => {
     it('con la sesión guardada entra directo, sin pedir la contraseña', async () => {
       await iniciarSesionGuardada();
@@ -230,7 +324,9 @@ describe('sesión del paciente', () => {
     it('si no se pueden borrar los tokens, no dice que cerró sesión', async () => {
       await iniciarSesionGuardada();
       await abrirApp();
-      await screen.findByRole('heading', { name: /^(Buen día|Buenas tardes|Buenas noches), Marina$/ });
+      await screen.findByRole('heading', {
+        name: /^(Buen día|Buenas tardes|Buenas noches), Marina$/,
+      });
       __secureStore.failDeletesOf('mediconnect.session.refreshToken');
 
       fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));

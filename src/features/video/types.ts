@@ -14,3 +14,11 @@ export interface VideoConsultationAccess {
     mode: 'off' | 'cloud-audio-only';
   };
 }
+
+/** `POST /video/test-room`: la sala de prueba de cámara y micrófono, solo para quien la pidió. */
+export interface TestRoom {
+  /** URL de la sala con el meeting token. No se guarda en ningún lado. */
+  url: string;
+  /** ISO-8601. A los diez minutos Daily cierra la sala. */
+  expiraEl: string;
+}

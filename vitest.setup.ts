@@ -11,6 +11,7 @@ import { __documentos } from './test-stubs/expo-document-picker';
 import { __disco } from './test-stubs/expo-file-system';
 import { __fotos } from './test-stubs/expo-image-picker';
 import { __abiertas } from './test-stubs/expo-web-browser';
+import { __notifications } from './test-stubs/expo-notifications';
 
 // Los tests montan la app entera con el navegador real, y abrirla ahora incluye
 // restaurar la sesión (ENG-114): en una máquina lenta o en CI, el segundo que
@@ -35,6 +36,7 @@ afterEach(() => {
   __fotos.reiniciar();
   __documentos.reiniciar();
   __disco.reiniciar();
+  __notifications.reset();
 });
 
 afterAll(() => {

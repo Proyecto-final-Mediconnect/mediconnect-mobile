@@ -2,6 +2,8 @@ import { http, HttpResponse } from 'msw';
 
 import type { PatientProfile } from '../features/patient-profile/types';
 import { turnosDemo } from '../mocks/appointments';
+import { chatDemo } from '../mocks/chat';
+import { multipartFields } from './multipart';
 import { refundPercentFor } from '../features/cancellation-policy/policy';
 import { matchesSearch } from '../features/catalog/lib/catalog';
 import { disponibilidadDe, ESPECIALIDADES, perfilDe, PROFESIONALES } from '../mocks/catalog';
@@ -65,7 +67,59 @@ export function servirDatosDelPaciente(): void {
   scope = TODO_VISIBLE;
   tarjetaActiva = null;
   recordatorios = true;
+  chatDemo.reiniciar();
   server.use(
+    // Chat (ENG-152).
+    http.get(`${API_URL}/conversations/me`, () => HttpResponse.json(chatDemo.bandeja())),
+    http.post(`${API_URL}/conversations`, async ({ request }) => {
+      const { contraparteId } = (await request.json()) as { contraparteId: string };
+      const abierta = chatDemo.abrir(contraparteId);
+      return abierta
+        ? HttpResponse.json(abierta)
+        : HttpResponse.json(
+            { message: 'Solo podés escribirle a alguien con quien tuviste un turno.' },
+            { status: 403 },
+          );
+    }),
+    http.get(`${API_URL}/conversations/:id/messages`, ({ params }) => {
+      const pagina = chatDemo.mensajes(String(params.id));
+      return pagina
+        ? HttpResponse.json(pagina)
+        : HttpResponse.json({ message: 'Esa conversación no existe.' }, { status: 404 });
+    }),
+    http.post(`${API_URL}/conversations/:id/messages`, async ({ params, request }) => {
+      const { contenido } = (await request.json()) as { contenido: string };
+      const enviado = chatDemo.enviar(String(params.id), contenido);
+      return enviado
+        ? HttpResponse.json(enviado, { status: 201 })
+        : HttpResponse.json({ message: 'Esa conversación no existe.' }, { status: 404 });
+    }),
+    http.post(`${API_URL}/conversations/:id/attachments`, async ({ params, request }) => {
+      const campos = await multipartFields(request);
+      // En los tests el archivo llega como texto: React Native lo manda como
+      // `{ uri, name, type }`. Alcanza con saber que vino.
+      if (!campos.file) {
+        return HttpResponse.json({ message: 'Adjuntá el archivo.' }, { status: 400 });
+      }
+      const enviado = chatDemo.enviarArchivo(
+        String(params.id),
+        { tipo: 'application/pdf', tamano: 245_000 },
+        campos.contenido ?? '',
+      );
+      return enviado
+        ? HttpResponse.json(enviado, { status: 201 })
+        : HttpResponse.json({ message: 'Esa conversación no existe.' }, { status: 404 });
+    }),
+    http.get(`${API_URL}/conversations/:id/messages/:messageId/attachment`, ({ params }) =>
+      HttpResponse.json({
+        url: `https://storage.test/${String(params.messageId)}`,
+        expiraEl: new Date(Date.now() + 5 * 60_000).toISOString(),
+      }),
+    ),
+    http.patch(`${API_URL}/conversations/:id/read`, ({ params }) => {
+      chatDemo.marcarLeido(String(params.id));
+      return new HttpResponse(null, { status: 204 });
+    }),
     http.get(`${API_URL}/medipass/me/emergency-card`, () =>
       HttpResponse.json({ activa: tarjetaActiva !== null, creadaEl: tarjetaActiva }),
     ),

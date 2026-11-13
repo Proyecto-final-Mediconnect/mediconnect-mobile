@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Polyline } from 'react-native-svg';
 
 import logo from '../../assets/brand/logo-horizontal-light.png';
-import { NotPatientError, useSession } from '../features/auth/session';
+import { MfaRequiredError, NotPatientError, useSession } from '../features/auth/session';
 import { validateLogin, type LoginErrors } from '../features/auth/validation';
 import { useKeyboardHeight } from '../shared/hooks/use-keyboard-height';
 import { ApiError } from '../shared/lib/api-client';
@@ -54,7 +54,10 @@ const LO_QUE_HAY: { icono: ComponentProps<typeof Ionicons>['name']; texto: strin
  * como si el email no está confirmado— para no revelar qué cuentas existen.
  */
 export function LoginScreen(): React.JSX.Element {
-  const { state, signIn } = useSession();
+  const { state, signIn, signInWithCode } = useSession();
+  /** ENG-88: la contraseña estuvo bien y falta el código de la app autenticadora. */
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [codigo, setCodigo] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errores, setErrores] = useState<LoginErrors>({});
@@ -92,9 +95,47 @@ export function LoginScreen(): React.JSX.Element {
       // Con la sesión iniciada el navegador cambia a la app y esta pantalla se
       // desmonta: no hay nada más que hacer acá.
     } catch (err) {
+      if (err instanceof MfaRequiredError) {
+        // La contraseña ya no hace falta: no se deja en memoria mientras dura el paso del código.
+        setPassword('');
+        setMfaToken(err.mfaToken);
+        setEnviando(false);
+        return;
+      }
       setFalla(mensajeDe(err));
       setEnviando(false);
     }
+  }
+
+  async function verificar(): Promise<void> {
+    if (enviando || !mfaToken || codigo.length !== 6) return;
+    setFalla(null);
+    setEnviando(true);
+    try {
+      await signInWithCode(mfaToken, codigo);
+    } catch (err) {
+      // 401: el token del primer paso venció o ya no sirve, y reintentar el código no
+      // lo arregla. Se vuelve al email y la contraseña con un aviso claro.
+      if (err instanceof ApiError && err.status === 401) {
+        setEnviando(false);
+        volverAlPrimerPaso('Tu verificación venció. Ingresá de nuevo con tu email y contraseña.');
+        return;
+      }
+      setFalla(mensajeDe(err));
+      setEnviando(false);
+    }
+  }
+
+  /** Vuelve al paso 1 con un aviso opcional. La contraseña se borra: hay que escribirla de nuevo. */
+  function volverAlPrimerPaso(mensaje: string | null): void {
+    setMfaToken(null);
+    setCodigo('');
+    setPassword('');
+    setFalla(mensaje);
+  }
+
+  function volver(): void {
+    volverAlPrimerPaso(null);
   }
 
   return (
@@ -180,38 +221,80 @@ export function LoginScreen(): React.JSX.Element {
               </View>
             ) : null}
 
-            <TextField
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              error={errores.email}
-              placeholder="tu@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="email"
-              textContentType="username"
-              returnKeyType="next"
-              submitBehavior="submit"
-              onSubmitEditing={() => passwordRef.current?.focus()}
-              editable={!enviando}
-            />
+            {mfaToken ? (
+              <>
+                <View style={styles.paso}>
+                  <Text accessibilityRole="header" style={styles.pasoTitulo}>
+                    Verificación en dos pasos
+                  </Text>
+                  <Text style={styles.pasoTexto}>
+                    Abrí tu app autenticadora y escribí el código de seis números de MediConnect.
+                  </Text>
+                </View>
+                <TextField
+                  label="Código"
+                  value={codigo}
+                  onChangeText={(valor) => setCodigo(valor.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="123456"
+                  keyboardType="number-pad"
+                  autoComplete="one-time-code"
+                  textContentType="oneTimeCode"
+                  maxLength={6}
+                  autoFocus
+                  returnKeyType="go"
+                  onSubmitEditing={() => void verificar()}
+                  editable={!enviando}
+                />
+                <Button
+                  label="Verificar e ingresar"
+                  onPress={() => void verificar()}
+                  loading={enviando}
+                  disabled={codigo.length !== 6}
+                  fullWidth
+                />
+                <Button label="Volver" variant="ghost" onPress={volver} fullWidth />
+              </>
+            ) : (
+              <>
+                <TextField
+                  label="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  error={errores.email}
+                  placeholder="tu@email.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="email"
+                  textContentType="username"
+                  returnKeyType="next"
+                  submitBehavior="submit"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
+                  editable={!enviando}
+                />
 
-            <TextField
-              ref={passwordRef}
-              label="Contraseña"
-              password
-              value={password}
-              onChangeText={setPassword}
-              error={errores.password}
-              autoComplete="current-password"
-              textContentType="password"
-              returnKeyType="go"
-              onSubmitEditing={() => void ingresar()}
-              editable={!enviando}
-            />
+                <TextField
+                  ref={passwordRef}
+                  label="Contraseña"
+                  password
+                  value={password}
+                  onChangeText={setPassword}
+                  error={errores.password}
+                  autoComplete="current-password"
+                  textContentType="password"
+                  returnKeyType="go"
+                  onSubmitEditing={() => void ingresar()}
+                  editable={!enviando}
+                />
 
-            <Button label="Ingresar" onPress={() => void ingresar()} loading={enviando} fullWidth />
+                <Button
+                  label="Ingresar"
+                  onPress={() => void ingresar()}
+                  loading={enviando}
+                  fullWidth
+                />
+              </>
+            )}
           </View>
 
           {teclado ? null : (
@@ -233,6 +316,14 @@ function mensajeDe(err: unknown): string {
 
 const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.surface },
+  paso: { gap: spacing.xs },
+  pasoTitulo: { fontFamily: fonts.bold, fontSize: fontSize.lg, color: colors.brandDeep },
+  pasoTexto: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.sm,
+    color: colors.muted,
+    lineHeight: 19,
+  },
   crece: { flexGrow: 1 },
   // `flex: 1` dentro de un contenido con `flexGrow: 1`: se queda con el alto que
   // sobra y el formulario baja hasta el pie de la pantalla.
