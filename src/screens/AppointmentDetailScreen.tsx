@@ -23,6 +23,7 @@ import { appointmentTimeline, type TimelineStep } from '../features/appointments
 import { ProfessionalAvatar } from '../features/catalog/components/ProfessionalAvatar';
 import { getPaymentStatus } from '../features/payments/api';
 import { AppointmentReview } from '../features/reviews/components/AppointmentReview';
+import { usePendingReviews } from '../features/reviews/hooks/use-reviews';
 import { canPay } from '../features/payments/lib/payment';
 import { DeviceCheckButton } from '../features/video/components/DeviceCheckButton';
 import { JoinConsultationButton } from '../features/video/components/JoinConsultationButton';
@@ -63,6 +64,10 @@ export function AppointmentDetailScreen(): React.JSX.Element {
   const [confirmando, setConfirmando] = useState(false);
 
   const turno = turnos.data?.find((t) => t.id === params.appointmentId) ?? null;
+  // Reseñable sin estar completado: el paciente entró a la sala y el
+  // profesional todavía no cerró el turno (ENG-190). Eso lo sabe el backend.
+  const pendientes = usePendingReviews(turno !== null);
+  const pendiente = pendientes.data?.some((p) => p.appointmentId === params.appointmentId) ?? false;
   const devolucion = useRefundNotice(confirmando ? turno : null, ahora);
   /** Qué pasó con la devolución al cancelar desde acá (ENG-65). */
   const [resultadoDevolucion, setResultadoDevolucion] = useState<string | null>(null);
@@ -154,7 +159,7 @@ export function AppointmentDetailScreen(): React.JSX.Element {
 
       {/* Solo una consulta que ya se hizo se puede reseñar (ENG-80): el backend
           rechaza las demás con 409. */}
-      {turno.status === 'COMPLETADO' ? (
+      {turno.status === 'COMPLETADO' || pendiente ? (
         <AppointmentReview appointmentId={turno.id} professionalName={professionalName(turno)} />
       ) : null}
 

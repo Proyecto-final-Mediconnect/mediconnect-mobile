@@ -41,6 +41,8 @@ export type RootStackParamList = {
   Pago: { appointmentId: string };
   /** El detalle de un turno propio, con lo que pasó desde la reserva. */
   Turno: { appointmentId: string };
+  /** Al volver de la sala: pedir la reseña ahí mismo (ENG-190). */
+  CierreConsulta: { appointmentId: string; professionalName: string };
   /** La bandeja del chat con los profesionales (ENG-152). */
   Mensajes: undefined;
   /**

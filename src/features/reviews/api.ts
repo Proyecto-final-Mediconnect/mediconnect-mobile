@@ -1,5 +1,5 @@
 import { apiRequest } from '../../shared/lib/api-client';
-import type { MyReview, NewReview, ProfessionalReviewsPage } from './types';
+import type { MyReview, NewReview, PendingReview, ProfessionalReviewsPage } from './types';
 
 /* API de reseñas: los mismos endpoints que usa la web (backend#92). */
 
@@ -32,4 +32,19 @@ export function fetchProfessionalReviews(
     `/professionals/${encodeURIComponent(professionalId)}/reviews?page=${String(page)}`,
     { fallbackMessage: 'No pudimos cargar las reseñas.' },
   );
+}
+
+/** `GET /reviews/pending`: los turnos que falta reseñar (ENG-190). */
+export function fetchPendingReviews(): Promise<PendingReview[]> {
+  return apiRequest<PendingReview[]>('/reviews/pending', {
+    fallbackMessage: 'No pudimos cargar tus consultas para calificar.',
+  });
+}
+
+/** `POST /reviews/pending/:appointmentId/dismiss`: no se vuelve a pedir. */
+export function dismissPendingReview(appointmentId: string): Promise<void> {
+  return apiRequest<void>(`/reviews/pending/${encodeURIComponent(appointmentId)}/dismiss`, {
+    method: 'POST',
+    fallbackMessage: 'No pudimos ocultar el pedido.',
+  });
 }
