@@ -7,8 +7,17 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-13
+
+Primera versión numerada: es la que se distribuye como APK para la demo y la
+defensa.
+
 ### Added
 
+- Build interno distribuible (ENG-119): APK con el perfil `preview` de EAS,
+  apuntando al backend publicado en Render, sin pasar por las stores. El README
+  explica las variables del entorno `preview`, cómo generarlo y cómo
+  instalarlo. La versión deja de ser `0.0.0`.
 - Mis documentos (ENG-164): el paciente sube los estudios y papeles que trae de
   antes —sacándole una foto con la cámara, desde la galería o como PDF— con
   tipo, nombre, fecha e institución, los ve con una URL firmada y los retira
