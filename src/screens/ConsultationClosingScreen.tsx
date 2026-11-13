@@ -13,7 +13,8 @@ import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 
 /**
  * Pantalla de cierre al volver de la sala (ENG-190): pide la reseña ahí mismo,
- * mientras la consulta está fresca. Es la misma que muestra la web, con el
+ * mientras la consulta está fresca. El título pregunta y no afirma que la
+ * consulta terminó: el paciente puede haber salido antes (review de web #76). Es la misma que muestra la web, con el
  * lenguaje de la app: el círculo y el título de "listo" de la reserva, y la
  * calificación en una tarjeta como la reseña del detalle del turno.
  *
@@ -42,14 +43,14 @@ export function ConsultationClosingScreen(): React.JSX.Element {
           />
         </View>
         <Text accessibilityRole="header" style={styles.titulo}>
-          {listo ? '¡Gracias!' : `Tu consulta con ${params.professionalName} terminó`}
+          {listo ? '¡Gracias!' : `¿Cómo te fue en tu consulta con ${params.professionalName}?`}
         </Text>
         <Text style={styles.detalle}>
           {enviada
             ? 'Tu reseña se publica cuando la revisemos.'
             : yaReseno
               ? 'Ya dejaste tu reseña de esta consulta.'
-              : '¿Cómo te fue? Tu opinión ayuda a otros pacientes a elegir.'}
+              : 'Tu opinión ayuda a otros pacientes a elegir.'}
         </Text>
       </View>
 

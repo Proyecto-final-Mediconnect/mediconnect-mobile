@@ -16,7 +16,7 @@ describe('Cierre de la consulta', () => {
         professionalName: 'Valeria Ocampo',
       });
     });
-    await screen.findByText('Tu consulta con Valeria Ocampo terminó');
+    await screen.findByText('¿Cómo te fue en tu consulta con Valeria Ocampo?');
   }
 
   it('pide la reseña con las estrellas y "Ahora no"', async () => {
