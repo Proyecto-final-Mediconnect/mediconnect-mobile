@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Image,
@@ -20,6 +20,7 @@ import {
   validateUploadForm,
   type UploadFormErrors,
 } from '../features/patient-documents/lib/document-file';
+import { discardPickedFile } from '../features/patient-documents/lib/pick-file';
 import {
   DOCUMENT_TYPE_LABELS,
   DOCUMENT_TYPES,
@@ -49,6 +50,10 @@ function tituloSugerido(nombre: string, pdf: boolean): string {
  * El archivo ya pasó la validación de tipo y tamaño al elegirlo; acá se valida
  * el resto antes de mandar, y lo que diga el backend (un 409 si no completó la
  * ficha, la firma del archivo) se muestra tal cual, que ya viene en castellano.
+ *
+ * Mientras sube no se puede salir sin querer (volver, el gesto del modal): se
+ * corta con "Cancelar envío". Al salir se borra la copia del archivo que quedó
+ * en el caché.
  */
 export function UploadDocumentScreen(): React.JSX.Element {
   const navigation = useNavigation();
@@ -62,6 +67,22 @@ export function UploadDocumentScreen(): React.JSX.Element {
   const [fecha, setFecha] = useState('');
   const [institucion, setInstitucion] = useState('');
   const [errores, setErrores] = useState<UploadFormErrors>({});
+  // En un ref y no en el estado de la mutación: al terminar, `goBack` corre
+  // antes de que el render vea `isPending` en false.
+  const enviando = useRef(false);
+
+  useEffect(
+    () =>
+      navigation.addListener('beforeRemove', (e) => {
+        if (enviando.current) e.preventDefault();
+        else discardPickedFile(file.uri);
+      }),
+    [navigation, file.uri],
+  );
+
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: !subir.isPending });
+  }, [navigation, subir.isPending]);
 
   function enviar(): void {
     if (subir.isPending) return;
@@ -70,10 +91,16 @@ export function UploadDocumentScreen(): React.JSX.Element {
     setErrores(encontrados);
     if (Object.keys(encontrados).length > 0) return;
 
+    enviando.current = true;
     subir.mutate(
       { file, type: tipo, ...form },
-      // La lista ya se invalidó: al volver aparece el documento nuevo arriba.
-      { onSuccess: () => navigation.goBack() },
+      {
+        onSettled: (_doc, error) => {
+          enviando.current = false;
+          // La lista ya se invalidó: al volver aparece el documento nuevo arriba.
+          if (!error) navigation.goBack();
+        },
+      },
     );
   }
 
@@ -182,6 +209,9 @@ export function UploadDocumentScreen(): React.JSX.Element {
             onPress={enviar}
             fullWidth
           />
+          {subir.isPending ? (
+            <Button label="Cancelar envío" variant="secondary" onPress={subir.cancelar} fullWidth />
+          ) : null}
         </ScrollView>
       </Animated.View>
     </Screen>

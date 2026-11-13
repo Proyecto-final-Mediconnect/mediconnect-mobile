@@ -9,7 +9,7 @@ import { API_URL, server } from '../../test/msw-server';
 import { multipartFields } from '../../test/multipart';
 import { TOKENS } from '../../test/session';
 import { saveSessionTokens } from '../../infrastructure/secure-store/session-tokens';
-import { apiRequest, ApiError, onSessionExpired } from './api-client';
+import { apiRequest, ApiError, MENSAJE_CANCELADO, onSessionExpired } from './api-client';
 
 /** `GET /recurso`: 200 solo con el access token indicado, 401 con cualquier otro. */
 function recursoProtegido(tokenValido: string): void {
@@ -49,6 +49,22 @@ describe('apiRequest', () => {
 
     expect(tipo).toMatch(/^multipart\/form-data; boundary=/);
     expect(titulo).toBe('Análisis de sangre');
+  });
+
+  it('una señal de afuera corta el request y lo dice como cancelado', async () => {
+    await saveSessionTokens(TOKENS);
+    server.use(
+      http.post(`${API_URL}/archivo`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({});
+      }),
+    );
+    const cancelar = new AbortController();
+
+    const envio = apiRequest('/archivo', { method: 'POST', body: {}, signal: cancelar.signal });
+    cancelar.abort();
+
+    await expect(envio).rejects.toEqual(new ApiError(0, MENSAJE_CANCELADO));
   });
 
   it('las rutas públicas no mandan token', async () => {

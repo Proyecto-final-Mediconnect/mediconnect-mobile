@@ -1,4 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker';
+import { File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 
 import type { PickedFile } from '../types';
@@ -83,7 +84,38 @@ async function elegirPdf(): Promise<PickResult> {
   });
 }
 
-function validar(file: PickedFile): PickResult {
+function validar(elegido: PickedFile): PickResult {
+  // Algunos pickers no informan el tamaño (`fileSize` es opcional, y ciertos
+  // `content://` de Android): se lee del disco, sin abrir el archivo, para que
+  // el tope de 10 MB se chequee antes de mandarlo entero por datos móviles.
+  const file =
+    elegido.sizeBytes === null ? { ...elegido, sizeBytes: tamanoEnDisco(elegido.uri) } : elegido;
   const problema = fileProblem(file);
+  if (problema) discardPickedFile(file.uri);
   return problema ? { status: 'invalid', message: problema } : { status: 'picked', file };
+}
+
+function tamanoEnDisco(uri: string): number | null {
+  try {
+    const archivo = new File(uri);
+    return archivo.exists ? archivo.size : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Borra la copia que los pickers dejan en el caché de la app (el PDF con
+ * `copyToCacheDirectory`, la foto recomprimida a JPEG). Son datos médicos y el
+ * caché no está cifrado: no tienen que quedar ahí después de subirlos o de
+ * arrepentirse. Solo toca el caché propio, nunca el original del paciente.
+ */
+export function discardPickedFile(uri: string): void {
+  if (!uri.startsWith(Paths.cache.uri)) return;
+  try {
+    const archivo = new File(uri);
+    if (archivo.exists) archivo.delete();
+  } catch {
+    // Si no se puede borrar, lo limpia el sistema cuando necesita espacio.
+  }
 }
