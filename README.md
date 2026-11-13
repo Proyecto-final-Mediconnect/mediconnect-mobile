@@ -105,13 +105,28 @@ interno, sin cuenta de desarrollador ni revisión de la store.
 | `SENTRY_AUTH_TOKEN`                 | Secreta                                                                                               |
 | `SENTRY_DISABLE_AUTO_UPLOAD`        | `true` si faltan `SENTRY_AUTH_TOKEN`/org/project (si no, el plugin puede fallar al subir source maps) |
 
-`EXPO_PUBLIC_ENV=production` en el build de demo es intencional (pedido del
-PR): los eventos de la demo van al mismo entorno de Sentry que producción y se
-mezclan con los reales.
+`EXPO_PUBLIC_ENV=production` en el build de demo es intencional: el APK opera
+contra el backend y la base de producción, así que sus errores van al mismo
+entorno de Sentry que los de la web publicada.
 
 `EXPO_PUBLIC_WEB_URL` puede faltar: usa la web publicada en Render. Sin
 `GOOGLE_SERVICES_JSON` el APK compila igual pero no recibe push (ENG-71). Para
 revisar lo cargado: `npx eas-cli env:list --environment preview`.
+
+Las secretas (`SENTRY_AUTH_TOKEN`, `GOOGLE_SERVICES_JSON`) se cargan con
+visibilidad `secret`, nunca `plain text` ni `sensitive`: después no se pueden
+volver a leer, ni siquiera con `env:list`.
+
+```bash
+npx eas-cli env:create --environment preview --visibility secret --name SENTRY_AUTH_TOKEN --value <token>
+npx eas-cli env:create --environment preview --visibility secret --type file --name GOOGLE_SERVICES_JSON --value ./google-services.json
+```
+
+> **El APK habla con producción.** Usa el backend y la base reales: en la demo
+> y en las pruebas en dispositivos, solo cuentas y datos sintéticos (nunca una
+> historia clínica ni documentos reales). El link de descarga se comparte solo
+> por el canal interno del equipo: cualquiera que lo tenga instala una app que
+> opera contra producción.
 
 ### Generar
 
@@ -120,7 +135,8 @@ npx eas-cli build --profile preview --platform android
 ```
 
 Corre en la nube de EAS (unos 15 minutos) y al terminar da un link y un QR.
-El link vence a los pocos días (ver el panel de EAS): guardá el `.apk` aparte si hace falta después.
+El link vence según el plan de EAS (con el nuestro, el build del 21/10 venció el
+04/11, a los 14 días): guardá el `.apk` aparte si hace falta después.
 
 ### Instalar
 
