@@ -7,7 +7,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-11-09
+## [1.0.0] - 2026-11-13
 
 Primera versión numerada: es la que se distribuye como APK para la demo y la
 defensa.

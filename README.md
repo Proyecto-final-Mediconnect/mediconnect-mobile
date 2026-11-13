@@ -90,18 +90,24 @@ interno, sin cuenta de desarrollador ni revisión de la store.
 
 - La versión sale de `version` en `app.json` (Semantic Versioning). Subila
   antes de un build nuevo para la defensa; el `versionCode` lo numera EAS
-  (`appVersionSource: remote`).
+  (`appVersionSource: remote`) y lo sube solo en cada build del perfil
+  `preview` (`autoIncrement: true`).
 - Las variables del entorno `preview` de EAS quedan **fijas dentro del APK**.
   Nunca una IP local: el APK solo andaría en la red de quien lo generó.
 
-| Variable (entorno `preview` de EAS) | Valor                                                                  |
-| ----------------------------------- | ---------------------------------------------------------------------- |
-| `EXPO_PUBLIC_API_URL`               | `https://mediconnect-backend-smss.onrender.com`                        |
-| `EXPO_PUBLIC_ENV`                   | `production`                                                           |
-| `EXPO_PUBLIC_SENTRY_DSN`            | DSN del proyecto mobile en Sentry                                      |
-| `GOOGLE_SERVICES_JSON`              | `google-services.json` de Firebase, como variable secreta tipo archivo |
-| `SENTRY_ORG` / `SENTRY_PROJECT`     | Para subir los source maps                                             |
-| `SENTRY_AUTH_TOKEN`                 | Secreta                                                                |
+| Variable (entorno `preview` de EAS) | Valor                                                                                                 |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_API_URL`               | `https://mediconnect-backend-smss.onrender.com`                                                       |
+| `EXPO_PUBLIC_ENV`                   | `production`                                                                                          |
+| `EXPO_PUBLIC_SENTRY_DSN`            | DSN del proyecto mobile en Sentry                                                                     |
+| `GOOGLE_SERVICES_JSON`              | `google-services.json` de Firebase, como variable secreta tipo archivo                                |
+| `SENTRY_ORG` / `SENTRY_PROJECT`     | Para subir los source maps                                                                            |
+| `SENTRY_AUTH_TOKEN`                 | Secreta                                                                                               |
+| `SENTRY_DISABLE_AUTO_UPLOAD`        | `true` si faltan `SENTRY_AUTH_TOKEN`/org/project (si no, el plugin puede fallar al subir source maps) |
+
+`EXPO_PUBLIC_ENV=production` en el build de demo es intencional (pedido del
+PR): los eventos de la demo van al mismo entorno de Sentry que producción y se
+mezclan con los reales.
 
 `EXPO_PUBLIC_WEB_URL` puede faltar: usa la web publicada en Render. Sin
 `GOOGLE_SERVICES_JSON` el APK compila igual pero no recibe push (ENG-71). Para
@@ -114,7 +120,7 @@ npx eas-cli build --profile preview --platform android
 ```
 
 Corre en la nube de EAS (unos 15 minutos) y al terminar da un link y un QR.
-El link vence a los 14 días: guardá el `.apk` aparte si hace falta después.
+El link vence a los pocos días (ver el panel de EAS): guardá el `.apk` aparte si hace falta después.
 
 ### Instalar
 
