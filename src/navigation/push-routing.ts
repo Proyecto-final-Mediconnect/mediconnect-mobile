@@ -1,6 +1,7 @@
 import { createNavigationContainerRef } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
 
 import {
   messagePushData,
@@ -36,20 +37,30 @@ export function conversationRoute(data: MessagePushData): RootStackParamList['Co
 
 // Con la app abierta, el aviso se muestra salvo que ya esté en esa conversación
 // (ahí el mensaje llega solo). Va a nivel de módulo: el handler tiene que estar
-// antes de que llegue el primer aviso.
-Notifications.setNotificationHandler({
-  handleNotification: async (notification) => {
-    const data = messagePushData(notification.request.content.data);
-    const hidden =
-      data !== null && isViewingConversation(navigationRef.getCurrentRoute(), data.conversationId);
-    return {
-      shouldShowBanner: !hidden,
-      shouldShowList: !hidden,
-      shouldPlaySound: !hidden,
-      shouldSetBadge: false,
-    };
-  },
-});
+// antes de que llegue el primer aviso. En web no hay push: expo-notifications
+// no tiene esas funciones ahí y tiraría al importar.
+const PUSH_DISPONIBLE = Platform.OS !== 'web';
+
+/** Las llamadas de limpieza no pueden romper la app si el módulo falla. */
+const olvidarUltimoAviso = (): void => {
+  if (PUSH_DISPONIBLE) void Notifications.clearLastNotificationResponseAsync().catch(() => {});
+};
+
+if (PUSH_DISPONIBLE)
+  Notifications.setNotificationHandler({
+    handleNotification: async (notification) => {
+      const data = messagePushData(notification.request.content.data);
+      const hidden =
+        data !== null &&
+        isViewingConversation(navigationRef.getCurrentRoute(), data.conversationId);
+      return {
+        shouldShowBanner: !hidden,
+        shouldShowList: !hidden,
+        shouldPlaySound: !hidden,
+        shouldSetBadge: false,
+      };
+    },
+  });
 
 /**
  * Registra el push al iniciar sesión y lleva a la conversación al tocar un
@@ -80,26 +91,29 @@ export function usePushNotifications(
     if (!data || !listo.current || !navigationRef.isReady()) return;
     pending.current = null;
     // Si no, al volver a abrir la app desde el ícono llevaría otra vez a este chat.
-    void Notifications.clearLastNotificationResponseAsync();
+    olvidarUltimoAviso();
     navigationRef.navigate('Conversacion', conversationRoute(data));
   }).current;
 
   useEffect(() => {
-    if (signedIn) void registerForPush();
+    if (signedIn && PUSH_DISPONIBLE) void registerForPush();
   }, [signedIn]);
 
   useEffect(() => {
+    if (!PUSH_DISPONIBLE) return;
     let vigente = true;
     const recibir = (response: Notifications.NotificationResponse | null): void => {
       if (!vigente || !response) return;
       if (sinSesion.current) {
-        void Notifications.clearLastNotificationResponseAsync();
+        olvidarUltimoAviso();
         return;
       }
       pending.current = messagePushData(response.notification.request.content.data);
       openPending();
     };
-    void Notifications.getLastNotificationResponseAsync().then(recibir);
+    Notifications.getLastNotificationResponseAsync()
+      .then(recibir)
+      .catch(() => {});
     const subscription = Notifications.addNotificationResponseReceivedListener(recibir);
     return () => {
       vigente = false;
@@ -112,7 +126,7 @@ export function usePushNotifications(
   useEffect(() => {
     if (!signedOut) return;
     pending.current = null;
-    void Notifications.clearLastNotificationResponseAsync();
+    olvidarUltimoAviso();
   }, [signedOut]);
 
   // Recién con sesión y navegador listos se abre lo que quedó pendiente.

@@ -100,10 +100,11 @@ async function toApiError(response: Response, fallback?: string): Promise<ApiErr
     message?: string | string[];
   } | null;
   const message = data?.message;
-  return new ApiError(
-    response.status,
-    Array.isArray(message) ? message.join(' ') : (message ?? fallback ?? MENSAJE_GENERICO),
-  );
+  // Un 500 trae "Internal server error" y la validación del backend, una lista
+  // de mensajes pensados para quien programa: ninguno de los dos le sirve al
+  // paciente. Esos se reemplazan por el mensaje de la pantalla.
+  const crudo = response.status >= 500 || Array.isArray(message) || !message;
+  return new ApiError(response.status, crudo ? (fallback ?? MENSAJE_GENERICO) : message);
 }
 
 // --- Sesión vencida ---------------------------------------------------------
