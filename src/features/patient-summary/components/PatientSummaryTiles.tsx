@@ -7,6 +7,7 @@ import { formatPrice } from '../../appointments/lib/appointments';
 import { usePatientSummary } from '../hooks/use-patient-summary';
 import {
   detallePagos,
+  PERIOD_IN_SENTENCE,
   PERIOD_LABELS,
   periodRange,
   sinActividad,
@@ -78,8 +79,8 @@ export function PatientSummaryTiles(): React.JSX.Element {
       ) : sinActividad(resumen.data) ? (
         <View style={styles.aviso}>
           <Text style={styles.avisoTexto}>
-            Sin actividad en {PERIOD_LABELS[periodo].toLowerCase()}: no tuviste consultas, pagos ni
-            accesos a tu información.
+            Sin actividad {PERIOD_IN_SENTENCE[periodo]}: no tuviste consultas, pagos ni accesos a tu
+            información.
           </Text>
         </View>
       ) : (
@@ -103,7 +104,9 @@ export function PatientSummaryTiles(): React.JSX.Element {
           <Tile
             valor={formatPrice(resumen.data.pagos.reembolsado)}
             etiqueta="Te reembolsaron"
-            detalle="Por turnos cancelados"
+            detalle={
+              resumen.data.pagos.reembolsado > 0 ? 'Por turnos cancelados' : 'No hubo devoluciones'
+            }
             onPress={irATurnos}
           />
           <Tile

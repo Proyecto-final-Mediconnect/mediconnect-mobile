@@ -4,6 +4,12 @@ import type { PatientSummary } from '../types';
 /** Los períodos del resumen del inicio (ENG-198), los mismos que en la web. */
 export type SummaryPeriod = '30D' | 'ANIO';
 
+/** El período dentro de una oración: "Sin actividad en los últimos 30 días". */
+export const PERIOD_IN_SENTENCE: Record<SummaryPeriod, string> = {
+  '30D': 'en los últimos 30 días',
+  ANIO: 'este año',
+};
+
 export const PERIOD_LABELS: Record<SummaryPeriod, string> = {
   '30D': 'Últimos 30 días',
   ANIO: 'Este año',

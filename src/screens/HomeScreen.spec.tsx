@@ -162,10 +162,10 @@ describe('Inicio', () => {
       }),
     );
 
-    expect(await screen.findByText(/Sin actividad en últimos 30 días/)).toBeInTheDocument();
+    expect(await screen.findByText(/Sin actividad en los últimos 30 días/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('radio', { name: 'Este año' }));
     await waitFor(() => expect(pedido).toMatch(/^\d{4}-01-01$/));
-    expect(await screen.findByText(/Sin actividad en este año/)).toBeInTheDocument();
+    expect(await screen.findByText(/Sin actividad este año/)).toBeInTheDocument();
   });
 
   it('la próxima consulta y las filas de "Después" abren el detalle del turno', async () => {
