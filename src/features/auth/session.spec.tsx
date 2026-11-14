@@ -383,7 +383,7 @@ describe('sesión del paciente', () => {
 
       expect(await screen.findByRole('heading', { name: /, Tomás$/ })).toBeVisible();
       expect(screen.queryByRole('button', { name: 'Ingresar a la sala' })).not.toBeInTheDocument();
-      expect(screen.getByText('Buscando tu próxima consulta…')).toBeInTheDocument();
+      expect(screen.getByText('Buscando tu próximo turno…')).toBeInTheDocument();
     });
   });
 });

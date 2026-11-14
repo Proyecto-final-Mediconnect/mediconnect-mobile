@@ -1,7 +1,6 @@
 import { createNavigationContainerRef } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
 
 import {
   messagePushData,
@@ -37,16 +36,16 @@ export function conversationRoute(data: MessagePushData): RootStackParamList['Co
 
 // Con la app abierta, el aviso se muestra salvo que ya esté en esa conversación
 // (ahí el mensaje llega solo). Va a nivel de módulo: el handler tiene que estar
-// antes de que llegue el primer aviso. En web no hay push: expo-notifications
-// no tiene esas funciones ahí y tiraría al importar.
-const PUSH_DISPONIBLE = Platform.OS !== 'web';
-
-/** Las llamadas de limpieza no pueden romper la app si el módulo falla. */
+// antes de que llegue el primer aviso.
+//
+// En la versión web (Expo web) no hay push: expo-notifications rechaza estas
+// llamadas con "not available on web". Ninguna puede romper la app, así que
+// todas atrapan su error.
 const olvidarUltimoAviso = (): void => {
-  if (PUSH_DISPONIBLE) void Notifications.clearLastNotificationResponseAsync().catch(() => {});
+  Notifications.clearLastNotificationResponseAsync().catch(() => {});
 };
 
-if (PUSH_DISPONIBLE)
+try {
   Notifications.setNotificationHandler({
     handleNotification: async (notification) => {
       const data = messagePushData(notification.request.content.data);
@@ -61,6 +60,9 @@ if (PUSH_DISPONIBLE)
       };
     },
   });
+} catch {
+  // Sin push en esta plataforma.
+}
 
 /**
  * Registra el push al iniciar sesión y lleva a la conversación al tocar un
@@ -96,11 +98,10 @@ export function usePushNotifications(
   }).current;
 
   useEffect(() => {
-    if (signedIn && PUSH_DISPONIBLE) void registerForPush();
+    if (signedIn) void registerForPush();
   }, [signedIn]);
 
   useEffect(() => {
-    if (!PUSH_DISPONIBLE) return;
     let vigente = true;
     const recibir = (response: Notifications.NotificationResponse | null): void => {
       if (!vigente || !response) return;

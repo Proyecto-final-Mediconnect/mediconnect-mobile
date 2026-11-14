@@ -19,7 +19,7 @@ import {
   type StatusFilter,
 } from '../features/appointments/lib/agenda';
 import {
-  formatShortDay,
+  formatSentenceDay,
   isActive,
   professionalName,
 } from '../features/appointments/lib/appointments';
@@ -259,7 +259,7 @@ export function AppointmentsScreen(): React.JSX.Element {
         title="¿Cancelar el turno?"
         message={
           aCancelar
-            ? `Se cancela tu turno del ${formatShortDay(aCancelar.date, aCancelar.startTime)} con ${professionalName(aCancelar)}, y el horario queda libre para otro paciente.${devolucion.texto ? `\n\n${devolucion.texto}` : ''}`
+            ? `Se cancela tu turno del ${formatSentenceDay(aCancelar.date, aCancelar.startTime)} con ${professionalName(aCancelar)}, y el horario queda libre para otro paciente.${devolucion.texto ? `\n\n${devolucion.texto}` : ''}`
             : ''
         }
         confirmLabel="Cancelar turno"

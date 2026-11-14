@@ -6,13 +6,14 @@ import { CompactAppointmentRow } from '../features/appointments/components/Compa
 import { NextAppointmentCard } from '../features/appointments/components/NextAppointmentCard';
 import { useMyAppointments } from '../features/appointments/hooks/use-appointments';
 import {
-  formatShortDay,
+  formatSentenceDay,
+  whenIs,
   nextAppointment,
   professionalName,
   splitByTime,
 } from '../features/appointments/lib/appointments';
 import { greeting, laterAppointments, pastProfessionals } from '../features/appointments/lib/home';
-import { joinStateOf, timeUntilOpen } from '../features/appointments/lib/join-window';
+import { joinStateOf } from '../features/appointments/lib/join-window';
 import type { Appointment } from '../features/appointments/types';
 import { PastProfessionalCard } from '../features/catalog/components/PastProfessionalCard';
 import { PatientSummaryTiles } from '../features/patient-summary/components/PatientSummaryTiles';
@@ -104,7 +105,7 @@ export function HomeScreen(): React.JSX.Element {
       {sinPagar && sinPagar.id !== proxima?.id ? (
         <Notice
           icon="time-outline"
-          message={`Tu turno del ${formatShortDay(sinPagar.date, sinPagar.startTime)} con ${professionalName(sinPagar)} todavía no está pagado.`}
+          message={`Tu turno del ${formatSentenceDay(sinPagar.date, sinPagar.startTime)} con ${professionalName(sinPagar)} todavía no está pagado.`}
           action={{
             label: 'Pagar',
             onPress: () => navigation.navigate('Pago', { appointmentId: sinPagar.id }),
@@ -200,10 +201,7 @@ function subtitulo(proxima: Appointment | null, ahora: Date): string {
       : `Tu consulta con ${professionalName(proxima)} está en curso.`;
   }
 
-  const cuando = timeUntilOpen(new Date(proxima.scheduledAt), ahora);
-  return cuando === 'mañana'
-    ? 'Tu próxima consulta es mañana.'
-    : `Tu próxima consulta es ${cuando}.`;
+  return `Tu próximo turno es ${whenIs(proxima, ahora)}.`;
 }
 
 const styles = StyleSheet.create({

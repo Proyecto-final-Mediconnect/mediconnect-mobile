@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useAvailability, useBookAppointment } from '../features/appointments/hooks/use-booking';
-import { formatPrice, formatShortDay } from '../features/appointments/lib/appointments';
+import { formatPrice, formatSentenceDay } from '../features/appointments/lib/appointments';
 import {
   bookingRange,
   dayParts,
@@ -77,7 +77,7 @@ export function BookAppointmentScreen(): React.JSX.Element {
             Reservaste tu turno
           </Text>
           <Text style={styles.listoDetalle}>
-            Con {nombre}, el {formatShortDay(reservado.date, reservado.startTime)}. Se confirma
+            Con {nombre}, el {formatSentenceDay(reservado.date, reservado.startTime)}. Se confirma
             cuando pagás.
           </Text>
         </View>
@@ -200,7 +200,7 @@ export function BookAppointmentScreen(): React.JSX.Element {
         title="¿Reservar el turno?"
         message={
           horario && dia
-            ? `Con ${nombre}, el ${formatShortDay(dia, horario.startTime)} (${horario.durationMinutes} min)${
+            ? `Con ${nombre}, el ${formatSentenceDay(dia, horario.startTime)} (${horario.durationMinutes} min)${
                 precio !== null ? `, por ${formatPrice(precio)}` : ''
               }. ${AVISO_PAGO}${politica ? `\n\n${describePolicy(politica)}` : ''}`
             : ''

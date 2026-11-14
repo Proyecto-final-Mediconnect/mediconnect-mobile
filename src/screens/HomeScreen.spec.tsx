@@ -179,7 +179,7 @@ describe('Inicio', () => {
     await renderApp();
 
     fireEvent.click(
-      (await screen.findAllByRole('button', { name: 'Ver el turno con Martín Olivares' }))[0],
+      (await screen.findAllByRole('button', { name: 'Ver el turno con Martín Olivares' }))[0]!,
     );
     expect(await screen.findByText('Cancelar el turno')).toBeInTheDocument();
   });
