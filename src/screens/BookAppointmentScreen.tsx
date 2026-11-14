@@ -146,6 +146,9 @@ export function BookAppointmentScreen(): React.JSX.Element {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        // Sin esto, dentro del scroll vertical de la pantalla la fila de días se
+        // estira hasta ocupar el alto libre y cada tarjeta queda altísima.
+        style={styles.diasScroll}
         contentContainerStyle={styles.dias}
         accessibilityRole="tablist"
       >
@@ -229,7 +232,8 @@ export function BookAppointmentScreen(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  dias: { gap: spacing.sm, paddingRight: spacing.lg },
+  diasScroll: { flexGrow: 0 },
+  dias: { gap: spacing.sm, paddingRight: spacing.lg, alignItems: 'flex-start' },
   dia: {
     width: 58,
     alignItems: 'center',
