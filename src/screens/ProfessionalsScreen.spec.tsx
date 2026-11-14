@@ -104,7 +104,7 @@ describe('Buscar profesionales (ENG-132)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ver el perfil de Martín Olivares' }));
 
-    expect(await screen.findByText('Sobre mí')).toBeInTheDocument();
+    expect(await screen.findByText('SOBRE MÍ')).toBeInTheDocument();
     expect(screen.getByText('$42.000')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ver turnos disponibles' })).toBeInTheDocument();
   });

@@ -80,7 +80,9 @@ export function ProfessionalReviews({
 
   return (
     <View style={styles.seccion}>
-      <Text style={styles.seccionTitulo}>Reseñas</Text>
+      <Text accessibilityRole="header" style={styles.seccionTitulo}>
+        RESEÑAS
+      </Text>
       {contenido}
     </View>
   );
@@ -125,7 +127,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     padding: spacing.lg,
   },
-  seccionTitulo: { fontFamily: fonts.display, fontSize: fontSize.lg, color: colors.brandDeep },
+  // El mismo rótulo que el resto del perfil del profesional:
+  // un solo estilo de título en toda la pantalla.
+  seccionTitulo: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    letterSpacing: 1,
+    color: colors.brandHover,
+  },
   nota: { fontFamily: fonts.medium, fontSize: fontSize.sm, lineHeight: 19, color: colors.muted },
   error: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.danger },
   vacio: { gap: spacing.xs, paddingVertical: spacing.sm },

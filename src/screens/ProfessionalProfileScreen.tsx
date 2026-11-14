@@ -87,21 +87,27 @@ export function ProfessionalProfileScreen(): React.JSX.Element {
 
       {p.cancellationPolicy ? (
         <View style={styles.seccion}>
-          <Text style={styles.seccionTitulo}>Si tenés que cancelar</Text>
+          <Text accessibilityRole="header" style={styles.seccionTitulo}>
+            SI TENÉS QUE CANCELAR
+          </Text>
           <Text style={styles.bio}>{describePolicy(p.cancellationPolicy)}</Text>
         </View>
       ) : null}
 
       {p.bio ? (
         <View style={styles.seccion}>
-          <Text style={styles.seccionTitulo}>Sobre mí</Text>
+          <Text accessibilityRole="header" style={styles.seccionTitulo}>
+            SOBRE MÍ
+          </Text>
           <Text style={styles.bio}>{p.bio}</Text>
         </View>
       ) : null}
 
       {p.education.length > 0 ? (
         <View style={styles.seccion}>
-          <Text style={styles.seccionTitulo}>Formación</Text>
+          <Text accessibilityRole="header" style={styles.seccionTitulo}>
+            FORMACIÓN
+          </Text>
           {p.education.map((e) => (
             <View key={e.id} style={styles.formacion}>
               <Text style={styles.titulo}>{e.degree}</Text>
@@ -153,7 +159,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     padding: spacing.lg,
   },
-  seccionTitulo: { fontFamily: fonts.display, fontSize: fontSize.lg, color: colors.brandDeep },
+  // El mismo rótulo que "VIDEOCONSULTA" y que las secciones del resto de la app:
+  // un solo estilo de título en toda la pantalla.
+  seccionTitulo: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    letterSpacing: 1,
+    color: colors.brandHover,
+  },
   bio: { fontFamily: fonts.regular, fontSize: fontSize.md, lineHeight: 22, color: colors.ink },
   formacion: { gap: 2, paddingVertical: spacing.xs },
   titulo: { fontFamily: fonts.semibold, fontSize: fontSize.md, color: colors.ink },

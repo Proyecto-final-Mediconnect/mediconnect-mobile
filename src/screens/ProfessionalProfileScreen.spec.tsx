@@ -25,7 +25,7 @@ async function abrirPerfilDeOlivares(...handlers: Parameters<typeof renderApp>):
   await renderApp(...handlers);
   fireEvent.click(screen.getByRole('tab', { name: 'Reservar' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Ver el perfil de Martín Olivares' }));
-  await screen.findByText('Sobre mí');
+  await screen.findByText('SOBRE MÍ');
 }
 
 describe('Las reseñas en el perfil del profesional (ENG-82)', () => {

@@ -30,7 +30,7 @@ describe('Reservar un turno (ENG-133)', () => {
       await screen.findByRole('button', { name: 'Ver el perfil de Martín Olivares' }),
     );
 
-    expect(await screen.findByText('Si tenés que cancelar')).toBeInTheDocument();
+    expect(await screen.findByText('SI TENÉS QUE CANCELAR')).toBeInTheDocument();
     expect(screen.getByText(/Entre 24 horas y 6 horas antes, el 50 %/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ver turnos disponibles' }));
