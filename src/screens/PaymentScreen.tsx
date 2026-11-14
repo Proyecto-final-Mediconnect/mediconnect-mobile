@@ -20,7 +20,11 @@ import {
   usePaymentStatus,
   useStartCheckout,
 } from '../features/payments/hooks/use-payment';
+import { PaymentReceiptCard } from '../features/payments/components/PaymentReceiptCard';
 import { canPay, paymentOutcomeOf, type PaymentOutcome } from '../features/payments/lib/payment';
+import { formatRestante, restanteParaPagar } from '../features/payments/lib/receipt';
+import { DeviceCheckButton } from '../features/video/components/DeviceCheckButton';
+import { useNow } from '../shared/hooks/use-now';
 import type { PaymentStatus } from '../features/payments/types';
 import type { RootStackParamList } from '../navigation/types';
 import { Button } from '../shared/ui/Button';
@@ -47,6 +51,10 @@ type Fase = 'inicio' | 'checkout' | 'volvio';
  * El checkout se abre en el navegador dentro de la app; la tarjeta se carga del
  * lado de MercadoPago (ADR-013). **La vuelta no confirma nada**: el turno lo
  * confirma el webhook (ENG-64), y esta pantalla solo consulta el estado.
+ *
+ * Mientras el paciente paga, la pantalla espera en una tarjeta oscura con el
+ * tiempo que le queda; al acreditarse muestra el comprobante (ENG-199), como la
+ * web.
  */
 export function PaymentScreen(): React.JSX.Element {
   const navigation = useNavigation();
@@ -64,6 +72,9 @@ export function PaymentScreen(): React.JSX.Element {
   const [errorApertura, setErrorApertura] = useState<string | null>(null);
   const [agotado, setAgotado] = useState(false);
   const [intento, setIntento] = useState(0);
+  // El link abierto, para volver a abrirlo si el paciente cerró MercadoPago sin pagar.
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const ahora = useNow(1_000);
 
   const estado = usePaymentStatus(
     params.appointmentId,
@@ -109,17 +120,22 @@ export function PaymentScreen(): React.JSX.Element {
       },
       onSuccess: (link) => {
         setEstadoPrevio(link.status);
-        setFase('checkout');
-        openCheckout(link.checkoutUrl)
-          .then((cerrado) => {
-            if (cerrado) setFase('volvio');
-          })
-          .catch(() => {
-            setFase('inicio');
-            setErrorApertura('No pudimos abrir MercadoPago. Probá de nuevo.');
-          });
+        setCheckoutUrl(link.checkoutUrl);
+        abrir(link.checkoutUrl);
       },
     });
+  }
+
+  function abrir(url: string): void {
+    setFase('checkout');
+    openCheckout(url)
+      .then((cerrado) => {
+        if (cerrado) setFase('volvio');
+      })
+      .catch(() => {
+        setFase('inicio');
+        setErrorApertura('No pudimos abrir MercadoPago. Probá de nuevo.');
+      });
   }
 
   function volverAConsultar(): void {
@@ -163,14 +179,54 @@ export function PaymentScreen(): React.JSX.Element {
   );
 
   if (resultado === 'CONFIRMADO') {
+    const receipt = estado.data?.receipt ?? null;
     return (
       <Screen header={header}>
-        <Resultado icono="checkmark" tono="ok" titulo="¡Listo, tu turno está confirmado!">
-          MercadoPago acreditó el pago. Te vamos a recordar la consulta antes de que empiece.
-        </Resultado>
-        {detalle}
+        <View style={styles.hero}>
+          <View style={styles.heroEyebrow}>
+            <View style={styles.heroCheck}>
+              <Ionicons name="checkmark" size={18} color={colors.inkDeep} />
+            </View>
+            <Text style={styles.heroEyebrowTexto}>
+              {receipt ? 'PAGO ACREDITADO' : 'TURNO CONFIRMADO'}
+            </Text>
+          </View>
+          <Text accessibilityRole="header" style={styles.heroTitulo}>
+            Tu turno está confirmado.
+          </Text>
+          <Text style={styles.heroTexto}>
+            {receipt ? `Recibimos tu pago de ${formatPrice(receipt.amount)}. ` : ''}
+            {professionalName(turno)} te espera el {formatShortDay(turno.date, turno.startTime)}.
+          </Text>
+        </View>
+
+        {receipt ? (
+          <PaymentReceiptCard receipt={receipt} confirmedAt={estado.data?.confirmedAt} />
+        ) : null}
+
+        <Text style={styles.seccion}>QUÉ SIGUE</Text>
+        <View style={styles.sigue}>
+          <Sigue icono="videocam-outline" titulo="La sala se abre antes">
+            Podés entrar a la videoconsulta 10 minutos antes, desde el turno.
+          </Sigue>
+          <Sigue icono="mic-outline" titulo="Probá cámara y micrófono">
+            Hacelo antes del día, así no perdés tiempo de la consulta.
+          </Sigue>
+          <DeviceCheckButton />
+          <Sigue icono="calendar-clear-outline" titulo="Si no podés ir">
+            Cancelalo o reprogramalo desde el turno. Lo que se devuelve depende de la anticipación.
+          </Sigue>
+        </View>
+
         <Button
-          label="Ver mis turnos"
+          label="Ver mi turno"
+          variant="accent"
+          onPress={() => navigation.navigate('Turno', { appointmentId: turno.id })}
+          fullWidth
+        />
+        <Button
+          label="Ir a Mis turnos"
+          variant="secondary"
           onPress={() => navigation.navigate('Paciente', { screen: 'Turnos' })}
           fullWidth
         />
@@ -198,6 +254,7 @@ export function PaymentScreen(): React.JSX.Element {
   // Antes de abrir MercadoPago, o de vuelta sin un resultado definitivo.
   const sePuedePagar = canPay(turno);
   const esperando = fase !== 'inicio' && resultado !== 'RECHAZADO';
+  const restante = restanteParaPagar(turno.createdAt, ahora);
 
   return (
     <Screen header={header}>
@@ -210,28 +267,46 @@ export function PaymentScreen(): React.JSX.Element {
       ) : null}
 
       {esperando ? (
-        <View accessibilityRole="summary" style={styles.esperando}>
-          <Text style={styles.esperandoTitulo}>
+        <View accessibilityRole="summary" style={styles.espera}>
+          <View style={styles.heroEyebrow}>
+            <View style={styles.punto} />
+            <Text style={styles.heroEyebrowTexto}>
+              {agotado ? 'TODAVÍA SIN CONFIRMAR' : 'ESPERANDO EL PAGO'}
+            </Text>
+          </View>
+          <Text accessibilityRole="header" style={styles.esperaTitulo}>
             {fase === 'checkout'
-              ? 'Completá el pago en MercadoPago'
+              ? 'Completá el pago en MercadoPago.'
               : agotado
-                ? 'Todavía no nos llegó la confirmación'
-                : 'Consultando el estado de tu pago…'}
+                ? 'Todavía no nos llegó la confirmación.'
+                : 'Consultando tu pago…'}
           </Text>
-          <Text style={styles.esperandoTexto}>
-            {fase === 'checkout'
-              ? 'Cuando termines, cerrá la ventana y volvé a la app: el turno se confirma solo cuando MercadoPago nos avisa.'
-              : agotado
-                ? estadoPrevio === 'RECHAZADO'
-                  ? 'Puede que MercadoPago haya rechazado el pago de nuevo, o que todavía esté en camino. Si se confirma, lo vas a ver en Mis turnos.'
-                  : 'Puede tardar unos minutos. El turno se confirma solo y lo vas a ver en Mis turnos.'
-                : 'En unos segundos nos llega el aviso de MercadoPago.'}
+          <Text style={styles.heroTexto}>
+            {agotado
+              ? estadoPrevio === 'RECHAZADO'
+                ? 'Puede que MercadoPago haya rechazado el pago de nuevo, o que todavía esté en camino. Si se confirma, lo vas a ver en Mis turnos.'
+                : 'Puede tardar unos minutos. El turno se confirma solo y lo vas a ver en Mis turnos.'
+              : `Apenas MercadoPago nos avise que se acreditó ${formatPrice(turno.price)}, esta pantalla pasa sola a la confirmación.`}
           </Text>
+          {restante !== null && !agotado ? (
+            <Text style={styles.restante}>
+              {restante > 0
+                ? `Te quedan ${formatRestante(restante)} para pagar antes de que se libere el horario.`
+                : 'Se terminó el tiempo para pagar: si no llegaste, el horario se libera en breve.'}
+            </Text>
+          ) : null}
           {agotado ? (
             <Button
               label="Volver a consultar"
-              variant="secondary"
+              variant="accent"
               onPress={volverAConsultar}
+              fullWidth
+            />
+          ) : checkoutUrl ? (
+            <Button
+              label="Volver a abrir MercadoPago"
+              variant="accent"
+              onPress={() => abrir(checkoutUrl)}
               fullWidth
             />
           ) : null}
@@ -266,6 +341,28 @@ export function PaymentScreen(): React.JSX.Element {
         </Text>
       ) : null}
     </Screen>
+  );
+}
+
+function Sigue({
+  icono,
+  titulo,
+  children,
+}: {
+  icono: ComponentProps<typeof Ionicons>['name'];
+  titulo: string;
+  children: string;
+}): React.JSX.Element {
+  return (
+    <View style={styles.sigueFila}>
+      <View style={styles.sigueIcono}>
+        <Ionicons name={icono} size={18} color={colors.brandHover} />
+      </View>
+      <View style={styles.sigueTextos}>
+        <Text style={styles.sigueTitulo}>{titulo}</Text>
+        <Text style={styles.sigueTexto}>{children}</Text>
+      </View>
+    </View>
   );
 }
 
@@ -330,18 +427,85 @@ const styles = StyleSheet.create({
     color: colors.muted,
   },
   error: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.danger },
-  esperando: {
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceTeal,
+  hero: {
+    gap: spacing.md,
+    backgroundColor: colors.night,
+    borderRadius: radius.card,
+    padding: spacing.xl,
+  },
+  espera: {
+    gap: spacing.md,
+    backgroundColor: colors.night,
+    borderRadius: radius.card,
+    padding: spacing.xl,
+  },
+  heroEyebrow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  heroCheck: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brand,
+  },
+  punto: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.brandBright },
+  heroEyebrowTexto: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    color: colors.brandBright,
+  },
+  heroTitulo: {
+    fontFamily: fonts.display,
+    fontSize: fontSize.xxl,
+    lineHeight: 34,
+    color: colors.white,
+  },
+  esperaTitulo: {
+    fontFamily: fonts.display,
+    fontSize: fontSize.xl,
+    lineHeight: 31,
+    color: colors.white,
+  },
+  heroTexto: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+    color: colors.onNight,
+  },
+  restante: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.white },
+  seccion: {
+    marginLeft: spacing.xs,
+    marginTop: spacing.xs,
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    letterSpacing: 1,
+    color: colors.mutedSoft,
+  },
+  sigue: {
+    gap: spacing.lg,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.line,
     borderRadius: radius.card,
     padding: spacing.lg,
   },
-  esperandoTitulo: { fontFamily: fonts.bold, fontSize: fontSize.md, color: colors.brandDeep },
-  esperandoTexto: {
+  sigueFila: { flexDirection: 'row', gap: spacing.md },
+  sigueIcono: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceTeal,
+  },
+  sigueTextos: { flex: 1, gap: 2 },
+  sigueTitulo: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.brandDeep },
+  sigueTexto: {
     fontFamily: fonts.medium,
     fontSize: fontSize.sm,
     lineHeight: 19,
-    color: colors.ink,
+    color: colors.muted,
   },
   resultado: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
   resultadoIcono: {

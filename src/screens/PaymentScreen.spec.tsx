@@ -10,7 +10,7 @@ import { renderApp } from '../test/render-app';
 const TURNO = 'turno-aliaga';
 const CHECKOUT = 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-1';
 
-type Pago = { status: string; appointmentStatus: string };
+type Pago = { status: string; appointmentStatus: string; [extra: string]: unknown };
 
 /** El backend del pago: el link, y el estado que va devolviendo el GET. */
 function backendDePago({
@@ -65,7 +65,7 @@ describe('Volver a la app después de pagar (ENG-172)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Pagar con MercadoPago' }));
 
     // Lo que confirma es el backend, no el link de vuelta.
-    expect(await screen.findByText('¡Listo, tu turno está confirmado!')).toBeVisible();
+    expect(await screen.findByText('Tu turno está confirmado.')).toBeVisible();
     expect(pedidos.cuerpos).toEqual([{ origen: 'app' }]);
     expect(__vueltas).toEqual(['mediconnect://pago']);
   });
@@ -80,8 +80,34 @@ describe('Pagar el turno desde la app (ENG-168)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Pagar con MercadoPago' }));
 
-    expect(await screen.findByText('¡Listo, tu turno está confirmado!')).toBeVisible();
+    expect(await screen.findByText('Tu turno está confirmado.')).toBeVisible();
     expect(__abiertas).toContain(CHECKOUT);
+  });
+
+  it('acreditado, muestra el comprobante con el medio y el número de operación (ENG-199)', async () => {
+    await abrirPagoDesdeTurnos(
+      ...backendDePago({
+        estado: {
+          status: 'APROBADO',
+          appointmentStatus: 'CONFIRMADO',
+          confirmedAt: '2026-11-14T00:36:15Z',
+          receipt: {
+            amount: 22_000,
+            currency: 'ARS',
+            method: 'account_money',
+            operationId: '189539998660',
+          },
+        },
+      }),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pagar con MercadoPago' }));
+
+    expect(await screen.findByText('PAGO ACREDITADO')).toBeVisible();
+    const comprobante = within(screen.getByLabelText('Comprobante del pago'));
+    expect(comprobante.getByText('Dinero en cuenta de MercadoPago')).toBeVisible();
+    expect(comprobante.getByText('N.º de operación de MercadoPago: 189539998660')).toBeVisible();
+    expect(screen.getByText('QUÉ SIGUE')).toBeVisible();
   });
 
   it('si MercadoPago rechaza, lo dice y ofrece reintentar', async () => {
@@ -109,7 +135,7 @@ describe('Pagar el turno desde la app (ENG-168)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Pagar con MercadoPago' }));
 
-    expect(await screen.findByText('Consultando el estado de tu pago…')).toBeVisible();
+    expect(await screen.findByText('Consultando tu pago…')).toBeVisible();
     expect(screen.queryByText('MercadoPago rechazó el pago')).not.toBeInTheDocument();
   });
 
@@ -162,7 +188,7 @@ describe('Pagar el turno desde la app (ENG-168)', () => {
     fireEvent.click(pagar);
     fireEvent.click(pagar);
 
-    await screen.findByText('¡Listo, tu turno está confirmado!');
+    await screen.findByText('Tu turno está confirmado.');
     expect(pedidos.posts).toBe(1);
   });
 
@@ -176,7 +202,7 @@ describe('Pagar el turno desde la app (ENG-168)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Pagar con MercadoPago' }));
 
-    expect(await screen.findByText('Consultando el estado de tu pago…')).toBeVisible();
+    expect(await screen.findByText('Consultando tu pago…')).toBeVisible();
   });
 
   it('si ya había otra sesión abierta, no da el pago por vuelto', async () => {
@@ -189,8 +215,8 @@ describe('Pagar el turno desde la app (ENG-168)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Pagar con MercadoPago' }));
 
-    expect(await screen.findByText('Completá el pago en MercadoPago')).toBeVisible();
-    expect(screen.queryByText('Consultando el estado de tu pago…')).not.toBeInTheDocument();
+    expect(await screen.findByText('Completá el pago en MercadoPago.')).toBeVisible();
+    expect(screen.queryByText('Consultando tu pago…')).not.toBeInTheDocument();
   });
 
   it('si no se puede abrir MercadoPago, lo dice', async () => {

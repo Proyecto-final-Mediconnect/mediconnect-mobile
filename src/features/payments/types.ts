@@ -30,4 +30,16 @@ export interface PaymentStatusView {
   appointmentStatus: string;
   /** Cuándo se acreditó el pago, ISO-8601. Opcional, como en `Appointment`. */
   confirmedAt?: string | null;
+  /** El comprobante (ENG-199): `null` hasta que se acredita. Falta con un backend anterior. */
+  receipt?: PaymentReceipt | null;
+}
+
+/** Lo cobrado, como lo informó MercadoPago (ENG-199). */
+export interface PaymentReceipt {
+  amount: number;
+  currency: string;
+  /** `payment_type_id` de MercadoPago: `account_money`, `credit_card`… */
+  method: string | null;
+  /** Número de operación de MercadoPago, el de su comprobante. */
+  operationId: string | null;
 }
