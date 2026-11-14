@@ -9,15 +9,30 @@ import { formatMonth, isActive, professionalName } from './appointments';
  */
 
 export type Period = 'todos' | 'este-mes' | 'mes-pasado' | 'ultimos-3-meses' | 'este-anio';
-export type StatusFilter = 'todos' | 'confirmados' | 'sin-pagar' | 'completados' | 'cancelados';
+export type StatusFilter =
+  'todos' | 'confirmados' | 'sin-pagar' | 'completados' | 'cancelados' | 'liberados';
+
+/** Orden del historial (los meses pasados). "Próximos" siempre va del más cercano al más lejano. */
+export type HistoryOrder = 'recientes' | 'antiguos';
 
 export interface AgendaFilters {
   search: string;
   period: Period;
   status: StatusFilter;
+  order: HistoryOrder;
 }
 
-export const EMPTY_AGENDA_FILTERS: AgendaFilters = { search: '', period: 'todos', status: 'todos' };
+export const EMPTY_AGENDA_FILTERS: AgendaFilters = {
+  search: '',
+  period: 'todos',
+  status: 'todos',
+  order: 'recientes',
+};
+
+export const ORDER_LABELS: Record<HistoryOrder, string> = {
+  recientes: 'Más recientes primero',
+  antiguos: 'Más antiguos primero',
+};
 
 export const PERIOD_LABELS: Record<Period, string> = {
   todos: 'Cualquier fecha',
@@ -32,14 +47,16 @@ export const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
   confirmados: 'Confirmados',
   'sin-pagar': 'Sin pagar',
   completados: 'Completados',
-  cancelados: 'Cancelados o liberados',
+  cancelados: 'Cancelados',
+  liberados: 'Vencidos sin pagar',
 };
 
 const ESTADOS: Record<Exclude<StatusFilter, 'todos'>, string[]> = {
   confirmados: ['CONFIRMADO'],
   'sin-pagar': ['RESERVADO_SIN_PAGAR'],
   completados: ['COMPLETADO', 'NO_ASISTIO'],
-  cancelados: ['CANCELADO', 'LIBERADO'],
+  cancelados: ['CANCELADO'],
+  liberados: ['LIBERADO'],
 };
 
 /** `YYYY-MM` corrido `meses` hacia atrás (negativo) o adelante. */
@@ -86,7 +103,11 @@ export function filterAgenda(
     (a) =>
       (buscado === '' || sinTildes(professionalName(a)).includes(buscado)) &&
       inPeriod(a, filters.period, now) &&
-      (filters.status === 'todos' || ESTADOS[filters.status].includes(a.status)),
+      // Un liberado fue una reserva que nadie pagó y venció: no es un turno que
+      // el paciente tuvo. Solo se ve si lo busca con su filtro.
+      (filters.status === 'todos'
+        ? a.status !== 'LIBERADO'
+        : ESTADOS[filters.status].includes(a.status)),
   );
 }
 
@@ -111,6 +132,7 @@ function finDe(a: Appointment): number {
 export function agendaSections(
   appointments: Appointment[],
   now: Date = new Date(),
+  order: HistoryOrder = 'recientes',
 ): AgendaSection[] {
   const ahora = now.getTime();
   const proximos = appointments
@@ -118,7 +140,11 @@ export function agendaSections(
     .sort((a, b) => Date.parse(a.scheduledAt) - Date.parse(b.scheduledAt));
   const resto = appointments
     .filter((a) => !(isActive(a) && finDe(a) > ahora))
-    .sort((a, b) => Date.parse(b.scheduledAt) - Date.parse(a.scheduledAt));
+    .sort((a, b) =>
+      order === 'recientes'
+        ? Date.parse(b.scheduledAt) - Date.parse(a.scheduledAt)
+        : Date.parse(a.scheduledAt) - Date.parse(b.scheduledAt),
+    );
 
   const secciones: AgendaSection[] = [];
   if (proximos.length > 0) {

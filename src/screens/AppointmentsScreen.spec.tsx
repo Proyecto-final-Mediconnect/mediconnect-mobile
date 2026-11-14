@@ -25,7 +25,8 @@ describe('Mis turnos (ENG-115)', () => {
     expect(lista().getByText('Sin pagar')).toBeInTheDocument();
     // Lo que ya pasó o no se va a realizar está en la misma lista, más abajo.
     expect(lista().getByText('Cancelado')).toBeInTheDocument();
-    expect(lista().getByText('Liberado')).toBeInTheDocument();
+    // Las reservas que vencieron sin pagar no son turnos que tuvo: no se listan.
+    expect(lista().queryByText('Liberado')).not.toBeInTheDocument();
     expect(lista().getAllByText('Completado')).toHaveLength(2);
     expect(screen.queryByRole('tab', { name: 'Pasados' })).not.toBeInTheDocument();
   });
