@@ -167,4 +167,20 @@ describe('Inicio', () => {
     await waitFor(() => expect(pedido).toMatch(/^\d{4}-01-01$/));
     expect(await screen.findByText(/Sin actividad en este año/)).toBeInTheDocument();
   });
+
+  it('la próxima consulta y las filas de "Después" abren el detalle del turno', async () => {
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver el turno con Valeria Ocampo' }));
+    expect(await screen.findByText('Cancelar el turno')).toBeInTheDocument();
+  });
+
+  it('una fila de "Después" abre su turno', async () => {
+    await renderApp();
+
+    fireEvent.click(
+      (await screen.findAllByRole('button', { name: 'Ver el turno con Martín Olivares' }))[0],
+    );
+    expect(await screen.findByText('Cancelar el turno')).toBeInTheDocument();
+  });
 });

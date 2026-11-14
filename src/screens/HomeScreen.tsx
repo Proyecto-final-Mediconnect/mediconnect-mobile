@@ -66,6 +66,8 @@ export function HomeScreen(): React.JSX.Element {
 
   const irATurnos = (): void => navigation.navigate('Paciente', { screen: 'Turnos' });
   const irAReservar = (): void => navigation.navigate('Paciente', { screen: 'Reservar' });
+  const abrirTurno = (t: Appointment): void =>
+    navigation.navigate('Turno', { appointmentId: t.id });
 
   return (
     <Screen
@@ -80,17 +82,26 @@ export function HomeScreen(): React.JSX.Element {
     >
       {turnos.isPending ? (
         <View style={styles.cargando}>
-          <LoadingState label="Buscando tu próxima consulta…" />
+          <LoadingState label="Buscando tu próximo turno…" />
         </View>
       ) : turnos.isError ? (
         // Sin los turnos no se sabe si hay una consulta: decir "no tenés turnos"
         // sería mentir justo cuando puede estar por empezar una.
         <ErrorState message={turnos.error.message} onRetry={() => void turnos.refetch()} />
       ) : (
-        <NextAppointmentCard appointment={proxima} now={ahora} onBook={irAReservar} />
+        <NextAppointmentCard
+          appointment={proxima}
+          now={ahora}
+          onBook={irAReservar}
+          onOpen={proxima ? () => abrirTurno(proxima) : undefined}
+          onPay={
+            proxima ? () => navigation.navigate('Pago', { appointmentId: proxima.id }) : undefined
+          }
+        />
       )}
 
-      {sinPagar ? (
+      {/* Si el que falta pagar es el próximo, el botón ya está en la tarjeta. */}
+      {sinPagar && sinPagar.id !== proxima?.id ? (
         <Notice
           icon="time-outline"
           message={`Tu turno del ${formatShortDay(sinPagar.date, sinPagar.startTime)} con ${professionalName(sinPagar)} todavía no está pagado.`}
@@ -117,6 +128,7 @@ export function HomeScreen(): React.JSX.Element {
                 key={t.id}
                 appointment={t}
                 last={i === siguientes.length - 1}
+                onPress={() => abrirTurno(t)}
               />
             ))}
           </View>

@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '../../../shared/ui/Button';
 import { Chip } from '../../../shared/ui/Chip';
@@ -15,11 +15,15 @@ interface NextAppointmentCardProps {
   now?: Date;
   /** Sin turnos próximos, ofrece reservar uno. */
   onBook?: () => void;
+  /** Abre el detalle del turno al tocar la tarjeta. */
+  onOpen?: () => void;
+  /** Turno sin pagar: lleva a pagarlo. */
+  onPay?: () => void;
 }
 
 /**
- * La tarjeta principal del inicio: la próxima consulta y, cuando corresponde, el
- * botón para entrar a la sala.
+ * La tarjeta principal del inicio: el próximo turno, que se toca para ver el
+ * detalle, y cuando corresponde el botón para entrar a la sala o para pagarlo.
  *
  * El botón aparece solo con la sala abierta —la misma ventana que la web, de 10
  * minutos antes a 15 después—. Antes se dice cuándo abre en lugar de mostrar un
@@ -30,14 +34,16 @@ export function NextAppointmentCard({
   appointment,
   now = new Date(),
   onBook,
+  onOpen,
+  onPay,
 }: NextAppointmentCardProps): React.JSX.Element {
   if (!appointment) {
     return (
       <View style={styles.card}>
-        <Text style={styles.eyebrow}>PRÓXIMA CONSULTA</Text>
+        <Text style={styles.eyebrow}>PRÓXIMO TURNO</Text>
         <Text style={styles.nombre}>No tenés turnos próximos</Text>
         <Text style={styles.detalle}>
-          Cuando reserves con un profesional, tu próxima consulta va a aparecer acá.
+          Cuando reserves con un profesional, tu próximo turno va a aparecer acá.
         </Text>
         {onBook ? (
           <View style={styles.accion}>
@@ -52,24 +58,52 @@ export function NextAppointmentCard({
 
   return (
     <View style={styles.card}>
-      <View style={styles.fila}>
-        <Text style={styles.eyebrow}>
-          {formatShortDay(appointment.date, appointment.startTime).toUpperCase()}
-        </Text>
-        <Chip label={statusLabel(appointment.status)} tone={statusTone(appointment.status)} />
-      </View>
-      <Text style={styles.nombre}>{professionalName(appointment)}</Text>
-      <Text style={styles.detalle}>Videoconsulta · {appointment.durationMinutes} min</Text>
+      {/* La cabecera abre el detalle; el botón de la sala o de pago va aparte para
+          que un toque en él no abra también el turno. */}
+      <Pressable
+        accessibilityRole={onOpen ? 'button' : undefined}
+        accessibilityLabel={
+          onOpen ? `Ver el turno con ${professionalName(appointment)}` : undefined
+        }
+        disabled={!onOpen}
+        onPress={onOpen}
+        style={({ pressed }) => pressed && styles.presionada}
+      >
+        <View style={styles.fila}>
+          <Text style={styles.eyebrow}>
+            {formatShortDay(appointment.date, appointment.startTime).toUpperCase()}
+          </Text>
+          <Chip label={statusLabel(appointment.status)} tone={statusTone(appointment.status)} />
+        </View>
+        <View style={styles.fila}>
+          <Text style={styles.nombre}>{professionalName(appointment)}</Text>
+          {onOpen ? (
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={colors.mutedSoft}
+              style={styles.chevron}
+            />
+          ) : null}
+        </View>
+        <Text style={styles.detalle}>Videoconsulta · {appointment.durationMinutes} min</Text>
+      </Pressable>
 
       {sala.kind === 'OPEN' ? (
         <View style={styles.accion}>
           <JoinConsultationButton appointmentId={appointment.id} />
         </View>
       ) : sala.kind === 'UNPAID' ? (
-        <View style={[styles.accion, styles.aviso]}>
-          <Ionicons name="card-outline" size={16} color={colors.muted} />
-          <Text style={[styles.avisoTexto, styles.avisoLargo]}>{UNPAID_JOIN_MESSAGE}</Text>
-        </View>
+        onPay ? (
+          <View style={styles.accion}>
+            <Button label="Pagar el turno" onPress={onPay} variant="accent" fullWidth />
+          </View>
+        ) : (
+          <View style={[styles.accion, styles.aviso]}>
+            <Ionicons name="card-outline" size={16} color={colors.muted} />
+            <Text style={[styles.avisoTexto, styles.avisoLargo]}>{UNPAID_JOIN_MESSAGE}</Text>
+          </View>
+        )
       ) : sala.kind === 'TOO_EARLY' ? (
         <View style={[styles.accion, styles.aviso]}>
           <Ionicons name="time-outline" size={16} color={colors.muted} />
@@ -104,6 +138,8 @@ const styles = StyleSheet.create({
   },
   detalle: { fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.muted, lineHeight: 19 },
   accion: { marginTop: spacing.md },
+  presionada: { opacity: 0.7 },
+  chevron: { marginTop: spacing.sm },
   aviso: {
     flexDirection: 'row',
     alignItems: 'center',

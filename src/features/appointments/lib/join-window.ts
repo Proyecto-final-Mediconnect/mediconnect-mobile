@@ -45,10 +45,8 @@ export type JoinState =
   | { kind: 'NOT_APPLICABLE' };
 
 /**
- * Lo que ve el paciente en un turno sin pagar. No dice dónde se paga a propósito:
- * el pago dentro de la app (ENG-168) todavía no está en esta rama.
- * TODO(ENG-168): cuando entre, sumar en `AppointmentCard` y `NextAppointmentCard`
- * el botón que navega a `Pago` para los turnos `UNPAID`.
+ * Lo que ve el paciente en un turno sin pagar, junto al botón que lleva a `Pago`
+ * (ENG-168).
  */
 export const UNPAID_JOIN_MESSAGE = 'Pagá el turno para entrar a la consulta.';
 

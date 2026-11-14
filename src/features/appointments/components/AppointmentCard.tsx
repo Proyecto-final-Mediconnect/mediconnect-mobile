@@ -81,7 +81,10 @@ export function AppointmentCard({
         </View>
       ) : null}
 
-      {sala === 'UNPAID' ? <Text style={styles.avisoPago}>{UNPAID_JOIN_MESSAGE}</Text> : null}
+      {/* Con el botón de pagar a la vista, el aviso de arriba ya lo dice. */}
+      {sala === 'UNPAID' && !pagar ? (
+        <Text style={styles.avisoPago}>{UNPAID_JOIN_MESSAGE}</Text>
+      ) : null}
 
       {salaAbierta || pagar || cancelable ? (
         <View style={styles.pie}>
