@@ -43,7 +43,7 @@ describe('Inicio', () => {
   it('con la consulta por empezar ofrece entrar a la sala', async () => {
     await renderApp();
 
-    expect(await screen.findByRole('button', { name: 'Ingresar a la sala' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Entrar a la sala' })).toBeInTheDocument();
     expect(screen.getAllByText('Valeria Ocampo').length).toBeGreaterThan(0);
     expect(screen.getByText(/empieza pronto/)).toBeInTheDocument();
   });
@@ -57,7 +57,7 @@ describe('Inicio', () => {
   // Cada lectura de la HC queda auditada: abrir la app no puede ser una.
   it('no muestra contenido de la historia clínica', async () => {
     await renderApp();
-    await screen.findByRole('button', { name: 'Ingresar a la sala' });
+    await screen.findByRole('button', { name: 'Entrar a la sala' });
 
     expect(screen.queryByText(/Enalapril/)).not.toBeInTheDocument();
   });
@@ -75,7 +75,7 @@ describe('Inicio', () => {
     expect(screen.queryByText('No tenés turnos próximos')).not.toBeInTheDocument();
   });
 
-  it('"Ingresar a la sala" abre la sala de la próxima consulta (ENG-131)', async () => {
+  it('"Entrar a la sala" abre la sala de la próxima consulta (ENG-131)', async () => {
     await renderApp(
       http.post(`${API_URL}/appointments/turno-sala/video`, () =>
         HttpResponse.json({
@@ -89,7 +89,7 @@ describe('Inicio', () => {
       ),
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Ingresar a la sala' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Entrar a la sala' }));
 
     await waitFor(() =>
       expect(__abiertas).toEqual(['https://mediconnect.daily.co/turno-sala?t=token']),

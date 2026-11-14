@@ -45,14 +45,16 @@ export function refundStep(appointment: Appointment): { title: string; tone: Ste
   const de = conMonto ? ` de ${formatPrice(refund.amount)}` : '';
   switch (refund.status) {
     case 'PENDIENTE':
-      return { title: `Pedimos el reembolso${de}`, tone: 'current' };
+      return { title: `Pedimos la devolución${de}`, tone: 'current' };
     case 'PROCESADO':
       return {
-        title: conMonto ? `Te devolvimos ${formatPrice(refund.amount)}` : 'Te hicimos el reembolso',
+        title: conMonto
+          ? `Te devolvimos ${formatPrice(refund.amount)}`
+          : 'Te hicimos la devolución',
         tone: 'done',
       };
     case 'RECHAZADO':
-      return { title: `No se pudo hacer el reembolso${de}`, tone: 'bad' };
+      return { title: `No se pudo hacer la devolución${de}`, tone: 'bad' };
     default:
       // El estado viene del backend: uno nuevo no tiene que hacer desaparecer el
       // reembolso. Se avisa a Sentry solo con el estado, sin monto ni turno.
@@ -60,7 +62,7 @@ export function refundStep(appointment: Appointment): { title: string; tone: Ste
         level: 'warning',
         tags: { refundStatus: String(refund.status) },
       });
-      return { title: `Tenés un reembolso${de} en proceso`, tone: 'current' };
+      return { title: `Tenés una devolución${de} en proceso`, tone: 'current' };
   }
 }
 

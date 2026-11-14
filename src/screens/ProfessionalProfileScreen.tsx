@@ -57,7 +57,7 @@ export function ProfessionalProfileScreen(): React.JSX.Element {
         <View style={styles.fila}>
           <ProfessionalAvatar professional={p} size={64} />
           <View style={styles.precioBloque}>
-            <Text style={styles.rotulo}>CONSULTA POR VIDEO</Text>
+            <Text style={styles.rotulo}>VIDEOCONSULTA</Text>
             <Text style={styles.precio}>
               {p.price === null ? 'Precio a confirmar' : formatPrice(p.price)}
             </Text>

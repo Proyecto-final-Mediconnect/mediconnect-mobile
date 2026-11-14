@@ -134,7 +134,7 @@ export function AppointmentDetailScreen(): React.JSX.Element {
           <Dato icon="calendar-outline" texto={capitalizar(formatLongDay(turno.date))} />
           <Dato
             icon="time-outline"
-            texto={`${turno.startTime} hs · ${String(turno.durationMinutes)} minutos`}
+            texto={`${turno.startTime} · ${String(turno.durationMinutes)} min`}
           />
           <Dato icon="videocam-outline" texto="Videoconsulta" />
           <Dato icon="card-outline" texto={formatPrice(turno.price)} />
@@ -215,7 +215,7 @@ export function AppointmentDetailScreen(): React.JSX.Element {
         visible={confirmando}
         title="¿Cancelar el turno?"
         message={`Se cancela tu turno del ${formatSentenceDay(turno.date, turno.startTime)} con ${professionalName(turno)}, y el horario queda libre para otro paciente.${devolucion.texto ? `\n\n${devolucion.texto}` : ''}`}
-        confirmLabel="Cancelar turno"
+        confirmLabel="Sí, cancelar el turno"
         dismissLabel="Mantener el turno"
         pending={cancelar.isPending}
         confirmDisabled={devolucion.cargando}

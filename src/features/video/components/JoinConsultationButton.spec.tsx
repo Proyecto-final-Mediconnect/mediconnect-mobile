@@ -40,12 +40,12 @@ async function montar(): Promise<QueryClient> {
   return queryClient;
 }
 
-describe('Ingresar a la sala (ENG-131)', () => {
+describe('Entrar a la sala (ENG-131)', () => {
   it('pide la sala del turno y la abre en el navegador', async () => {
     salaQueResponde(() => HttpResponse.json(acceso()));
     await montar();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ingresar a la sala' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar a la sala' }));
 
     await waitFor(() => expect(__abiertas).toEqual([SALA]));
   });
@@ -56,7 +56,7 @@ describe('Ingresar a la sala (ENG-131)', () => {
     __control.fallarProxima = true;
     await montar();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ingresar a la sala' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar a la sala' }));
 
     await waitFor(() => expect(sistema).toHaveBeenCalledWith(SALA));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -69,7 +69,7 @@ describe('Ingresar a la sala (ENG-131)', () => {
     __control.fallarProxima = true;
     await montar();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ingresar a la sala' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar a la sala' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos abrir el navegador');
     sistema.mockRestore();
@@ -85,7 +85,7 @@ describe('Ingresar a la sala (ENG-131)', () => {
     );
     await montar();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ingresar a la sala' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar a la sala' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'La sala se abre 10 minutos antes del turno.',
@@ -100,7 +100,7 @@ describe('Ingresar a la sala (ENG-131)', () => {
     );
     await montar();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ingresar a la sala' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar a la sala' }));
 
     expect(await screen.findByText(/se graba/)).toBeInTheDocument();
     expect(__abiertas).toEqual([]);
@@ -115,10 +115,10 @@ describe('Ingresar a la sala (ENG-131)', () => {
     );
     await montar();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ingresar a la sala' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar a la sala' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Ahora no' }));
 
-    expect(screen.getByRole('button', { name: 'Ingresar a la sala' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Entrar a la sala' })).toBeInTheDocument();
     expect(__abiertas).toEqual([]);
   });
 
@@ -127,7 +127,7 @@ describe('Ingresar a la sala (ENG-131)', () => {
     salaQueResponde(() => HttpResponse.json(acceso()));
     const queryClient = await montar();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ingresar a la sala' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar a la sala' }));
     await waitFor(() => expect(__abiertas).toEqual([SALA]));
 
     const cache = JSON.stringify(

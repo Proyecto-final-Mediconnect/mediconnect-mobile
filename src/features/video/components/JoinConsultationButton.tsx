@@ -13,7 +13,7 @@ interface JoinConsultationButtonProps {
 }
 
 /**
- * "Ingresar a la sala" (ENG-131): pide la sala al backend y la abre en el
+ * "Entrar a la sala" (ENG-131): pide la sala al backend y la abre en el
  * navegador dentro de la app.
  *
  * Va solo donde la sala está abierta —quien lo usa ya lo decidió con
@@ -90,7 +90,7 @@ export function JoinConsultationButton({
   return (
     <View style={styles.contenedor}>
       <Button
-        label="Ingresar a la sala"
+        label="Entrar a la sala"
         variant="accent"
         onPress={entrar}
         loading={unirse.isPending}

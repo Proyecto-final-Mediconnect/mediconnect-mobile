@@ -191,7 +191,7 @@ export function BookAppointmentScreen(): React.JSX.Element {
 
       {precio !== null ? (
         <Text style={styles.pie}>
-          La consulta por video sale {formatPrice(precio)}. Se paga después de reservar.
+          La videoconsulta sale {formatPrice(precio)}. Se paga después de reservar.
         </Text>
       ) : null}
 

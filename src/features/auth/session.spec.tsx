@@ -362,7 +362,7 @@ describe('sesión del paciente', () => {
     it('no deja los datos del paciente anterior para el siguiente', async () => {
       await iniciarSesionGuardada();
       await abrirApp();
-      expect(await screen.findByRole('button', { name: 'Ingresar a la sala' })).toBeVisible();
+      expect(await screen.findByRole('button', { name: 'Entrar a la sala' })).toBeVisible();
 
       fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
       fireEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
@@ -382,7 +382,7 @@ describe('sesión del paciente', () => {
       completarYEnviar(otro.email, 'Password1');
 
       expect(await screen.findByRole('heading', { name: /, Tomás$/ })).toBeVisible();
-      expect(screen.queryByRole('button', { name: 'Ingresar a la sala' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Entrar a la sala' })).not.toBeInTheDocument();
       expect(screen.getByText('Buscando tu próximo turno…')).toBeInTheDocument();
     });
   });

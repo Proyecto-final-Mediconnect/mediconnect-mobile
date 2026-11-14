@@ -73,7 +73,7 @@ export function AppointmentsScreen(): React.JSX.Element {
   const header = (
     <ScreenHeader
       title="Mis turnos"
-      action={{ label: 'Nuevo turno', icon: 'add', onPress: irAReservar }}
+      action={{ label: 'Sacar turno', icon: 'add', onPress: irAReservar }}
     />
   );
 
@@ -262,7 +262,7 @@ export function AppointmentsScreen(): React.JSX.Element {
             ? `Se cancela tu turno del ${formatSentenceDay(aCancelar.date, aCancelar.startTime)} con ${professionalName(aCancelar)}, y el horario queda libre para otro paciente.${devolucion.texto ? `\n\n${devolucion.texto}` : ''}`
             : ''
         }
-        confirmLabel="Cancelar turno"
+        confirmLabel="Sí, cancelar el turno"
         dismissLabel="Mantener el turno"
         pending={cancelar.isPending}
         confirmDisabled={devolucion.cargando}

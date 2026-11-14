@@ -55,7 +55,7 @@ export function VitalSummary({
       </Seccion>
 
       <Seccion
-        titulo="MEDICACIÓN ACTIVA"
+        titulo="MEDICACIÓN"
         control={control('medicacion', 'Medicación', medicacion.length > 0)}
       >
         {medicacion.length ? (
@@ -72,8 +72,8 @@ export function VitalSummary({
       </Seccion>
 
       <Seccion
-        titulo="DIAGNÓSTICOS"
-        control={control('condiciones', 'Diagnósticos', condiciones.length > 0)}
+        titulo="CONDICIONES"
+        control={control('condiciones', 'Condiciones', condiciones.length > 0)}
       >
         {condiciones.length ? (
           condiciones.map((c) => (
