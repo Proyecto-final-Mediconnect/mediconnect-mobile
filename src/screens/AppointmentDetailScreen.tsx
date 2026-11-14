@@ -38,6 +38,7 @@ import { Notice } from '../shared/ui/Notice';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
+import { PaymentReceiptCard } from '../features/payments/components/PaymentReceiptCard';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -161,6 +162,15 @@ export function AppointmentDetailScreen(): React.JSX.Element {
           rechaza las demás con 409. */}
       {turno.status === 'COMPLETADO' || pendiente ? (
         <AppointmentReview appointmentId={turno.id} professionalName={professionalName(turno)} />
+      ) : null}
+
+      {/* El comprobante del pago (ENG-199). */}
+      {pago.data?.receipt ? (
+        <PaymentReceiptCard
+          titulo="PAGO"
+          receipt={pago.data.receipt}
+          confirmedAt={pago.data.confirmedAt}
+        />
       ) : null}
 
       <Text style={styles.seccion}>QUÉ PASÓ</Text>

@@ -66,15 +66,19 @@ export function BookAppointmentScreen(): React.JSX.Element {
   if (reservado) {
     return (
       <Screen header={<ScreenHeader title="Turno reservado" />}>
+        {/* Reservado no es confirmado: falta pagar. Reloj y tono de aviso, no el
+            check de "listo", que queda para cuando se acredita (ENG-199). */}
         <View style={styles.listo}>
           <View style={styles.listoIcono}>
-            <Ionicons name="checkmark" size={32} color={colors.white} />
+            <Ionicons name="time-outline" size={30} color={colors.warmInk} />
           </View>
+          <Text style={styles.listoEyebrow}>FALTA PAGAR</Text>
           <Text accessibilityRole="header" style={styles.listoTitulo}>
-            ¡Listo, reservaste tu turno!
+            Reservaste tu turno
           </Text>
           <Text style={styles.listoDetalle}>
-            Con {nombre}, el {formatShortDay(reservado.date, reservado.startTime)}.
+            Con {nombre}, el {formatShortDay(reservado.date, reservado.startTime)}. Se confirma
+            cuando pagás.
           </Text>
         </View>
         <Notice icon="time-outline" message={AVISO_PAGO} />
@@ -278,7 +282,13 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.brandHover,
+    backgroundColor: colors.warm,
+  },
+  listoEyebrow: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    letterSpacing: 1.4,
+    color: colors.warmInk,
   },
   listoTitulo: {
     fontFamily: fonts.display,

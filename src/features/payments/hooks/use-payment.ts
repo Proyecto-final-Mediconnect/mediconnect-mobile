@@ -9,8 +9,13 @@ import type { PaymentStatus } from '../types';
 /** Cada cuánto se vuelve a preguntar mientras se espera el webhook. */
 export const POLL_INTERVAL_MS = 2_000;
 
-/** Mientras el paciente sigue en MercadoPago no hay apuro: se pregunta menos seguido. */
-export const POLL_CHECKOUT_INTERVAL_MS = 8_000;
+/**
+ * Mientras el paciente sigue en MercadoPago. En la web (y en Android con el
+ * navegador del sistema) la app no se entera de que volvió, así que esta
+ * consulta es la que pasa la pantalla a la confirmación: cada 3 s se ve casi en
+ * el momento (ENG-199; antes eran 8 s).
+ */
+export const POLL_CHECKOUT_INTERVAL_MS = 3_000;
 
 /**
  * Adónde vuelve MercadoPago al terminar (ENG-172): el backend arma los

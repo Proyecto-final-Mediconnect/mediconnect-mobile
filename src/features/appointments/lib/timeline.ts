@@ -24,7 +24,7 @@ export interface TimelineStep {
 }
 
 /** Un instante ISO en hora argentina: `21 oct · 21:35`. */
-function cuando(iso: string | null | undefined): string | null {
+export function cuando(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const { date, time } = enArgentina(new Date(iso));
   // `formatShortDay` arma `mié 21 oct · 21:35`; acá sobra el día de la semana.

@@ -49,7 +49,7 @@ describe('Reservar un turno (ENG-133)', () => {
     expect(screen.getAllByText(/15 minutos/).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: 'Reservar turno' }));
 
-    expect(await screen.findByText('¡Listo, reservaste tu turno!')).toBeInTheDocument();
+    expect(await screen.findByText('Reservaste tu turno')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ver mis turnos' }));
     await waitFor(() =>
@@ -80,7 +80,7 @@ describe('Reservar un turno (ENG-133)', () => {
       await screen.findByText('Ese turno lo acaba de reservar otra persona. Elegí otro horario.'),
     ).toBeInTheDocument();
     await waitFor(() => expect(pedidos).toBeGreaterThan(antes));
-    expect(screen.queryByText('¡Listo, reservaste tu turno!')).not.toBeInTheDocument();
+    expect(screen.queryByText('Reservaste tu turno')).not.toBeInTheDocument();
     server.events.removeAllListeners();
   });
 
