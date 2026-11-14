@@ -15,6 +15,7 @@ import { greeting, laterAppointments, pastProfessionals } from '../features/appo
 import { joinStateOf, timeUntilOpen } from '../features/appointments/lib/join-window';
 import type { Appointment } from '../features/appointments/types';
 import { PastProfessionalCard } from '../features/catalog/components/PastProfessionalCard';
+import { PatientSummaryTiles } from '../features/patient-summary/components/PatientSummaryTiles';
 import { PendingReviewCards } from '../features/reviews/components/PendingReviewCards';
 import { useConversations } from '../features/chat/hooks/use-chat';
 import { totalUnread } from '../features/chat/lib/chat';
@@ -35,6 +36,7 @@ import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
  * 3. Los turnos que siguen, en una línea cada uno.
  * 4. Los profesionales con los que ya se atendió, para volver a reservar.
  * 5. Su historia clínica, su MediPass y los mensajes con sus profesionales.
+ * 6. Su resumen del período: consultas, pagos y accesos (ENG-198).
  *
  * Reservar no está acá como botón: es la tab central, a un toque desde
  * cualquier pantalla.
@@ -169,6 +171,8 @@ export function HomeScreen(): React.JSX.Element {
           />
         </View>
       </View>
+
+      <PatientSummaryTiles />
     </Screen>
   );
 }

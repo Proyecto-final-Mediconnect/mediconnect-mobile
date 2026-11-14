@@ -132,4 +132,39 @@ describe('Inicio', () => {
       expect(screen.queryByText('CALIFICÁ TU CONSULTA')).not.toBeInTheDocument();
     });
   });
+
+  // ENG-198: los mismos números que la web, y cada tarjeta lleva a su detalle.
+  it('muestra el resumen del período y lleva a los turnos', async () => {
+    await renderApp();
+
+    expect(await screen.findByText('TU RESUMEN')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pagaste: $54.000' })).toBeInTheDocument();
+    expect(screen.getByText('Por 4 turnos · 1 pendiente')).toBeInTheDocument();
+    expect(screen.getByText('2 al MediPass · 5 a tu historia')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Consultas realizadas: 3' }));
+    expect(await screen.findByRole('heading', { name: 'Mis turnos' })).toBeVisible();
+  });
+
+  it('cambia de período y pide el año en curso', async () => {
+    let pedido = '';
+    await renderApp(
+      http.get(`${API_URL}/patients/me/summary`, ({ request }) => {
+        pedido = new URL(request.url).searchParams.get('from') ?? '';
+        return HttpResponse.json({
+          from: pedido,
+          to: '2026-11-14',
+          currency: 'ARS',
+          consultas: { realizadas: 0, profesionales: 0 },
+          pagos: { pagado: 0, reembolsado: 0, neto: 0, turnos: 0, porVenir: 0 },
+          accesos: { medipass: 0, historiaClinica: 0, total: 0 },
+        });
+      }),
+    );
+
+    expect(await screen.findByText(/Sin actividad en últimos 30 días/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: 'Este año' }));
+    await waitFor(() => expect(pedido).toMatch(/^\d{4}-01-01$/));
+    expect(await screen.findByText(/Sin actividad en este año/)).toBeInTheDocument();
+  });
 });

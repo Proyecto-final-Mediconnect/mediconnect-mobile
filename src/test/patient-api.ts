@@ -229,6 +229,18 @@ export function servirDatosDelPaciente(): void {
     // Reseñas (ENG-80, ENG-82): por defecto la paciente no dejó ninguna y los
     // profesionales no tienen; los tests de reseñas declaran las suyas.
     http.get(`${API_URL}/reviews/me`, () => HttpResponse.json([])),
+    // ENG-198: el resumen del inicio, con el período que pidió la app.
+    http.get(`${API_URL}/patients/me/summary`, ({ request }) => {
+      const qs = new URL(request.url).searchParams;
+      return HttpResponse.json({
+        from: qs.get('from'),
+        to: qs.get('to'),
+        currency: 'ARS',
+        consultas: { realizadas: 3, profesionales: 2 },
+        pagos: { pagado: 54000, reembolsado: 9000, neto: 45000, turnos: 4, porVenir: 1 },
+        accesos: { medipass: 2, historiaClinica: 5, total: 7 },
+      });
+    }),
     // ENG-190: sin consultas para calificar, salvo que el test diga otra cosa.
     http.get(`${API_URL}/reviews/pending`, () => HttpResponse.json([])),
     http.post(
