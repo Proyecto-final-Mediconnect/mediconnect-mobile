@@ -36,8 +36,3 @@ export function formatRestante(ms: number): string {
   const segundos = total % 60;
   return `${String(minutos)}:${String(segundos).padStart(2, '0')}`;
 }
-
-/** Si un turno se muestra como pagado: confirmado es pagado (ENG-64). */
-export function isPaid(status: string): boolean {
-  return status === 'CONFIRMADO';
-}

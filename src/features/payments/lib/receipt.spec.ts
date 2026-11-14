@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatRestante, isPaid, paymentMethodLabel, restanteParaPagar } from './receipt';
+import { formatRestante, paymentMethodLabel, restanteParaPagar } from './receipt';
 
 describe('comprobante y espera del pago (ENG-199)', () => {
   it('nombra el medio de MercadoPago y nunca lo deja vacío', () => {
@@ -16,11 +16,5 @@ describe('comprobante y espera del pago (ENG-199)', () => {
     expect(restanteParaPagar(reserva, new Date('2026-11-17T12:30:00.000Z'))).toBe(0);
     expect(restanteParaPagar(undefined, new Date())).toBeNull();
     expect(formatRestante(65_500)).toBe('1:06');
-  });
-
-  it('solo un turno confirmado se muestra pagado', () => {
-    expect(isPaid('CONFIRMADO')).toBe(true);
-    expect(isPaid('RESERVADO_SIN_PAGAR')).toBe(false);
-    expect(isPaid('CANCELADO')).toBe(false);
   });
 });

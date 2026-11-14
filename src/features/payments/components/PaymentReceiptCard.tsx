@@ -9,8 +9,8 @@ import type { PaymentReceipt } from '../types';
 
 /**
  * El comprobante del pago (ENG-199): importe, medio, cuándo se acreditó y el
- * número de operación de MercadoPago, seleccionable para copiarlo en un
- * reclamo. Lo usan la confirmación del pago y el detalle del turno.
+ * número de operación de MercadoPago, al pie y seleccionable para copiarlo en
+ * un reclamo. Lo usan la confirmación del pago y el detalle del turno.
  */
 export function PaymentReceiptCard({
   receipt,
@@ -40,12 +40,12 @@ export function PaymentReceiptCard({
           <Text style={styles.valor}>{fecha}</Text>
         </Fila>
       ) : null}
+      {/* Al pie y en gris: no compite con el importe, pero está para un reclamo y
+          coincide con el "Operación #…" del comprobante de MercadoPago. */}
       {receipt.operationId ? (
-        <Fila rotulo="Operación">
-          <Text selectable style={styles.valor}>
-            N.º {receipt.operationId}
-          </Text>
-        </Fila>
+        <Text selectable style={styles.operacion}>
+          N.º de operación de MercadoPago: {receipt.operationId}
+        </Text>
       ) : null}
     </View>
   );
@@ -91,6 +91,14 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.ink,
     textAlign: 'right',
+  },
+  operacion: {
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.lineSoft,
+    fontFamily: fonts.medium,
+    fontSize: fontSize.xs,
+    color: colors.mutedSoft,
   },
   monto: { fontFamily: fonts.bold, fontSize: fontSize.md, color: colors.brandDeep },
 });

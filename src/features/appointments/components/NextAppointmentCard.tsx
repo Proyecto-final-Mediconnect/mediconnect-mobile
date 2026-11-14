@@ -8,8 +8,6 @@ import { JoinConsultationButton } from '../../video/components/JoinConsultationB
 import { formatShortDay, professionalName, statusLabel, statusTone } from '../lib/appointments';
 import { joinStateOf, timeUntilOpen, UNPAID_JOIN_MESSAGE } from '../lib/join-window';
 import type { Appointment } from '../types';
-import { PaidChip } from '../../payments/components/PaidChip';
-import { isPaid } from '../../payments/lib/receipt';
 
 interface NextAppointmentCardProps {
   /** `null`: el paciente no tiene turnos próximos. */
@@ -58,10 +56,7 @@ export function NextAppointmentCard({
         <Text style={styles.eyebrow}>
           {formatShortDay(appointment.date, appointment.startTime).toUpperCase()}
         </Text>
-        <View style={styles.chips}>
-          {isPaid(appointment.status) ? <PaidChip /> : null}
-          <Chip label={statusLabel(appointment.status)} tone={statusTone(appointment.status)} />
-        </View>
+        <Chip label={statusLabel(appointment.status)} tone={statusTone(appointment.status)} />
       </View>
       <Text style={styles.nombre}>{professionalName(appointment)}</Text>
       <Text style={styles.detalle}>Videoconsulta · {appointment.durationMinutes} min</Text>
@@ -95,7 +90,6 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   fila: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   eyebrow: {
     fontFamily: fonts.bold,
     fontSize: fontSize.xs,

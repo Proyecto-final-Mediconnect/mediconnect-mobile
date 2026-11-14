@@ -106,7 +106,7 @@ describe('Pagar el turno desde la app (ENG-168)', () => {
     expect(await screen.findByText('PAGO ACREDITADO')).toBeVisible();
     const comprobante = within(screen.getByLabelText('Comprobante del pago'));
     expect(comprobante.getByText('Dinero en cuenta de MercadoPago')).toBeVisible();
-    expect(comprobante.getByText('N.º 189539998660')).toBeVisible();
+    expect(comprobante.getByText('N.º de operación de MercadoPago: 189539998660')).toBeVisible();
     expect(screen.getByText('QUÉ SIGUE')).toBeVisible();
   });
 
