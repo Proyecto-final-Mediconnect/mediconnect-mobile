@@ -17,6 +17,8 @@ import { dayParts } from '../lib/booking';
 import { joinStateOf, UNPAID_JOIN_MESSAGE } from '../lib/join-window';
 import type { Appointment } from '../types';
 import { DateBadge } from './DateBadge';
+import { PaidChip } from '../../payments/components/PaidChip';
+import { isPaid } from '../../payments/lib/receipt';
 
 interface AppointmentCardProps {
   appointment: Appointment;
@@ -67,6 +69,7 @@ export function AppointmentCard({
           <Text style={styles.detalle}>Videoconsulta · {formatPrice(appointment.price)}</Text>
         </View>
         <View style={styles.estado}>
+          {isPaid(appointment.status) ? <PaidChip /> : null}
           <Chip label={statusLabel(appointment.status)} tone={statusTone(appointment.status)} />
           {onOpen ? <Ionicons name="chevron-forward" size={16} color={colors.mutedSoft} /> : null}
         </View>

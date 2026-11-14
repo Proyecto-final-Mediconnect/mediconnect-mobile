@@ -38,6 +38,9 @@ import { Notice } from '../shared/ui/Notice';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
+import { PaidChip } from '../features/payments/components/PaidChip';
+import { PaymentReceiptCard } from '../features/payments/components/PaymentReceiptCard';
+import { isPaid } from '../features/payments/lib/receipt';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -125,7 +128,10 @@ export function AppointmentDetailScreen(): React.JSX.Element {
           ) : null}
           <View style={styles.quienTextos}>
             <Text style={styles.nombre}>{professionalName(turno)}</Text>
-            <Chip label={statusLabel(turno.status)} tone={statusTone(turno.status)} />
+            <View style={styles.chips}>
+              <Chip label={statusLabel(turno.status)} tone={statusTone(turno.status)} />
+              {isPaid(turno.status) ? <PaidChip /> : null}
+            </View>
           </View>
         </View>
 
@@ -161,6 +167,15 @@ export function AppointmentDetailScreen(): React.JSX.Element {
           rechaza las demás con 409. */}
       {turno.status === 'COMPLETADO' || pendiente ? (
         <AppointmentReview appointmentId={turno.id} professionalName={professionalName(turno)} />
+      ) : null}
+
+      {/* El comprobante del pago (ENG-199). */}
+      {pago.data?.receipt ? (
+        <PaymentReceiptCard
+          titulo="PAGO"
+          receipt={pago.data.receipt}
+          confirmedAt={pago.data.confirmedAt}
+        />
       ) : null}
 
       <Text style={styles.seccion}>QUÉ PASÓ</Text>
@@ -283,6 +298,7 @@ const styles = StyleSheet.create({
   },
   quien: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   quienTextos: { flex: 1, gap: 6 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   nombre: { fontFamily: fonts.bold, fontSize: fontSize.lg, color: colors.brandDeep },
   datos: {
     gap: spacing.md,
