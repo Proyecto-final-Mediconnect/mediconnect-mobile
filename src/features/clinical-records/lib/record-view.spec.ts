@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { crearHistoriaDemo } from '../../../mocks/clinical-record';
 import {
   correctionLinks,
+  currentVersions,
   filterByPeriod,
   newestFirst,
   periodLabel,
@@ -16,6 +17,14 @@ import {
 const HISTORIA = crearHistoriaDemo(new Date('2026-09-23T12:00:00.000Z'));
 
 describe('record-view', () => {
+  it('la versión vigente saca los originales que tienen corrección', () => {
+    const { correctedBy } = correctionLinks(HISTORIA);
+    const vigentes = currentVersions(HISTORIA, correctedBy);
+    expect(correctedBy.size).toBeGreaterThan(0);
+    expect(vigentes).toHaveLength(HISTORIA.length - correctedBy.size);
+    expect(vigentes.some((e) => correctedBy.has(e.id))).toBe(false);
+  });
+
   it('ordena por fecha aunque la posición en la cadena no coincida, para no partir los meses', () => {
     const [base] = HISTORIA;
     const e = (id: string, sequenceNumber: number, createdAt: string) => ({

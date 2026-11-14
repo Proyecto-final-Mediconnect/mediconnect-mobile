@@ -7,6 +7,7 @@ import { useMyClinicalRecord } from '../features/clinical-records/hooks/use-clin
 import {
   byMonth,
   correctionLinks,
+  currentVersions,
   filterByPeriod,
   newestFirst,
   periodLabel,
@@ -67,6 +68,7 @@ export function ClinicalRecordScreen(): React.JSX.Element {
   const [periodo, setPeriodo] = useState<Period>('TODO');
   const [busqueda, setBusqueda] = useState('');
   const [verFiltros, setVerFiltros] = useState(false);
+  const [conOriginales, setConOriginales] = useState(false);
   const [visibles, setVisibles] = useState(TANDA);
   const [opciones, setOpciones] = useState(false);
   const [eligiendo, setEligiendo] = useState(false);
@@ -103,6 +105,10 @@ export function ClinicalRecordScreen(): React.JSX.Element {
     [historia.data],
   );
   const vinculos = useMemo(() => correctionLinks(entradas), [entradas]);
+  const enLista = useMemo(
+    () => (conOriginales ? entradas : currentVersions(entradas, vinculos.correctedBy)),
+    [entradas, vinculos, conOriginales],
+  );
   const tipos = useMemo(() => typesPresent(entradas), [entradas]);
   const anios = useMemo(() => yearsPresent(entradas), [entradas]);
   // El texto normalizado de cada entrada se arma una vez por historia, y la
@@ -114,13 +120,13 @@ export function ClinicalRecordScreen(): React.JSX.Element {
     () =>
       searchEntries(
         filterByPeriod(
-          filtro === 'TODAS' ? entradas : entradas.filter((e) => e.entryType === filtro),
+          filtro === 'TODAS' ? enLista : enLista.filter((e) => e.entryType === filtro),
           periodo,
         ),
         busquedaAplicada,
         indice,
       ),
-    [entradas, filtro, periodo, busquedaAplicada, indice],
+    [enLista, filtro, periodo, busquedaAplicada, indice],
   );
   const secciones = useMemo(() => byMonth(filtradas.slice(0, visibles)), [filtradas, visibles]);
   const hayFiltros = filtro !== 'TODAS' || periodo !== 'TODO' || busqueda.trim() !== '';
@@ -153,6 +159,15 @@ export function ClinicalRecordScreen(): React.JSX.Element {
       : []),
     ...(periodo !== 'TODO'
       ? [{ key: 'fecha', label: periodLabel(periodo), onRemove: () => elegirPeriodo('TODO') }]
+      : []),
+    ...(conOriginales
+      ? [
+          {
+            key: 'originales',
+            label: 'Con versiones originales',
+            onRemove: () => setConOriginales(false),
+          },
+        ]
       : []),
   ];
 
@@ -247,8 +262,9 @@ export function ClinicalRecordScreen(): React.JSX.Element {
             <MyDocumentsSection onUpload={subir} />
             {entradas.length > 0 ? (
               <Text style={styles.aclaracion}>
-                Cada entrada queda sellada y no se puede modificar. Si un profesional necesita
-                corregir algo, agrega una corrección vinculada al registro original.
+                Cada entrada queda sellada y no se puede modificar. Si un profesional corrige algo,
+                ves la versión vigente; la original sigue guardada y la encontrás dentro de la
+                corrección.
               </Text>
             ) : null}
           </View>
@@ -313,15 +329,37 @@ export function ClinicalRecordScreen(): React.JSX.Element {
               onPress: () => elegirPeriodo(p),
             })),
           },
+          ...(vinculos.correctedBy.size > 0
+            ? [
+                {
+                  title: 'Registros corregidos',
+                  options: [
+                    {
+                      key: 'vigente',
+                      label: 'Solo la versión vigente',
+                      selected: !conOriginales,
+                      onPress: () => setConOriginales(false),
+                    },
+                    {
+                      key: 'originales',
+                      label: 'Incluir las versiones originales',
+                      selected: conOriginales,
+                      onPress: () => setConOriginales(true),
+                    },
+                  ],
+                },
+              ]
+            : []),
         ]}
         resultLabel={
           filtradas.length === 1 ? 'Ver 1 registro' : `Ver ${filtradas.length} registros`
         }
         onClear={
-          filtro !== 'TODAS' || periodo !== 'TODO'
+          filtro !== 'TODAS' || periodo !== 'TODO' || conOriginales
             ? () => {
                 elegirTipo('TODAS');
                 elegirPeriodo('TODO');
+                setConOriginales(false);
               }
             : undefined
         }
