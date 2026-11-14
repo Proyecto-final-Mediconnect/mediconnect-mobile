@@ -79,6 +79,19 @@ export type UploadFormErrors = Partial<
   Record<'title' | 'documentDate' | 'sourceInstitution', string>
 >;
 
+/**
+ * Lo que tipea el paciente (`12/03/2025`, también `12/3/2025`) como fecha ISO
+ * para el backend (`2025-03-12`). Acepta también ISO tal cual. `null` si no
+ * tiene ninguna de las dos formas.
+ */
+export function toIsoDate(texto: string): string | null {
+  const t = texto.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(t);
+  if (!m) return null;
+  return `${m[3]}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}`;
+}
+
 /** Una fecha de calendario real (`2025-02-30` no pasa) y que no esté en el futuro. */
 function fechaValida(texto: string, hoy: Date): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(texto)) return false;
@@ -101,8 +114,9 @@ export function validateUploadForm(
   else if (titulo.length > MAX_TEXTO) errores.title = `Hasta ${MAX_TEXTO} caracteres.`;
 
   const fecha = form.documentDate?.trim();
-  if (fecha && !fechaValida(fecha, hoy)) {
-    errores.documentDate = 'Usá el formato AAAA-MM-DD, con una fecha que ya pasó.';
+  const iso = fecha ? toIsoDate(fecha) : null;
+  if (fecha && (!iso || !fechaValida(iso, hoy))) {
+    errores.documentDate = 'Usá el formato DD/MM/AAAA, con una fecha que ya pasó.';
   }
 
   if ((form.sourceInstitution?.trim().length ?? 0) > MAX_TEXTO) {

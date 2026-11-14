@@ -8,6 +8,7 @@ import {
   formatSize,
   MAX_BYTES,
   mimeTypeOf,
+  toIsoDate,
   validateUploadForm,
 } from './document-file';
 
@@ -69,17 +70,25 @@ describe('validateUploadForm', () => {
     ).toEqual({});
   });
 
-  it.each(['2025-13-01', '2025-02-30', '12/03/2025', '2026-11-03'])(
+  it.each(['2025-13-01', '2025-02-30', '30/02/2025', '3/11/2026', '12-03-2025'])(
     'rechaza la fecha %s',
     (documentDate) => {
       expect(validateUploadForm({ title: 'Hemograma', documentDate }, hoy).documentDate).toBe(
-        'Usá el formato AAAA-MM-DD, con una fecha que ya pasó.',
+        'Usá el formato DD/MM/AAAA, con una fecha que ya pasó.',
       );
     },
   );
 
-  it('acepta una fecha real de hoy o antes', () => {
-    expect(validateUploadForm({ title: 'Hemograma', documentDate: '2026-11-02' }, hoy)).toEqual({});
+  it('acepta una fecha real de hoy o antes, como la escribe el paciente', () => {
+    expect(validateUploadForm({ title: 'Hemograma', documentDate: '02/11/2026' }, hoy)).toEqual({});
+    expect(validateUploadForm({ title: 'Hemograma', documentDate: '2/3/2025' }, hoy)).toEqual({});
+  });
+
+  it('pasa DD/MM/AAAA a la fecha ISO que espera el backend', () => {
+    expect(toIsoDate('12/03/2025')).toBe('2025-03-12');
+    expect(toIsoDate('2/3/2025')).toBe('2025-03-02');
+    expect(toIsoDate('2025-03-12')).toBe('2025-03-12');
+    expect(toIsoDate('12-03-2025')).toBeNull();
   });
 
   it('corta nombre e institución a 120 caracteres', () => {

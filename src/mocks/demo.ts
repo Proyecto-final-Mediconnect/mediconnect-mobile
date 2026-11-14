@@ -6,7 +6,8 @@
  *
  * - Es lo que responde el backend en los tests (`src/test/patient-api.ts`, con
  *   MSW), con las mismas formas que la API real.
- * - Alimenta el MediPass, que todavía no tiene rutas en el backend (ENG-117).
+ * - Sirve de datos de ejemplo para el modo demo; el MediPass ya sale de
+ *   `/medipass/me*` (ENG-117).
  *
  * `conDemora` simula la red, para que se vean los estados de carga.
  */

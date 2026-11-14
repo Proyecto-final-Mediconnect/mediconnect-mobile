@@ -17,6 +17,7 @@ import {
   formatSize,
   isPdf,
   MAX_TEXTO,
+  toIsoDate,
   validateUploadForm,
   type UploadFormErrors,
 } from '../features/patient-documents/lib/document-file';
@@ -93,7 +94,8 @@ export function UploadDocumentScreen(): React.JSX.Element {
 
     enviando.current = true;
     subir.mutate(
-      { file, type: tipo, ...form },
+      // El paciente escribe DD/MM/AAAA; el backend espera la fecha ISO.
+      { file, type: tipo, ...form, documentDate: toIsoDate(fecha) ?? '' },
       {
         onSettled: (_doc, error) => {
           enviando.current = false;
@@ -176,7 +178,7 @@ export function UploadDocumentScreen(): React.JSX.Element {
           />
           <TextField
             label="Fecha del documento (opcional)"
-            placeholder="AAAA-MM-DD"
+            placeholder="DD/MM/AAAA"
             value={fecha}
             onChangeText={setFecha}
             maxLength={10}
