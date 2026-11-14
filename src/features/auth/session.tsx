@@ -60,7 +60,9 @@ interface SessionContextValue {
 /** La cuenta existe y la contraseña es correcta, pero no es de un paciente. */
 export class NotPatientError extends Error {
   constructor() {
-    super('La app de MediConnect es para pacientes. Si sos profesional, ingresá desde la web.');
+    super(
+      'La app de MediConnect es para pacientes. Si sos profesional o moderador, ingresá desde la web.',
+    );
     this.name = 'NotPatientError';
   }
 }

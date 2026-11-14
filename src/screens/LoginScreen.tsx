@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState, type ComponentProps } from 'react';
 import {
   Animated,
   Image,
   Keyboard,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,6 +23,7 @@ import { MfaRequiredError, NotPatientError, useSession } from '../features/auth/
 import { validateLogin, type LoginErrors } from '../features/auth/validation';
 import { useKeyboardHeight } from '../shared/hooks/use-keyboard-height';
 import { ApiError } from '../shared/lib/api-client';
+import { WEB_URL } from '../shared/lib/web-url';
 import { Button } from '../shared/ui/Button';
 import { Desborde } from '../shared/ui/Screen';
 import { TextField } from '../shared/ui/TextField';
@@ -293,6 +296,21 @@ export function LoginScreen(): React.JSX.Element {
                   loading={enviando}
                   fullWidth
                 />
+
+                {/* Recuperar la contraseña vive en la web: el mail trae un link a
+                    la web, y ahí se elige la nueva. */}
+                <Pressable
+                  accessibilityRole="link"
+                  hitSlop={spacing.sm}
+                  onPress={() =>
+                    void WebBrowser.openBrowserAsync(`${WEB_URL}/recuperar-contrasena`).catch(
+                      () => {},
+                    )
+                  }
+                  style={styles.olvido}
+                >
+                  <Text style={styles.olvidoTexto}>¿Olvidaste tu contraseña?</Text>
+                </Pressable>
               </>
             )}
           </View>
@@ -389,6 +407,8 @@ const styles = StyleSheet.create({
   bannerTexto: { flex: 1, fontFamily: fonts.semibold, fontSize: fontSize.sm, lineHeight: 18 },
   bannerInfoTexto: { color: colors.brandDeep },
   bannerErrorTexto: { color: colors.danger },
+  olvido: { alignSelf: 'center', paddingVertical: spacing.xs },
+  olvidoTexto: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.brandHover },
   pie: {
     fontFamily: fonts.medium,
     fontSize: fontSize.sm,
