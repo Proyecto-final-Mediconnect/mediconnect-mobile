@@ -4,7 +4,7 @@ import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, fonts, spacing } from '../shared/ui/theme';
+import { colors, fonts, fontSize, spacing } from '../shared/ui/theme';
 import type { PatientTabParamList } from './types';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   tab: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 3 },
-  rotulo: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 0.3 },
+  rotulo: { fontFamily: fonts.semibold, fontSize: fontSize.xs, letterSpacing: 0.3 },
   reservar: {
     width: 34,
     height: 26,

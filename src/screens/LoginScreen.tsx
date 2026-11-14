@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   bienvenida: { gap: spacing.sm },
   titulo: {
     fontFamily: fonts.display,
-    fontSize: 34,
+    fontSize: fontSize.display,
     lineHeight: 40,
     color: colors.white,
   },
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(46, 196, 182, 0.14)',
+    backgroundColor: colors.brandBrightSoft,
   },
   itemTexto: { flex: 1, fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.onNight },
   contenido: { padding: spacing.lg, gap: spacing.lg, marginTop: -SOLAPE },
@@ -401,8 +401,8 @@ const styles = StyleSheet.create({
   },
   bannerInfo: { backgroundColor: colors.surfaceTeal, borderColor: colors.line },
   bannerError: {
-    backgroundColor: 'rgba(214, 69, 98, 0.05)',
-    borderColor: 'rgba(214, 69, 98, 0.3)',
+    backgroundColor: colors.dangerTint,
+    borderColor: colors.dangerBorder,
   },
   bannerTexto: { flex: 1, fontFamily: fonts.semibold, fontSize: fontSize.sm, lineHeight: 18 },
   bannerInfoTexto: { color: colors.brandDeep },

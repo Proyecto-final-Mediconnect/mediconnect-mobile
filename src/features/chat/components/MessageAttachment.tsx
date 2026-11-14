@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: 12,
   },
-  tarjetaMia: { backgroundColor: 'rgba(255,255,255,0.12)' },
+  tarjetaMia: { backgroundColor: colors.onBrandCard },
   tarjetaSuya: { backgroundColor: colors.surface },
   presionada: { opacity: 0.8 },
   icono: {
@@ -144,10 +144,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.white,
   },
-  iconoMio: { backgroundColor: 'rgba(255,255,255,0.16)' },
+  iconoMio: { backgroundColor: colors.onBrandIcon },
   tipo: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.ink },
   detalle: { fontFamily: fonts.medium, fontSize: fontSize.xs, color: colors.muted },
   textoMio: { color: colors.white },
-  detalleMio: { color: 'rgba(255,255,255,0.75)' },
+  detalleMio: { color: colors.onBrandMuted },
   error: { fontFamily: fonts.semibold, fontSize: fontSize.xs, color: colors.danger },
 });

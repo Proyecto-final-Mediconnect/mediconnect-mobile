@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
     fontFamily: fonts.bold,
-    fontSize: 11,
+    fontSize: fontSize.xs,
     letterSpacing: 1.2,
     color: colors.muted,
   },

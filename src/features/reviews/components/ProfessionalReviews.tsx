@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   },
   promedio: {
     fontFamily: fonts.display,
-    fontSize: 40,
+    fontSize: fontSize.displayLg,
     lineHeight: 44,
     color: colors.brandDeep,
   },

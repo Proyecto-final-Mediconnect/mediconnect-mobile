@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   textos: { flex: 1, gap: 1 },
   docTitulo: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.brandDeep },
   docMeta: { fontFamily: fonts.medium, fontSize: fontSize.xs, color: colors.muted },
-  docArchivo: { fontFamily: fonts.medium, fontSize: 11, color: colors.mutedSoft },
+  docArchivo: { fontFamily: fonts.medium, fontSize: fontSize.xs, color: colors.mutedSoft },
   accion: {
     width: 34,
     height: 34,

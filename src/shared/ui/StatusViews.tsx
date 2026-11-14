@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.surfaceTeal,
   },
-  iconoDark: { backgroundColor: 'rgba(255,255,255,0.08)' },
+  iconoDark: { backgroundColor: colors.nightIcon },
   titulo: {
     fontFamily: fonts.bold,
     fontSize: fontSize.lg,

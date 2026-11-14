@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: colors.brand,
   },
-  insigniaTexto: { fontFamily: fonts.bold, fontSize: 11, color: colors.inkDeep },
+  insigniaTexto: { fontFamily: fonts.bold, fontSize: fontSize.xs, color: colors.inkDeep },
   activosFuera: { marginHorizontal: -spacing.lg },
   activos: { gap: spacing.sm, paddingHorizontal: spacing.lg },
   activo: {

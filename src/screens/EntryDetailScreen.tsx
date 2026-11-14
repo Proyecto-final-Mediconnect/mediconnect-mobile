@@ -168,7 +168,12 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
   },
   campo: { gap: 4 },
-  rotulo: { fontFamily: fonts.bold, fontSize: 10, letterSpacing: 1, color: colors.mutedSoft },
+  rotulo: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1,
+    color: colors.mutedSoft,
+  },
   valor: { fontFamily: fonts.regular, fontSize: fontSize.md, lineHeight: 22, color: colors.ink },
   enlace: {
     backgroundColor: colors.warm,

@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   bloque: { gap: spacing.sm },
   bloqueTitulo: {
     fontFamily: fonts.bold,
-    fontSize: 11,
+    fontSize: fontSize.xs,
     letterSpacing: 1.2,
     color: colors.muted,
   },

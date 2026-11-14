@@ -172,5 +172,5 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   pillPunto: { width: 6, height: 6, borderRadius: 3 },
-  pillTexto: { fontFamily: fonts.semibold, fontSize: 11 },
+  pillTexto: { fontFamily: fonts.semibold, fontSize: fontSize.xs },
 });

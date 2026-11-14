@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fonts } from '../../../shared/ui/theme';
+import { colors, fonts, fontSize } from '../../../shared/ui/theme';
 import { formatAverage, ratingSummaryText, reviewsCount } from '../lib/reviews';
 import type { RatingSummary } from '../types';
 
@@ -35,5 +35,5 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     backgroundColor: colors.warm,
   },
-  texto: { fontFamily: fonts.semibold, fontSize: 12, color: colors.warmInk },
+  texto: { fontFamily: fonts.semibold, fontSize: fontSize.chip, color: colors.warmInk },
 });

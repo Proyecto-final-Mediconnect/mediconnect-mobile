@@ -29,6 +29,22 @@ export const colors = {
   dangerOnNight: '#f4a3b3',
   /** `danger` presionado. */
   dangerPressed: '#b93a54',
+  /** Tarjetas y fondos sutiles sobre el azul noche (MediPass). */
+  nightCard: 'rgba(255, 255, 255, 0.06)',
+  nightIcon: 'rgba(255, 255, 255, 0.08)',
+  nightTrack: 'rgba(255, 255, 255, 0.18)',
+  nightBorder: 'rgba(255, 255, 255, 0.25)',
+  /** Sobre la burbuja propia del chat (fondo marca). */
+  onBrandCard: 'rgba(255, 255, 255, 0.12)',
+  onBrandIcon: 'rgba(255, 255, 255, 0.16)',
+  onBrandMuted: 'rgba(255, 255, 255, 0.75)',
+  /** El velo detrás de una hoja inferior. */
+  scrim: 'rgba(4, 29, 40, 0.45)',
+  /** `brandBright` al 14 %: el fondo de los íconos del login. */
+  brandBrightSoft: 'rgba(46, 196, 182, 0.14)',
+  /** `danger` muy suave: el fondo y el borde de un error en línea sobre blanco. */
+  dangerTint: 'rgba(214, 69, 98, 0.05)',
+  dangerBorder: 'rgba(214, 69, 98, 0.3)',
   /** Fondo de las superficies oscuras: el saludo del inicio y el MediPass. */
   night: '#072d3d',
   /** Texto sobre `night`: párrafos y, un escalón más tenue, subtítulos. */
@@ -91,10 +107,19 @@ export const radius = {
  * teléfono real: la escala sube los tamaños en esa proporción, redondeados.
  */
 export const fontSize = {
+  /** Rótulos mínimos: el día de la semana de una fecha, un rótulo sobre un dato. */
+  micro: 10,
   xs: 11,
+  /** Texto de chips y píldoras. */
+  chip: 12,
   sm: 13,
   md: 15,
   lg: 17,
+  /** Número grande dentro de una tarjeta (el importe del pago). */
+  title: 24,
   xl: 26,
   xxl: 30,
+  /** Títulos de portada (el login) y el promedio de reseñas. */
+  display: 34,
+  displayLg: 40,
 } as const;

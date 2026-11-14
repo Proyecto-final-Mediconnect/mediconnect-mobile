@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   },
   resultadoTitulo: {
     fontFamily: fonts.display,
-    fontSize: 24,
+    fontSize: fontSize.title,
     lineHeight: 30,
     color: colors.brandDeep,
     textAlign: 'center',
