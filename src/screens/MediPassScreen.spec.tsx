@@ -159,7 +159,7 @@ describe('Mi MediPass (ENG-117)', () => {
     expect(screen.queryByText('AB12-CD34')).not.toBeInTheDocument();
     expect(screen.queryByTestId('qr-value')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Probá de nuevo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
     expect(await screen.findByTestId('qr-value')).toBeInTheDocument();
   });

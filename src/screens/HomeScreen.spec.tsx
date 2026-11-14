@@ -71,7 +71,7 @@ describe('Inicio', () => {
     );
 
     expect(await screen.findByText('No se pudieron cargar tus turnos.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Probá de nuevo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
     expect(screen.queryByText('No tenés turnos próximos')).not.toBeInTheDocument();
   });
 

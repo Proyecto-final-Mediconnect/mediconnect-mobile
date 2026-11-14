@@ -287,7 +287,7 @@ describe('sesión del paciente', () => {
       expect(await readSessionTokens()).toEqual(TOKENS);
 
       server.use(http.get(`${API_URL}/me`, () => HttpResponse.json(PACIENTE)));
-      fireEvent.click(screen.getByRole('button', { name: 'Probá de nuevo' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
       expect(await screen.findByRole('heading', { name: /, Marina$/ })).toBeVisible();
     });

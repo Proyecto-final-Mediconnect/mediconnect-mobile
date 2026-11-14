@@ -25,6 +25,10 @@ export const colors = {
   danger: '#d64562',
   /** El rojo al 10 % sobre blanco: el fondo de lo que no salió ("No publicada") y de un error en línea. */
   dangerSoft: '#fbecef',
+  /** El rojo de error sobre el azul noche: `danger` no llega al contraste ahí. */
+  dangerOnNight: '#f4a3b3',
+  /** `danger` presionado. */
+  dangerPressed: '#b93a54',
   /** Fondo de las superficies oscuras: el saludo del inicio y el MediPass. */
   night: '#072d3d',
   /** Texto sobre `night`: párrafos y, un escalón más tenue, subtítulos. */

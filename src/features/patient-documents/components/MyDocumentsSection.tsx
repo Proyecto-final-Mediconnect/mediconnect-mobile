@@ -59,11 +59,11 @@ export function MyDocumentsSection({ onUpload }: { onUpload: () => void }): Reac
           <Text style={styles.error}>{documentos.error.message}</Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Probá de nuevo"
+            accessibilityLabel="Reintentar"
             hitSlop={spacing.sm}
             onPress={() => void documentos.refetch()}
           >
-            <Text style={styles.link}>Probá de nuevo</Text>
+            <Text style={styles.link}>Reintentar</Text>
           </Pressable>
         </View>
       ) : lista.length === 0 ? (

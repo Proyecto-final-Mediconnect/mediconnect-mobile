@@ -11,11 +11,18 @@ import { colors, fonts, fontSize, spacing } from './theme';
  * encuadre, centrado en el alto disponible (con `<Screen scroll={false}>`).
  */
 
-export function LoadingState({ label = 'Cargando…' }: { label?: string }): React.JSX.Element {
+export function LoadingState({
+  label = 'Cargando…',
+  tone = 'light',
+}: {
+  label?: string;
+  /** `dark` sobre el azul noche del MediPass. */
+  tone?: 'light' | 'dark';
+}): React.JSX.Element {
   return (
     <View style={styles.centro} accessibilityRole="progressbar" accessibilityLabel={label}>
-      <ActivityIndicator size="large" color={colors.brand} />
-      <Text style={styles.texto}>{label}</Text>
+      <ActivityIndicator size="large" color={tone === 'dark' ? colors.brandBright : colors.brand} />
+      <Text style={[styles.texto, tone === 'dark' && styles.textoDark]}>{label}</Text>
     </View>
   );
 }
@@ -28,17 +35,28 @@ interface ErrorStateProps {
    * nuevo, y ofrecerlo manda a la persona a un callejón sin salida.
    */
   onRetry?: () => void;
+  /** `dark` sobre el azul noche del MediPass: el texto oscuro no se leía. */
+  tone?: 'light' | 'dark';
 }
 
-export function ErrorState({ message, onRetry }: ErrorStateProps): React.JSX.Element {
+export function ErrorState({
+  message,
+  onRetry,
+  tone = 'light',
+}: ErrorStateProps): React.JSX.Element {
+  const oscuro = tone === 'dark';
   return (
     <View style={styles.centro}>
-      <Ionicons name="alert-circle-outline" size={40} color={colors.danger} />
+      <Ionicons
+        name="alert-circle-outline"
+        size={40}
+        color={oscuro ? colors.dangerOnNight : colors.danger}
+      />
       <View accessibilityRole="alert" style={styles.bloque}>
-        <Text style={styles.titulo}>No pudimos cargar esto</Text>
-        <Text style={styles.texto}>{message}</Text>
+        <Text style={[styles.titulo, oscuro && styles.tituloDark]}>No pudimos cargar esto</Text>
+        <Text style={[styles.texto, oscuro && styles.textoDark]}>{message}</Text>
       </View>
-      {onRetry ? <Button label="Probá de nuevo" variant="secondary" onPress={onRetry} /> : null}
+      {onRetry ? <Button label="Reintentar" variant="secondary" onPress={onRetry} /> : null}
     </View>
   );
 }

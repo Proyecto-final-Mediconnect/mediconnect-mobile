@@ -85,10 +85,14 @@ export function MediPassScreen(): React.JSX.Element {
       {accesos.data ? (
         <AccessList accesses={accesos.data} now={ahora} onRevoke={setARevocar} />
       ) : accesos.isError ? (
-        <ErrorState message={accesos.error.message} onRetry={() => void accesos.refetch()} />
+        <ErrorState
+          tone="dark"
+          message={accesos.error.message}
+          onRetry={() => void accesos.refetch()}
+        />
       ) : (
         <View style={styles.cargando}>
-          <LoadingState />
+          <LoadingState tone="dark" />
         </View>
       )}
 
@@ -136,10 +140,14 @@ export function MediPassScreen(): React.JSX.Element {
           />
         </>
       ) : vital.isError ? (
-        <ErrorState message={vital.error.message} onRetry={() => void vital.refetch()} />
+        <ErrorState
+          tone="dark"
+          message={vital.error.message}
+          onRetry={() => void vital.refetch()}
+        />
       ) : (
         <View style={styles.cargando}>
-          <LoadingState />
+          <LoadingState tone="dark" />
         </View>
       )}
 

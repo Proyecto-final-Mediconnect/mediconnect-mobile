@@ -96,7 +96,7 @@ describe('Buscar profesionales (ENG-132)', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Reservar' }));
 
     expect(await screen.findByText('No pudimos cargar los profesionales.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Probá de nuevo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
   });
 
   it('tocar un profesional abre su perfil', async () => {

@@ -18,7 +18,7 @@ describe('ErrorState', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('Se cayó el servidor.');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Probá de nuevo' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
