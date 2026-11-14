@@ -198,7 +198,7 @@ describe('Probar cámara y micrófono desde el turno', () => {
     await screen.findByText('Tu turno');
 
     expect(screen.getByRole('button', { name: 'Probar cámara y micrófono' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ingresar a la sala' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Entrar a la sala' })).not.toBeInTheDocument();
   });
 
   it('no aparece en una consulta completada', async () => {

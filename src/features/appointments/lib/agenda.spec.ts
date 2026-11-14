@@ -72,6 +72,41 @@ describe('filtros', () => {
       filterAgenda(lista, { ...EMPTY_AGENDA_FILTERS, status: 'cancelados' }, AHORA).map(
         (t) => t.id,
       ),
-    ).toEqual(['b', 'c']);
+    ).toEqual(['b']);
+  });
+});
+
+describe('liberados y orden del historial', () => {
+  const ahora = new Date('2026-11-14T15:00:00Z');
+  const t = (id: string, status: string, scheduledAt: string) =>
+    ({
+      id,
+      status,
+      scheduledAt,
+      date: scheduledAt.slice(0, 10),
+      startTime: '10:00',
+      durationMinutes: 30,
+      professional: { firstName: 'Ana', lastName: 'García' },
+    }) as unknown as Appointment;
+  const turnos = [
+    t('a', 'COMPLETADO', '2026-10-01T13:00:00Z'),
+    t('b', 'LIBERADO', '2026-10-05T13:00:00Z'),
+    t('c', 'CANCELADO', '2026-09-10T13:00:00Z'),
+  ];
+
+  it('sin filtro de estado no muestra los liberados; con su filtro, sí', () => {
+    expect(filterAgenda(turnos, EMPTY_AGENDA_FILTERS, ahora).map((a) => a.id)).toEqual(['a', 'c']);
+    expect(
+      filterAgenda(turnos, { ...EMPTY_AGENDA_FILTERS, status: 'liberados' }, ahora).map(
+        (a) => a.id,
+      ),
+    ).toEqual(['b']);
+  });
+
+  it('el historial se ordena de lo más reciente a lo más viejo, o al revés', () => {
+    const ids = (order: 'recientes' | 'antiguos') =>
+      agendaSections(turnos, ahora, order).flatMap((s) => s.data.map((a) => a.id));
+    expect(ids('recientes')).toEqual(['b', 'a', 'c']);
+    expect(ids('antiguos')).toEqual(['c', 'a', 'b']);
   });
 });

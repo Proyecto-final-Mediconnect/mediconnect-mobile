@@ -55,7 +55,7 @@ export function VitalSummary({
       </Seccion>
 
       <Seccion
-        titulo="MEDICACIÓN ACTIVA"
+        titulo="MEDICACIÓN"
         control={control('medicacion', 'Medicación', medicacion.length > 0)}
       >
         {medicacion.length ? (
@@ -72,8 +72,8 @@ export function VitalSummary({
       </Seccion>
 
       <Seccion
-        titulo="DIAGNÓSTICOS"
-        control={control('condiciones', 'Diagnósticos', condiciones.length > 0)}
+        titulo="CONDICIONES"
+        control={control('condiciones', 'Condiciones', condiciones.length > 0)}
       >
         {condiciones.length ? (
           condiciones.map((c) => (
@@ -122,7 +122,7 @@ function Interruptor({ control }: { control: Control }): React.JSX.Element {
       value={control.visible}
       onValueChange={control.onToggle}
       disabled={control.saving}
-      trackColor={{ false: 'rgba(255, 255, 255, 0.18)', true: colors.brand }}
+      trackColor={{ false: colors.nightTrack, true: colors.brand }}
       thumbColor={colors.white}
     />
   );
@@ -196,7 +196,7 @@ function Linea({
   );
 }
 
-const TARJETA_OSCURA = 'rgba(255, 255, 255, 0.06)';
+const TARJETA_OSCURA = colors.nightCard;
 
 const styles = StyleSheet.create({
   cabecera: {
@@ -228,7 +228,12 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.md,
   },
-  rotulo: { fontFamily: fonts.bold, fontSize: 10, letterSpacing: 1.2, color: colors.onNightSoft },
+  rotulo: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1.2,
+    color: colors.onNightSoft,
+  },
   linea: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   puntoAlerta: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger },
   lineaTextos: { flex: 1, gap: 1 },

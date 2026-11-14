@@ -72,7 +72,7 @@ describe('Mensajes (ENG-152)', () => {
     );
 
     expect(await screen.findByText('No pudimos cargar tus mensajes.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Probá de nuevo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
   });
 });
 

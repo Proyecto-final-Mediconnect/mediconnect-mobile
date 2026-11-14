@@ -6,13 +6,14 @@ import { CompactAppointmentRow } from '../features/appointments/components/Compa
 import { NextAppointmentCard } from '../features/appointments/components/NextAppointmentCard';
 import { useMyAppointments } from '../features/appointments/hooks/use-appointments';
 import {
-  formatShortDay,
+  formatSentenceDay,
+  whenIs,
   nextAppointment,
   professionalName,
   splitByTime,
 } from '../features/appointments/lib/appointments';
 import { greeting, laterAppointments, pastProfessionals } from '../features/appointments/lib/home';
-import { joinStateOf, timeUntilOpen } from '../features/appointments/lib/join-window';
+import { joinStateOf } from '../features/appointments/lib/join-window';
 import type { Appointment } from '../features/appointments/types';
 import { PastProfessionalCard } from '../features/catalog/components/PastProfessionalCard';
 import { PatientSummaryTiles } from '../features/patient-summary/components/PatientSummaryTiles';
@@ -66,6 +67,8 @@ export function HomeScreen(): React.JSX.Element {
 
   const irATurnos = (): void => navigation.navigate('Paciente', { screen: 'Turnos' });
   const irAReservar = (): void => navigation.navigate('Paciente', { screen: 'Reservar' });
+  const abrirTurno = (t: Appointment): void =>
+    navigation.navigate('Turno', { appointmentId: t.id });
 
   return (
     <Screen
@@ -80,20 +83,29 @@ export function HomeScreen(): React.JSX.Element {
     >
       {turnos.isPending ? (
         <View style={styles.cargando}>
-          <LoadingState label="Buscando tu próxima consulta…" />
+          <LoadingState label="Buscando tu próximo turno…" />
         </View>
       ) : turnos.isError ? (
         // Sin los turnos no se sabe si hay una consulta: decir "no tenés turnos"
         // sería mentir justo cuando puede estar por empezar una.
         <ErrorState message={turnos.error.message} onRetry={() => void turnos.refetch()} />
       ) : (
-        <NextAppointmentCard appointment={proxima} now={ahora} onBook={irAReservar} />
+        <NextAppointmentCard
+          appointment={proxima}
+          now={ahora}
+          onBook={irAReservar}
+          onOpen={proxima ? () => abrirTurno(proxima) : undefined}
+          onPay={
+            proxima ? () => navigation.navigate('Pago', { appointmentId: proxima.id }) : undefined
+          }
+        />
       )}
 
-      {sinPagar ? (
+      {/* Si el que falta pagar es el próximo, el botón ya está en la tarjeta. */}
+      {sinPagar && sinPagar.id !== proxima?.id ? (
         <Notice
           icon="time-outline"
-          message={`Tu turno del ${formatShortDay(sinPagar.date, sinPagar.startTime)} con ${professionalName(sinPagar)} todavía no está pagado.`}
+          message={`Tu turno del ${formatSentenceDay(sinPagar.date, sinPagar.startTime)} con ${professionalName(sinPagar)} todavía no está pagado.`}
           action={{
             label: 'Pagar',
             onPress: () => navigation.navigate('Pago', { appointmentId: sinPagar.id }),
@@ -117,6 +129,7 @@ export function HomeScreen(): React.JSX.Element {
                 key={t.id}
                 appointment={t}
                 last={i === siguientes.length - 1}
+                onPress={() => abrirTurno(t)}
               />
             ))}
           </View>
@@ -188,10 +201,7 @@ function subtitulo(proxima: Appointment | null, ahora: Date): string {
       : `Tu consulta con ${professionalName(proxima)} está en curso.`;
   }
 
-  const cuando = timeUntilOpen(new Date(proxima.scheduledAt), ahora);
-  return cuando === 'mañana'
-    ? 'Tu próxima consulta es mañana.'
-    : `Tu próxima consulta es ${cuando}.`;
+  return `Tu próximo turno es ${whenIs(proxima, ahora)}.`;
 }
 
 const styles = StyleSheet.create({

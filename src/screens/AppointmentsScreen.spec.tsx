@@ -25,7 +25,8 @@ describe('Mis turnos (ENG-115)', () => {
     expect(lista().getByText('Sin pagar')).toBeInTheDocument();
     // Lo que ya pasó o no se va a realizar está en la misma lista, más abajo.
     expect(lista().getByText('Cancelado')).toBeInTheDocument();
-    expect(lista().getByText('Liberado')).toBeInTheDocument();
+    // Las reservas que vencieron sin pagar no son turnos que tuvo: no se listan.
+    expect(lista().queryByText('Liberado')).not.toBeInTheDocument();
     expect(lista().getAllByText('Completado')).toHaveLength(2);
     expect(screen.queryByRole('tab', { name: 'Pasados' })).not.toBeInTheDocument();
   });
@@ -44,7 +45,7 @@ describe('Mis turnos (ENG-115)', () => {
     const hoja = await screen.findByRole('alert');
     expect(within(hoja).getByText(/con Tomás Aliaga/)).toBeInTheDocument();
 
-    fireEvent.click(within(hoja).getByRole('button', { name: 'Cancelar turno' }));
+    fireEvent.click(within(hoja).getByRole('button', { name: 'Sí, cancelar el turno' }));
 
     await waitFor(() =>
       expect(
@@ -68,7 +69,7 @@ describe('Mis turnos (ENG-115)', () => {
     ).toHaveTextContent(/Te lo devolvemos por MercadoPago/);
 
     // Cancelado: el backend devolvió y la app lo dice (ENG-65).
-    fireEvent.click(within(hoja).getByRole('button', { name: 'Cancelar turno' }));
+    fireEvent.click(within(hoja).getByRole('button', { name: 'Sí, cancelar el turno' }));
     expect(await screen.findByText(/Te devolvemos \$26\.000 por MercadoPago/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Entendido' }));
     await waitFor(() =>
@@ -121,11 +122,11 @@ describe('Mis turnos (ENG-115)', () => {
     const hoja = await screen.findByRole('alert');
 
     expect(within(hoja).getByText(/Calculando cuánto te devolvemos/)).toBeInTheDocument();
-    expect(within(hoja).getByRole('button', { name: 'Cancelar turno' })).toBeDisabled();
+    expect(within(hoja).getByRole('button', { name: 'Sí, cancelar el turno' })).toBeDisabled();
 
     responder();
     expect(await within(hoja).findByText(/la devolución total/)).toBeInTheDocument();
-    expect(within(hoja).getByRole('button', { name: 'Cancelar turno' })).toBeEnabled();
+    expect(within(hoja).getByRole('button', { name: 'Sí, cancelar el turno' })).toBeEnabled();
   });
 
   it('cancelar un turno sin pagar no habla de devolución (ENG-173)', async () => {
@@ -155,13 +156,13 @@ describe('Mis turnos (ENG-115)', () => {
   it('el turno con la sala abierta ofrece entrar (ENG-131)', async () => {
     await abrirTurnos();
 
-    expect(lista().getAllByRole('button', { name: 'Ingresar a la sala' })).toHaveLength(1);
+    expect(lista().getAllByRole('button', { name: 'Entrar a la sala' })).toHaveLength(1);
   });
 
-  it('"Nuevo turno" lleva a sacar un turno', async () => {
+  it('"Sacar turno" lleva a sacar un turno', async () => {
     await abrirTurnos();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Nuevo turno' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sacar turno' }));
 
     expect(await screen.findByText('Elegí con quién atenderte.')).toBeInTheDocument();
   });

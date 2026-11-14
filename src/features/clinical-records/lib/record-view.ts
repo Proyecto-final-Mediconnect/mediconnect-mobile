@@ -5,7 +5,13 @@ import { authorName, readEntryFields } from './clinical-entry';
 
 /** Lo más reciente primero (ENG-116). El backend devuelve la cadena hacia adelante. */
 export function newestFirst(entries: ClinicalEntry[]): ClinicalEntry[] {
-  return [...entries].sort((a, b) => b.sequenceNumber - a.sequenceNumber);
+  // Por fecha y no solo por posición en la cadena: la lista se agrupa por mes
+  // con `createdAt`, y si el orden no es el mismo los meses se parten
+  // ("noviembre, octubre, noviembre otra vez"). La posición desempata.
+  return [...entries].sort(
+    (a, b) =>
+      Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.sequenceNumber - a.sequenceNumber,
+  );
 }
 
 /**
@@ -33,6 +39,20 @@ export function correctionLinks(entries: ClinicalEntry[]): {
   }
 
   return { correctedBy, corrects };
+}
+
+/**
+ * Solo la versión vigente de cada registro: saca los originales que tienen una
+ * corrección. La historia es inmutable y el original sigue guardado (Ley
+ * 26.529): se ve dentro de la corrección, o con "Incluir las versiones
+ * originales". En la lista principal, un registro corregido aparecía dos
+ * veces —el original y la corrección— y el original con su error a la vista.
+ */
+export function currentVersions(
+  entries: ClinicalEntry[],
+  correctedBy: Map<string, ClinicalEntry>,
+): ClinicalEntry[] {
+  return entries.filter((e) => !correctedBy.has(e.id));
 }
 
 const ORDEN_TIPOS = ['CONSULTA', 'DIAGNOSTICO', 'PRESCRIPCION', 'ESTUDIO', 'CORRECCION'];

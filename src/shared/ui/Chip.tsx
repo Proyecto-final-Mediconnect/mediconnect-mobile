@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fonts } from './theme';
+import { colors, fonts, fontSize } from './theme';
 
 type Tone = 'ok' | 'warning' | 'danger' | 'neutral';
 
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   punto: { width: 6, height: 6, borderRadius: 3 },
-  texto: { fontFamily: fonts.semibold, fontSize: 12 },
+  texto: { fontFamily: fonts.semibold, fontSize: fontSize.chip },
 });
 
 const fondos = StyleSheet.create({

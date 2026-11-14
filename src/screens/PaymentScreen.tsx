@@ -29,7 +29,7 @@ import type { PaymentStatus } from '../features/payments/types';
 import type { RootStackParamList } from '../navigation/types';
 import { Button } from '../shared/ui/Button';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
-import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
+import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 
 /** Cuánto se espera el webhook después de que el paciente vuelve, antes de dejar de preguntar. */
@@ -158,10 +158,16 @@ export function PaymentScreen(): React.JSX.Element {
   if (!turno) {
     return (
       <Screen scroll={false} header={header}>
-        <ErrorState
-          message={turnos.isError ? turnos.error.message : 'No encontramos ese turno.'}
-          onRetry={() => void turnos.refetch()}
-        />
+        {turnos.isError ? (
+          <ErrorState message={turnos.error.message} onRetry={() => void turnos.refetch()} />
+        ) : (
+          // No es un error de carga: reintentar no lo hace aparecer.
+          <EmptyState
+            icon="calendar-clear-outline"
+            title="No encontramos ese turno"
+            description="Puede que el link sea viejo. Fijate en Mis turnos."
+          />
+        )}
       </Screen>
     );
   }
@@ -214,7 +220,7 @@ export function PaymentScreen(): React.JSX.Element {
           </Sigue>
           <DeviceCheckButton />
           <Sigue icono="calendar-clear-outline" titulo="Si no podés ir">
-            Cancelalo o reprogramalo desde el turno. Lo que se devuelve depende de la anticipación.
+            Cancelalo desde el turno. Lo que se devuelve depende de la anticipación.
           </Sigue>
         </View>
 
@@ -336,9 +342,14 @@ export function PaymentScreen(): React.JSX.Element {
       ) : null}
 
       {!esperando && !sePuedePagar ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          Este turno ya no admite un pago.
-        </Text>
+        turno.status === 'CONFIRMADO' || turno.status === 'COMPLETADO' ? (
+          // Llegar acá con el turno ya pagado no es un error: se dice así, sin rojo.
+          <Text style={styles.info}>Este turno ya está pagado.</Text>
+        ) : (
+          <Text accessibilityRole="alert" style={styles.error}>
+            Este turno ya no se puede pagar: se canceló o la reserva venció.
+          </Text>
+        )
       ) : null}
     </Screen>
   );
@@ -427,6 +438,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
   },
   error: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.danger },
+  info: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.muted },
   hero: {
     gap: spacing.md,
     backgroundColor: colors.night,
@@ -517,7 +529,7 @@ const styles = StyleSheet.create({
   },
   resultadoTitulo: {
     fontFamily: fonts.display,
-    fontSize: 24,
+    fontSize: fontSize.title,
     lineHeight: 30,
     color: colors.brandDeep,
     textAlign: 'center',

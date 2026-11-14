@@ -13,13 +13,15 @@ import {
   EMPTY_AGENDA_FILTERS,
   filterAgenda,
   PERIOD_LABELS,
+  ORDER_LABELS,
   STATUS_FILTER_LABELS,
   type AgendaFilters,
   type Period,
+  type HistoryOrder,
   type StatusFilter,
 } from '../features/appointments/lib/agenda';
 import {
-  formatShortDay,
+  formatSentenceDay,
   isActive,
   professionalName,
 } from '../features/appointments/lib/appointments';
@@ -68,12 +70,15 @@ export function AppointmentsScreen(): React.JSX.Element {
     () => filterAgenda(turnos.data ?? [], filtros, ahora),
     [turnos.data, filtros, ahora],
   );
-  const secciones = useMemo(() => agendaSections(filtrados, ahora), [filtrados, ahora]);
+  const secciones = useMemo(
+    () => agendaSections(filtrados, ahora, filtros.order),
+    [filtrados, ahora, filtros.order],
+  );
 
   const header = (
     <ScreenHeader
       title="Mis turnos"
-      action={{ label: 'Nuevo turno', icon: 'add', onPress: irAReservar }}
+      action={{ label: 'Sacar turno', icon: 'add', onPress: irAReservar }}
     />
   );
 
@@ -93,6 +98,15 @@ export function AppointmentsScreen(): React.JSX.Element {
             key: 'estado',
             label: STATUS_FILTER_LABELS[filtros.status],
             onRemove: () => setFiltros((f) => ({ ...f, status: 'todos' })),
+          },
+        ]
+      : []),
+    ...(filtros.order !== 'recientes'
+      ? [
+          {
+            key: 'orden',
+            label: ORDER_LABELS[filtros.order],
+            onRemove: () => setFiltros((f) => ({ ...f, order: 'recientes' })),
           },
         ]
       : []),
@@ -245,11 +259,20 @@ export function AppointmentsScreen(): React.JSX.Element {
               ),
             ),
           },
+          {
+            title: 'Orden de los turnos pasados',
+            options: (Object.keys(ORDER_LABELS) as HistoryOrder[]).map((o) =>
+              opcion(o, filtros.order, ORDER_LABELS[o], (order) =>
+                setFiltros((f) => ({ ...f, order })),
+              ),
+            ),
+          },
         ]}
         resultLabel={verTurnos(filtrados.length)}
         onClear={
           activos.length > 0
-            ? () => setFiltros((f) => ({ ...f, period: 'todos', status: 'todos' }))
+            ? () =>
+                setFiltros((f) => ({ ...f, period: 'todos', status: 'todos', order: 'recientes' }))
             : undefined
         }
       />
@@ -259,10 +282,10 @@ export function AppointmentsScreen(): React.JSX.Element {
         title="¿Cancelar el turno?"
         message={
           aCancelar
-            ? `Se cancela tu turno del ${formatShortDay(aCancelar.date, aCancelar.startTime)} con ${professionalName(aCancelar)}, y el horario queda libre para otro paciente.${devolucion.texto ? `\n\n${devolucion.texto}` : ''}`
+            ? `Se cancela tu turno del ${formatSentenceDay(aCancelar.date, aCancelar.startTime)} con ${professionalName(aCancelar)}, y el horario queda libre para otro paciente.${devolucion.texto ? `\n\n${devolucion.texto}` : ''}`
             : ''
         }
-        confirmLabel="Cancelar turno"
+        confirmLabel="Sí, cancelar el turno"
         dismissLabel="Mantener el turno"
         pending={cancelar.isPending}
         confirmDisabled={devolucion.cargando}

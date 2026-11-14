@@ -4,12 +4,14 @@ import type { Appointment } from '../types';
 import {
   canCancel,
   formatPrice,
+  formatSentenceDay,
   formatShortDay,
   nextAppointment,
   professionalName,
   splitByTime,
   statusLabel,
   statusTone,
+  whenIs,
 } from './appointments';
 
 const NOW = new Date('2026-09-02T12:00:00.000Z');
@@ -128,5 +130,33 @@ describe('formatPrice', () => {
     expect(formatPrice(9250.5)).toBe('$9.250,50');
     expect(formatPrice(9250.05)).toBe('$9.250,05');
     expect(formatPrice(9250.0)).toBe('$9.250');
+  });
+});
+
+describe('formatSentenceDay y whenIs', () => {
+  const turno = (date: string, startTime: string, scheduledAt: string) =>
+    ({ date, startTime, scheduledAt }) as Appointment;
+
+  it('arma la fecha para una oración', () => {
+    expect(formatSentenceDay('2026-09-03', '09:30')).toBe('jueves 3 de septiembre a las 09:30');
+  });
+
+  it('dice minutos, hoy, mañana o la fecha según el día de calendario en Argentina', () => {
+    // 14/11 a las 23:00 en Argentina.
+    const ahora = new Date('2026-11-15T02:00:00Z');
+    expect(whenIs(turno('2026-11-14', '23:40', '2026-11-15T02:40:00Z'), ahora)).toBe(
+      'en 40 minutos',
+    );
+    expect(whenIs(turno('2026-11-15', '08:00', '2026-11-15T11:00:00Z'), ahora)).toBe(
+      'mañana a las 08:00',
+    );
+    // A 30 horas: pasado mañana, no "mañana".
+    expect(whenIs(turno('2026-11-16', '05:00', '2026-11-16T08:00:00Z'), ahora)).toBe(
+      'el lunes 16 de noviembre a las 05:00',
+    );
+    const mediodia = new Date('2026-11-14T13:00:00Z');
+    expect(whenIs(turno('2026-11-14', '15:00', '2026-11-14T18:00:00Z'), mediodia)).toBe(
+      'hoy a las 15:00',
+    );
   });
 });

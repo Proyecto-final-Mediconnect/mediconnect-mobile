@@ -416,6 +416,6 @@ describe('Mis documentos en la historia clínica (ENG-164)', () => {
     expect(
       await screen.findByText('No pudimos cargar tus documentos.', {}, { timeout: 4000 }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Probá de nuevo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
   });
 });

@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
 const pressedStyles = StyleSheet.create({
   primary: { backgroundColor: colors.night },
   accent: { backgroundColor: colors.brandBright },
-  danger: { backgroundColor: '#b93a54' },
+  danger: { backgroundColor: colors.dangerPressed },
   secondary: { borderColor: colors.brand },
   ghost: { backgroundColor: colors.surfaceTeal },
 });

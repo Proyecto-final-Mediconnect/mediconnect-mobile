@@ -34,7 +34,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceTeal,
   },
   bloqueApagado: { backgroundColor: colors.lineSoft },
-  semana: { fontFamily: fonts.bold, fontSize: 10, letterSpacing: 0.6, color: colors.brandHover },
+  semana: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.micro,
+    letterSpacing: 0.6,
+    color: colors.brandHover,
+  },
   numero: { fontFamily: fonts.display, fontSize: fontSize.lg, color: colors.brandDeep },
   textoApagado: { color: colors.muted },
 });

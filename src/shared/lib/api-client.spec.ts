@@ -94,6 +94,25 @@ describe('apiRequest', () => {
     ).rejects.toMatchObject({ status: 401, message: 'Email o contraseña incorrectos.' });
   });
 
+  it('un 500 o una lista de validación no se muestran crudos: usa el mensaje de la pantalla', async () => {
+    server.use(
+      http.get(`${API_URL}/publica`, () =>
+        HttpResponse.json({ message: 'Internal server error' }, { status: 500 }),
+      ),
+      http.get(`${API_URL}/lista`, () =>
+        HttpResponse.json({ message: ['page must be an integer'] }, { status: 400 }),
+      ),
+    );
+
+    await expect(
+      apiRequest('/publica', { auth: false, fallbackMessage: 'No pudimos cargar esto.' }),
+    ).rejects.toMatchObject({ status: 500, message: 'No pudimos cargar esto.' });
+    await expect(apiRequest('/lista', { auth: false })).rejects.toMatchObject({
+      status: 400,
+      message: 'Ocurrió un error inesperado. Intentá de nuevo.',
+    });
+  });
+
   it('sin conexión tira un error con status 0 y un mensaje para mostrar', async () => {
     server.use(http.get(`${API_URL}/publica`, () => HttpResponse.error()));
 

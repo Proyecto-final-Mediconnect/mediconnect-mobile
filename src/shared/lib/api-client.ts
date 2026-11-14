@@ -95,15 +95,21 @@ async function send(
   }
 }
 
+/** Los mensajes genéricos que Nest manda cuando nadie escribió uno propio. */
+const MENSAJES_DE_NEST =
+  /^(Internal server error|Bad Request|Unauthorized|Forbidden|Not Found|Conflict|Too Many Requests|Payload Too Large|Bad Gateway|Service Unavailable|Gateway Timeout|ThrottlerException.*)$/i;
+
 async function toApiError(response: Response, fallback?: string): Promise<ApiError> {
   const data = (await response.json().catch(() => null)) as {
     message?: string | string[];
   } | null;
   const message = data?.message;
-  return new ApiError(
-    response.status,
-    Array.isArray(message) ? message.join(' ') : (message ?? fallback ?? MENSAJE_GENERICO),
-  );
+  // Los textos por defecto de Nest ("Internal server error") y la lista de la
+  // validación del backend están pensados para quien programa, en inglés: no le
+  // sirven al paciente. Esos se reemplazan por el mensaje de la pantalla; los
+  // mensajes en español que arma el backend se muestran tal cual.
+  const crudo = !message || Array.isArray(message) || MENSAJES_DE_NEST.test(message);
+  return new ApiError(response.status, crudo ? (fallback ?? MENSAJE_GENERICO) : message);
 }
 
 // --- Sesión vencida ---------------------------------------------------------

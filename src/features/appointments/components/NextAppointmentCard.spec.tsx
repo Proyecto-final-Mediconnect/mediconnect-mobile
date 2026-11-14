@@ -38,14 +38,14 @@ describe('NextAppointmentCard', () => {
     render(<NextAppointmentCard appointment={TURNO} now={new Date('2026-09-02T10:00:00Z')} />);
 
     expect(screen.getByText('La sala se abre mañana')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ingresar a la sala' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Entrar a la sala' })).not.toBeInTheDocument();
   });
 
   it('con la sala abierta ofrece entrar', () => {
     // Cinco minutos antes del turno: la sala abre diez antes.
     render(<NextAppointmentCard appointment={TURNO} now={new Date('2026-09-03T12:25:00Z')} />);
 
-    expect(screen.getByRole('button', { name: 'Ingresar a la sala' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Entrar a la sala' })).toBeInTheDocument();
   });
 
   it('sin pagar pide el pago en vez de ofrecer la sala (ENG-147)', () => {
@@ -57,7 +57,7 @@ describe('NextAppointmentCard', () => {
     );
 
     expect(screen.getByText(/Pagá el turno para entrar a la consulta/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ingresar a la sala' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Entrar a la sala' })).not.toBeInTheDocument();
   });
 
   it('sin turnos lo dice', () => {

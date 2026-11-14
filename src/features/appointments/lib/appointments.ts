@@ -1,3 +1,4 @@
+import { diaArgentino } from '../../../shared/lib/argentina-time';
 import type { Appointment } from '../types';
 
 /**
@@ -128,6 +129,34 @@ export function formatLongDay(date: string): string {
   const [y, m, d] = date.split('-').map(Number);
   const dia = DIAS_LARGOS[new Date(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1)).getUTCDay()];
   return `${dia} ${d} de ${MESES_LARGOS[(m ?? 1) - 1]}`;
+}
+
+/**
+ * `2026-09-03` + `09:30` → `jueves 3 de septiembre a las 09:30`, para meterlo en
+ * una oración ("Tu turno del jueves 3 de septiembre a las 09:30 con…"). El
+ * formato corto de las tarjetas ("jue 3 sep · 09:30") se lee como un rótulo, no
+ * como parte de una frase.
+ */
+export function formatSentenceDay(date: string, startTime: string): string {
+  return `${formatLongDay(date)} a las ${startTime}`;
+}
+
+/**
+ * Cuándo es un turno, dicho como se habla: "en 40 minutos", "hoy a las 15:00",
+ * "mañana a las 09:30" o "el jueves 3 de septiembre a las 09:30".
+ *
+ * Compara días de calendario en Argentina, no horas: a las 23:00, un turno a
+ * las 08:00 es "mañana" aunque falten nueve horas, y uno a 30 horas puede ser
+ * pasado mañana.
+ */
+export function whenIs(appointment: Appointment, now: Date = new Date()): string {
+  const minutos = Math.ceil((Date.parse(appointment.scheduledAt) - now.getTime()) / 60_000);
+  if (minutos > 0 && minutos < 60) {
+    return minutos <= 1 ? 'en menos de un minuto' : `en ${minutos} minutos`;
+  }
+  if (appointment.date === diaArgentino(now)) return `hoy a las ${appointment.startTime}`;
+  if (appointment.date === diaArgentino(now, 1)) return `mañana a las ${appointment.startTime}`;
+  return `el ${formatSentenceDay(appointment.date, appointment.startTime)}`;
 }
 
 /** `2026-10` → `Octubre 2026`, el título de cada mes en "Mis turnos". */

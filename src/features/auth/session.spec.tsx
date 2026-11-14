@@ -102,7 +102,7 @@ describe('sesión del paciente', () => {
       completarYEnviar(PROFESIONAL.email, 'Password1');
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'La app de MediConnect es para pacientes. Si sos profesional, ingresá desde la web.',
+        'La app de MediConnect es para pacientes. Si sos profesional o moderador, ingresá desde la web.',
       );
       expect(__secureStore.items.size).toBe(0);
       expect(screen.queryByRole('tab')).not.toBeInTheDocument();
@@ -287,7 +287,7 @@ describe('sesión del paciente', () => {
       expect(await readSessionTokens()).toEqual(TOKENS);
 
       server.use(http.get(`${API_URL}/me`, () => HttpResponse.json(PACIENTE)));
-      fireEvent.click(screen.getByRole('button', { name: 'Probá de nuevo' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
       expect(await screen.findByRole('heading', { name: /, Marina$/ })).toBeVisible();
     });
@@ -362,7 +362,7 @@ describe('sesión del paciente', () => {
     it('no deja los datos del paciente anterior para el siguiente', async () => {
       await iniciarSesionGuardada();
       await abrirApp();
-      expect(await screen.findByRole('button', { name: 'Ingresar a la sala' })).toBeVisible();
+      expect(await screen.findByRole('button', { name: 'Entrar a la sala' })).toBeVisible();
 
       fireEvent.click(screen.getByRole('tab', { name: 'Perfil' }));
       fireEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
@@ -382,8 +382,8 @@ describe('sesión del paciente', () => {
       completarYEnviar(otro.email, 'Password1');
 
       expect(await screen.findByRole('heading', { name: /, Tomás$/ })).toBeVisible();
-      expect(screen.queryByRole('button', { name: 'Ingresar a la sala' })).not.toBeInTheDocument();
-      expect(screen.getByText('Buscando tu próxima consulta…')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Entrar a la sala' })).not.toBeInTheDocument();
+      expect(screen.getByText('Buscando tu próximo turno…')).toBeInTheDocument();
     });
   });
 });

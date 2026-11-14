@@ -13,7 +13,7 @@ import { correctionLinks } from '../features/clinical-records/lib/record-view';
 import { ENTRY_TYPE_LABELS } from '../features/clinical-records/types';
 import type { RootStackParamList } from '../navigation/types';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
-import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
+import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 
 /**
@@ -55,7 +55,11 @@ export function EntryDetailScreen(): React.JSX.Element {
   if (!entrada) {
     return (
       <Screen scroll={false} header={header}>
-        <ErrorState message="No encontramos esta entrada en tu historia clínica." />
+        <EmptyState
+          icon="document-text-outline"
+          title="No encontramos esta entrada"
+          description="Puede que el link sea viejo. Volvé a tu historia clínica para ver las que tenés."
+        />
       </Screen>
     );
   }
@@ -164,7 +168,12 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
   },
   campo: { gap: 4 },
-  rotulo: { fontFamily: fonts.bold, fontSize: 10, letterSpacing: 1, color: colors.mutedSoft },
+  rotulo: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.micro,
+    letterSpacing: 1,
+    color: colors.mutedSoft,
+  },
   valor: { fontFamily: fonts.regular, fontSize: fontSize.md, lineHeight: 22, color: colors.ink },
   enlace: {
     backgroundColor: colors.warm,

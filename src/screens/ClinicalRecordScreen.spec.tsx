@@ -50,10 +50,20 @@ describe('Mi historia clínica (ENG-116)', () => {
     expect(await screen.findByRole('heading', { name: 'Corrección' })).toBeVisible();
   });
 
-  it('en la lista, la entrada corregida lo dice', async () => {
+  it('por defecto muestra solo la versión vigente de un registro corregido', async () => {
     await abrirHistoria();
 
     await filtrarPorTipo('Estudios');
+
+    expect(screen.queryByText('Corregida')).not.toBeInTheDocument();
+  });
+
+  it('con las versiones originales, la entrada corregida lo dice', async () => {
+    await abrirHistoria();
+
+    await filtrarPorTipo('Estudios');
+    const hoja = await screen.findByRole('dialog');
+    fireEvent.click(within(hoja).getByRole('button', { name: 'Incluir las versiones originales' }));
 
     expect(await screen.findByText('Corregida')).toBeInTheDocument();
     // El lector de pantalla también lo anuncia: el label pisa el texto de la tarjeta.

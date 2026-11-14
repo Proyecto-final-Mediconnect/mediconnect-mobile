@@ -95,10 +95,10 @@ describe('appointmentTimeline', () => {
     it('uno pendiente queda en curso y uno rechazado, mal', () => {
       expect(
         appointmentTimeline(cancelado({ amount: 18000, status: 'PENDIENTE' }), PAGO, AHORA).at(-1),
-      ).toMatchObject({ title: 'Pedimos el reembolso de $18.000', tone: 'current' });
+      ).toMatchObject({ title: 'Pedimos la devolución de $18.000', tone: 'current' });
       expect(
         appointmentTimeline(cancelado({ amount: 18000, status: 'RECHAZADO' }), PAGO, AHORA).at(-1),
-      ).toMatchObject({ title: 'No se pudo hacer el reembolso de $18.000', tone: 'bad' });
+      ).toMatchObject({ title: 'No se pudo hacer la devolución de $18.000', tone: 'bad' });
     });
 
     it('uno total con el pago reembolsado no repite "te devolvimos el pago"', () => {
@@ -152,7 +152,7 @@ describe('appointmentTimeline', () => {
     it('un monto en 0 no es reembolso y uno roto no se muestra como $NaN', () => {
       expect(refundStep(cancelado({ amount: 0, status: 'PROCESADO' }))).toBeNull();
       expect(refundStep(cancelado({ amount: Number.NaN, status: 'PENDIENTE' }))).toEqual({
-        title: 'Pedimos el reembolso',
+        title: 'Pedimos la devolución',
         tone: 'current',
       });
     });
@@ -174,7 +174,7 @@ describe('appointmentTimeline', () => {
         >;
 
         expect(refundStep(cancelado(refund))).toEqual({
-          title: 'Tenés un reembolso de $5.000 en proceso',
+          title: 'Tenés una devolución de $5.000 en proceso',
           tone: 'current',
         });
         expect(mensajesCapturados).toHaveLength(1);

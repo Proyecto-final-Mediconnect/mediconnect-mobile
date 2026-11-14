@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: 'rgba(4, 29, 40, 0.45)',
+    backgroundColor: colors.scrim,
   },
   hoja: {
     backgroundColor: colors.white,
