@@ -5,7 +5,13 @@ import { authorName, readEntryFields } from './clinical-entry';
 
 /** Lo más reciente primero (ENG-116). El backend devuelve la cadena hacia adelante. */
 export function newestFirst(entries: ClinicalEntry[]): ClinicalEntry[] {
-  return [...entries].sort((a, b) => b.sequenceNumber - a.sequenceNumber);
+  // Por fecha y no solo por posición en la cadena: la lista se agrupa por mes
+  // con `createdAt`, y si el orden no es el mismo los meses se parten
+  // ("noviembre, octubre, noviembre otra vez"). La posición desempata.
+  return [...entries].sort(
+    (a, b) =>
+      Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.sequenceNumber - a.sequenceNumber,
+  );
 }
 
 /**

@@ -16,6 +16,22 @@ import {
 const HISTORIA = crearHistoriaDemo(new Date('2026-09-23T12:00:00.000Z'));
 
 describe('record-view', () => {
+  it('ordena por fecha aunque la posición en la cadena no coincida, para no partir los meses', () => {
+    const [base] = HISTORIA;
+    const e = (id: string, sequenceNumber: number, createdAt: string) => ({
+      ...base!,
+      id,
+      sequenceNumber,
+      createdAt,
+    });
+    const ordenadas = newestFirst([
+      e('vieja-con-numero-alto', 9, '2026-08-30T15:00:00.000Z'),
+      e('nueva', 5, '2026-11-13T15:00:00.000Z'),
+      e('media', 7, '2026-10-30T15:00:00.000Z'),
+    ]);
+    expect(ordenadas.map((x) => x.id)).toEqual(['nueva', 'media', 'vieja-con-numero-alto']);
+  });
+
   it('lo más reciente primero', () => {
     const ordenadas = newestFirst(HISTORIA);
     expect(ordenadas[0]?.sequenceNumber).toBe(HISTORIA.length);
