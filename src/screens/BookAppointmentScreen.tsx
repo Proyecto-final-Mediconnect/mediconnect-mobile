@@ -1,8 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type ScrollViewInstance,
+} from 'react-native';
 
+import { DayCalendarSheet } from '../features/appointments/components/DayCalendarSheet';
 import { useAvailability, useBookAppointment } from '../features/appointments/hooks/use-booking';
 import { formatPrice, formatSentenceDay } from '../features/appointments/lib/appointments';
 import {
@@ -42,6 +50,8 @@ export function BookAppointmentScreen(): React.JSX.Element {
   const reservar = useBookAppointment();
 
   const [diaElegido, setDiaElegido] = useState<string | null>(null);
+  const [verCalendario, setVerCalendario] = useState(false);
+  const tira = useRef<ScrollViewInstance>(null);
   const [horario, setHorario] = useState<AvailabilitySlot | null>(null);
   const [reservado, setReservado] = useState<Appointment | null>(null);
 
@@ -141,9 +151,29 @@ export function BookAppointmentScreen(): React.JSX.Element {
     reservar.reset();
   }
 
+  /** Elegir un día desde el calendario también corre la tira hasta él. */
+  const elegirDelCalendario = (fecha: string): void => {
+    setDiaElegido(fecha);
+    const i = dias.findIndex((d) => d.date === fecha);
+    if (i >= 0) tira.current?.scrollTo({ x: Math.max(0, i - 1) * ANCHO_DIA, animated: true });
+  };
+
   return (
     <Screen header={header}>
+      <View style={styles.diasCabecera}>
+        <Text style={styles.seccion}>DÍA</Text>
+        <Pressable
+          accessibilityRole="button"
+          hitSlop={spacing.sm}
+          onPress={() => setVerCalendario(true)}
+          style={styles.verCalendario}
+        >
+          <Ionicons name="calendar-outline" size={16} color={colors.brandHover} />
+          <Text style={styles.verCalendarioTexto}>Ver calendario</Text>
+        </Pressable>
+      </View>
       <ScrollView
+        ref={tira}
         horizontal
         showsHorizontalScrollIndicator={false}
         // Sin esto, dentro del scroll vertical de la pantalla la fila de días se
@@ -198,6 +228,14 @@ export function BookAppointmentScreen(): React.JSX.Element {
         </Text>
       ) : null}
 
+      <DayCalendarSheet
+        visible={verCalendario}
+        days={dias}
+        selected={dia}
+        onSelect={elegirDelCalendario}
+        onDismiss={() => setVerCalendario(false)}
+      />
+
       <ConfirmSheet
         visible={horario !== null}
         title="¿Reservar el turno?"
@@ -231,7 +269,13 @@ export function BookAppointmentScreen(): React.JSX.Element {
   );
 }
 
+/** Ancho de una tarjeta de día más el espacio entre tarjetas, para correr la tira. */
+const ANCHO_DIA = 58 + spacing.sm;
+
 const styles = StyleSheet.create({
+  diasCabecera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  verCalendario: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  verCalendarioTexto: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.brandHover },
   diasScroll: { flexGrow: 0 },
   dias: { gap: spacing.sm, paddingRight: spacing.lg, alignItems: 'flex-start' },
   dia: {

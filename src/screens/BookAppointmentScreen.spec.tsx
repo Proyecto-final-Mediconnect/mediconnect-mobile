@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
+import { diaArgentino } from '../shared/lib/argentina-time';
 import { API_URL, server } from '../test/msw-server';
 import { renderApp } from '../test/render-app';
 
@@ -14,6 +15,30 @@ async function abrirReserva(...respuestas: Parameters<typeof renderApp>): Promis
 }
 
 describe('Reservar un turno (ENG-133)', () => {
+  it('"Ver calendario" abre el mes y elegir un día muestra sus horarios', async () => {
+    await abrirReserva();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver calendario' }));
+    const hoja = within(await screen.findByRole('dialog'));
+    const dentroDeDiez = diaArgentino(new Date(), 10);
+    const numero = String(Number(dentroDeDiez.slice(8)));
+    // Si el día cae el mes que viene, se pasa de mes primero.
+    if (dentroDeDiez.slice(0, 7) !== diaArgentino(new Date()).slice(0, 7)) {
+      fireEvent.click(hoja.getByRole('button', { name: 'Mes siguiente' }));
+    }
+    fireEvent.click(hoja.getByRole('button', { name: `Día ${numero}` }));
+
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole('tab')
+          .find((t) => t.getAttribute('aria-selected') === 'true')
+          ?.getAttribute('aria-label'),
+      ).toContain(` ${numero} `),
+    );
+    expect(screen.getByRole('button', { name: 'Reservar a las 09:30' })).toBeInTheDocument();
+  });
+
   // Hoy no tiene lugar: abre en el primer día que sí, y ofrece solo los libres.
   it('muestra los horarios libres del primer día con lugar', async () => {
     await abrirReserva();
