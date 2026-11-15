@@ -23,8 +23,8 @@ const TABS: Record<keyof PatientTabParamList, { label: string; icon: [IconName, 
  * los bordes, que flota sobre el fondo de la pantalla.
  *
  * El MediPass va en el centro, en un recuadro teal con el corazón y el latido
- * del logo (el mismo que va en el centro del QR) y su nombre en teal abajo: es
- * lo que distingue a
+ * del logo (el mismo que va en el centro del QR) y su nombre abajo: es lo
+ * que distingue a
  * MediConnect y lo que se abre con apuro, en una guardia, así que se encuentra
  * sin buscarlo. Queda dentro de la barra, sin sobresalir sobre el contenido.
  *
@@ -85,8 +85,8 @@ export function TabBar({ state, navigation }: BottomTabBarProps): React.JSX.Elem
                     <Text
                       style={[
                         styles.rotulo,
-                        styles.activo,
-                        { color: activa ? colors.white : colors.brandBright },
+                        activa && styles.activo,
+                        { color: activa ? colors.white : colors.onNight },
                       ]}
                     >
                       {tab.label}
@@ -124,7 +124,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps): React.JSX.Elem
  */
 function Latido(): React.JSX.Element {
   return (
-    <Svg width={22} height={22} viewBox="0 0 24 24">
+    <Svg width={19} height={19} viewBox="0 0 24 24">
       <Path
         d="M12 21.4s-7.6-4.8-9.9-9.5A5.6 5.6 0 0 1 12 5.9a5.6 5.6 0 0 1 9.9 6c-2.3 4.7-9.9 9.5-9.9 9.5z"
         fill={colors.inkDeep}
@@ -162,10 +162,13 @@ const styles = StyleSheet.create({
   presionada: { opacity: 0.6 },
   rotulo: { fontFamily: fonts.semibold, fontSize: fontSize.xs, letterSpacing: 0.2 },
   activo: { fontFamily: fonts.bold },
+  // Un poco más arriba que los íconos de al lado: el recuadro se destaca sin
+  // salirse de la barra.
   centro: {
-    width: 44,
-    height: 32,
-    borderRadius: 11,
+    width: 40,
+    height: 28,
+    marginTop: -6,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.brand,
