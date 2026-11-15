@@ -45,6 +45,8 @@ export type RootStackParamList = {
   CierreConsulta: { appointmentId: string; professionalName: string };
   /** La bandeja del chat con los profesionales (ENG-152). */
   Mensajes: undefined;
+  /** Los avisos de la campanita, los mismos que en la web (ENG-69). */
+  Avisos: undefined;
   /**
    * Una conversación (ENG-152). Sin `conversationId` es un chat nuevo: se crea
    * con el primer mensaje.

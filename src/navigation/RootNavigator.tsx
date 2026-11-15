@@ -18,6 +18,7 @@ import { ConsultationClosingScreen } from '../screens/ConsultationClosingScreen'
 import { PaymentScreen } from '../screens/PaymentScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { MessagesScreen } from '../screens/MessagesScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfessionalProfileScreen } from '../screens/ProfessionalProfileScreen';
 import { UploadDocumentScreen } from '../screens/UploadDocumentScreen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
@@ -136,6 +137,7 @@ function RootStack(): React.JSX.Element {
             <Stack.Screen name="Turno" component={AppointmentDetailScreen} />
             <Stack.Screen name="CierreConsulta" component={ConsultationClosingScreen} />
             <Stack.Screen name="Mensajes" component={MessagesScreen} />
+            <Stack.Screen name="Avisos" component={NotificationsScreen} />
             <Stack.Screen name="Conversacion" component={ConversationScreen} />
             {/* El formulario de un documento se abre como modal, igual que el
                 diálogo de la web (ENG-164). */}

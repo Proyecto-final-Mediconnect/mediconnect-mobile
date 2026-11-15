@@ -4,6 +4,7 @@ import type { RequestHandler } from 'msw';
 
 import { turnosDemo } from '../mocks/appointments';
 import { accesosDemo } from '../mocks/medipass';
+import { avisosDemo } from '../mocks/notifications';
 import { RootNavigator } from '../navigation/RootNavigator';
 import { server } from './msw-server';
 import { servirDatosDelPaciente } from './patient-api';
@@ -23,6 +24,7 @@ export async function renderApp(...respuestas: RequestHandler[]): Promise<void> 
   if (respuestas.length) server.use(...respuestas);
   turnosDemo.reiniciar();
   accesosDemo.reiniciar();
+  avisosDemo.reiniciar();
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
   render(
