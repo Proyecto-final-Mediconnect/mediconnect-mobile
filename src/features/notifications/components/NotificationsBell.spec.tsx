@@ -2,9 +2,9 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
-import { avisosDemo } from '../mocks/notifications';
-import { API_URL } from '../test/msw-server';
-import { renderApp } from '../test/render-app';
+import { avisosDemo } from '../../../mocks/notifications';
+import { API_URL } from '../../../test/msw-server';
+import { renderApp } from '../../../test/render-app';
 
 /** La campanita de avisos en la app, la misma que la web (ENG-69). */
 
@@ -12,6 +12,8 @@ async function abrirAvisos(...respuestas: Parameters<typeof renderApp>): Promise
   await renderApp(...respuestas);
   fireEvent.click(await screen.findByRole('button', { name: /^Avisos/ }));
   await screen.findByRole('heading', { name: 'Avisos' });
+  // El desplegable, no otra pantalla: el inicio sigue debajo.
+  expect(screen.getByRole('heading', { name: /^Buen/ })).toBeInTheDocument();
 }
 
 describe('Avisos (ENG-69)', () => {
@@ -32,9 +34,10 @@ describe('Avisos (ENG-69)', () => {
     expect(await screen.findByRole('button', { name: 'Avisos' })).toBeInTheDocument();
   });
 
-  it('lista los avisos con su texto y cuándo llegaron, los sin leer marcados', async () => {
+  it('despliega los avisos con su texto y cuándo llegaron, los sin leer marcados', async () => {
     await abrirAvisos();
 
+    expect(screen.getByText('2 sin leer')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /^Sin leer: Abrieron tu MediPass\. Alguien que dijo ser/,
@@ -64,6 +67,16 @@ describe('Avisos (ENG-69)', () => {
 
     expect(await screen.findByText('Tu turno')).toBeInTheDocument();
     expect(screen.getAllByText(/Martín Olivares/).length).toBeGreaterThan(0);
+  });
+
+  it('tocar afuera lo cierra', async () => {
+    await abrirAvisos();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar avisos' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Avisos' })).not.toBeInTheDocument(),
+    );
   });
 
   it('sin avisos lo dice', async () => {
