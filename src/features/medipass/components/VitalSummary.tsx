@@ -144,13 +144,15 @@ function Dato({
   const apagado = control && !control.visible;
   // Va en media tarjeta: el rótulo y el interruptor juntos no entran en un
   // renglón, así que el interruptor va al lado del valor, que es corto.
+  // Sin numberOfLines: es un dato clínico que se muestra a un tercero y con
+  // fuente grande o pantalla angosta tiene que envolver, nunca recortarse.
   return (
     <View style={[styles.dato, apagado && styles.apagado]}>
-      <Text style={styles.rotulo} numberOfLines={1}>
+      <Text style={styles.rotulo}>
         {rotulo}
       </Text>
       <View style={styles.cabecera}>
-        <Text style={[styles.datoValor, styles.flex]} numberOfLines={1}>
+        <Text style={[styles.datoValor, styles.flex]}>
           {valor}
         </Text>
         {control ? <Interruptor control={control} /> : null}
