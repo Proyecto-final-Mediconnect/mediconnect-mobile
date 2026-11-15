@@ -1,4 +1,4 @@
-import type { EmergencyScope, MediPassAccess } from '../types';
+import type { EmergencyScope, MediPassAccess, MediPassScope, VitalBlock } from '../types';
 
 /**
  * Reglas del MediPass (EP-05).
@@ -110,4 +110,21 @@ export function normalizarAlcance(scopes: EmergencyScope[]): EmergencyScope[] {
 /** Si un bloque se muestra con el alcance elegido. */
 export function muestraBloque(scopes: EmergencyScope[], bloque: EmergencyScope): boolean {
   return normalizarAlcance(scopes).includes(bloque);
+}
+
+/** Sin nada clínico cargado: el médico solo vería el nombre y la edad (ENG-136). */
+export function vitalVacio(vital: VitalBlock): boolean {
+  return (
+    !vital.grupoSanguineo &&
+    !vital.alergias?.length &&
+    !vital.medicacion?.length &&
+    !vital.condiciones?.length &&
+    !vital.contacto
+  );
+}
+
+/** Cuántos de los bloques que se pueden ocultar ve quien escanea. */
+export function bloquesVisibles(scope: MediPassScope): { visibles: number; total: number } {
+  const valores = Object.values(scope);
+  return { visibles: valores.filter(Boolean).length, total: valores.length };
 }

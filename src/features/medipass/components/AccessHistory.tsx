@@ -22,7 +22,7 @@ const ESTADO: Record<MediPassHistoryStatus, { label: string; fondo: string; text
 };
 
 /** Un instante ISO en hora argentina: `lun 16 nov · 21:12`. */
-function cuando(iso: string): string {
+export function cuandoAcceso(iso: string): string {
   const { date, time } = enArgentina(new Date(iso));
   return formatShortDay(date, time);
 }
@@ -110,7 +110,7 @@ function Acceso({ acceso }: { acceso: MediPassHistoryEntry }): React.JSX.Element
           ? `Matrícula ${acceso.consultante.matricula} (declarada)`
           : 'No dio matrícula'}
         {' · '}
-        {cuando(acceso.inicio)}
+        {cuandoAcceso(acceso.inicio)}
         {acceso.origen === 'TARJETA' ? ' · con tu tarjeta' : ''}
       </Text>
       {acceso.vistas.length > 0 ? (
