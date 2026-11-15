@@ -172,6 +172,30 @@ describe('La reseña de una consulta (ENG-80)', () => {
     expect(screen.queryByRole('button', { name: 'Dejar una reseña' })).not.toBeInTheDocument();
   });
 
+  // Quedó de cuando había moderación y nadie la resolvió: no está en el perfil.
+  it('una reseña vieja pendiente de moderación no se muestra como publicada', async () => {
+    await abrirConsultaHecha(
+      http.get(`${API_URL}/reviews/me`, () =>
+        HttpResponse.json([resena({ rating: 4, status: 'PENDIENTE_MODERACION' })]),
+      ),
+    );
+
+    expect(await screen.findByText('Tu reseña todavía no está publicada.')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '4 de 5 estrellas' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Dejar una reseña' })).not.toBeInTheDocument();
+  });
+
+  it('una reseña aprobada no lleva avisos de estado', async () => {
+    await abrirConsultaHecha(
+      http.get(`${API_URL}/reviews/me`, () =>
+        HttpResponse.json([resena({ rating: 5, status: 'APROBADA' })]),
+      ),
+    );
+
+    expect(await screen.findByRole('img', { name: '5 de 5 estrellas' })).toBeInTheDocument();
+    expect(screen.queryByText('Tu reseña todavía no está publicada.')).not.toBeInTheDocument();
+  });
+
   it('un turno que todavía no pasó no ofrece reseñarlo', async () => {
     await renderApp();
     fireEvent.click(screen.getByRole('tab', { name: 'Turnos' }));

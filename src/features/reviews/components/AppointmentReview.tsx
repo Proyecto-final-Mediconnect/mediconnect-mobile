@@ -63,6 +63,10 @@ export function AppointmentReview({
                 No se publicó{resena.moderationReason ? `: ${resena.moderationReason}` : '.'}
               </Text>
             ) : null}
+            {/* Quedó sin resolver porque ya no hay moderadores: no está en el perfil. */}
+            {resena.status === 'PENDIENTE_MODERACION' ? (
+              <Text style={styles.pendiente}>Tu reseña todavía no está publicada.</Text>
+            ) : null}
           </>
         ) : (
           <>
@@ -120,6 +124,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   motivo: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.danger },
+  pendiente: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.muted },
   invitacion: {
     fontFamily: fonts.medium,
     fontSize: fontSize.md,
