@@ -1,5 +1,7 @@
 /* Tipos de las reseñas (ENG-80, ENG-82): los mismos que la web y que backend#92. */
 
+/** Las nuevas nacen APROBADA (no hay moderación); PENDIENTE_MODERACION y
+ *  RECHAZADA quedan solo en reseñas viejas. */
 export type ReviewStatus = 'PENDIENTE_MODERACION' | 'APROBADA' | 'RECHAZADA';
 
 /** Una reseña del paciente de la sesión, en `GET /reviews/me`. */

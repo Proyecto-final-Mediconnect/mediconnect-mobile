@@ -16,7 +16,7 @@ function resena(parcial: Partial<MyReview> = {}): MyReview {
     professionalId: 'pro-garcia',
     rating: 4,
     comment: 'Muy clara con las indicaciones.',
-    status: 'PENDIENTE_MODERACION',
+    status: 'APROBADA',
     moderationReason: null,
     createdAt: new Date().toISOString(),
     ...parcial,
@@ -54,9 +54,7 @@ describe('La reseña de una consulta (ENG-80)', () => {
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Dejar una reseña' }));
 
-    expect(
-      await screen.findByText(/Se publica en su perfil cuando la revise un moderador/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Se publica en su perfil apenas la enviás/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('radio', { name: '4 estrellas, Muy buena' }));
     expect(screen.getByText('Muy buena')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Comentario (opcional)'), {
@@ -65,8 +63,9 @@ describe('La reseña de una consulta (ENG-80)', () => {
     expect(screen.getByText('31/1000')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Enviar reseña' }));
 
-    // La hoja se cierra y la tarjeta muestra la reseña, en revisión.
-    expect(await screen.findByText('En revisión')).toBeInTheDocument();
+    // La hoja se cierra y la tarjeta muestra la reseña, ya publicada: sin "En revisión".
+    expect(await screen.findByText('“Muy clara con las indicaciones.”')).toBeInTheDocument();
+    expect(screen.queryByText(/revisión/i)).not.toBeInTheDocument();
     expect(enviados).toEqual([
       { id: TURNO, rating: 4, comment: 'Muy clara con las indicaciones.' },
     ]);
@@ -131,7 +130,7 @@ describe('La reseña de una consulta (ENG-80)', () => {
     expect(
       await screen.findByText('Ya dejaste una reseña para esta consulta.'),
     ).toBeInTheDocument();
-    expect(await screen.findByText('En revisión')).toBeInTheDocument();
+    expect(await screen.findByText('“Muy clara con las indicaciones.”')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Dejar una reseña' })).not.toBeInTheDocument();
   });
 
@@ -153,7 +152,7 @@ describe('La reseña de una consulta (ENG-80)', () => {
     expect(screen.queryByText('No pudimos cargar tu reseña.')).not.toBeInTheDocument();
   });
 
-  it('una reseña que no se publicó muestra el estado y el motivo', async () => {
+  it('una reseña vieja rechazada dice que no se publicó y por qué', async () => {
     await abrirConsultaHecha(
       http.get(`${API_URL}/reviews/me`, () =>
         HttpResponse.json([
@@ -166,9 +165,8 @@ describe('La reseña de una consulta (ENG-80)', () => {
       ),
     );
 
-    expect(await screen.findByText('No publicada')).toBeInTheDocument();
     expect(
-      screen.getByText('Motivo: Incluye datos personales de otra persona.'),
+      await screen.findByText('No se publicó: Incluye datos personales de otra persona.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('img', { name: '2 de 5 estrellas' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Dejar una reseña' })).not.toBeInTheDocument();

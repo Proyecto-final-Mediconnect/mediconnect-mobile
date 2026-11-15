@@ -47,7 +47,7 @@ export function ConsultationClosingScreen(): React.JSX.Element {
         </Text>
         <Text style={styles.detalle}>
           {enviada
-            ? 'Tu reseña se publica cuando la revisemos.'
+            ? 'Tu reseña ya se ve en su perfil.'
             : yaReseno
               ? 'Ya dejaste tu reseña de esta consulta.'
               : 'Tu opinión ayuda a otros pacientes a elegir.'}

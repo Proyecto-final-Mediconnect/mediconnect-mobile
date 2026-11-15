@@ -23,8 +23,8 @@ interface ReviewSheetProps {
 
 /**
  * Dejar la reseña de una consulta (ENG-80): las estrellas y, si quiere, un
- * comentario. Se publica recién cuando la aprueba un moderador, y la hoja lo
- * dice antes de mandar, no después: que no aparezca enseguida no es un error.
+ * comentario. Se publica en el acto, y la hoja lo dice antes de mandar, no
+ * después.
  */
 export function ReviewSheet({
   visible,
@@ -113,8 +113,7 @@ export function ReviewSheet({
         </View>
 
         <Text style={styles.aclaracion}>
-          Se publica en su perfil cuando la revise un moderador. Va con tu nombre y la inicial de tu
-          apellido.
+          Se publica en su perfil apenas la enviás. Va con tu nombre y la inicial de tu apellido.
         </Text>
 
         {crear.isError ? (
