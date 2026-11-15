@@ -142,13 +142,19 @@ function Dato({
   control?: Control;
 }): React.JSX.Element {
   const apagado = control && !control.visible;
+  // Va en media tarjeta: el rótulo y el interruptor juntos no entran en un
+  // renglón, así que el interruptor va al lado del valor, que es corto.
   return (
     <View style={[styles.dato, apagado && styles.apagado]}>
+      <Text style={styles.rotulo} numberOfLines={1}>
+        {rotulo}
+      </Text>
       <View style={styles.cabecera}>
-        <Text style={styles.rotulo}>{rotulo}</Text>
+        <Text style={[styles.datoValor, styles.flex]} numberOfLines={1}>
+          {valor}
+        </Text>
         {control ? <Interruptor control={control} /> : null}
       </View>
-      <Text style={styles.datoValor}>{valor}</Text>
       {apagado ? <Oculto /> : null}
     </View>
   );
@@ -205,6 +211,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
+  flex: { flex: 1 },
   apagado: { opacity: 0.55 },
   oculto: {
     fontFamily: fonts.medium,
