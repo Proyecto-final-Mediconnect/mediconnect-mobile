@@ -124,7 +124,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps): React.JSX.Elem
  */
 function Latido(): React.JSX.Element {
   return (
-    <Svg width={19} height={19} viewBox="0 0 24 24">
+    <Svg width={18} height={18} viewBox="0 0 24 24">
       <Path
         d="M12 21.4s-7.6-4.8-9.9-9.5A5.6 5.6 0 0 1 12 5.9a5.6 5.6 0 0 1 9.9 6c-2.3 4.7-9.9 9.5-9.9 9.5z"
         fill={colors.inkDeep}
@@ -162,13 +162,10 @@ const styles = StyleSheet.create({
   presionada: { opacity: 0.6 },
   rotulo: { fontFamily: fonts.semibold, fontSize: fontSize.xs, letterSpacing: 0.2 },
   activo: { fontFamily: fonts.bold },
-  // Un poco más arriba que los íconos de al lado: el recuadro se destaca sin
-  // salirse de la barra.
   centro: {
-    width: 40,
-    height: 28,
-    marginTop: -6,
-    borderRadius: 9,
+    width: 32,
+    height: 26,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.brand,
