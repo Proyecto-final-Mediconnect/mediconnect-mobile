@@ -209,7 +209,7 @@ function Latido(): React.JSX.Element {
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <Svg width="100%" height={48} viewBox="0 0 320 56" preserveAspectRatio="none">
+      <Svg width="100%" height={40} viewBox="0 0 320 56" preserveAspectRatio="none">
         <Polyline
           points="0,30 170,30 182,30 192,8 206,50 216,22 224,30 320,30"
           fill="none"
@@ -237,7 +237,8 @@ function alertaMediPass(accesos: MediPassAccess[] | undefined, ahora: Date): str
 }
 
 const styles = StyleSheet.create({
-  latido: { position: 'absolute', left: 0, right: 0, bottom: 64 },
+  // Entre el saludo y la tarjeta que se monta encima, sin cruzar el texto.
+  latido: { position: 'absolute', left: 0, right: 0, bottom: 34 },
   cargando: { minHeight: 160 },
   seccion: { gap: spacing.sm, marginTop: spacing.sm },
   seccionCabecera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
