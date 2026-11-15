@@ -9,7 +9,10 @@ import { SessionProvider, useSession } from '../features/auth/session';
 import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
 import { ClinicalRecordScreen } from '../screens/ClinicalRecordScreen';
 import { ConversationScreen } from '../screens/ConversationScreen';
+import { EmergencyCardScreen } from '../screens/EmergencyCardScreen';
 import { EmergencyDataScreen } from '../screens/EmergencyDataScreen';
+import { MediPassHistoryScreen } from '../screens/MediPassHistoryScreen';
+import { MediPassVisibleScreen } from '../screens/MediPassVisibleScreen';
 import { PrivacyScreen } from '../screens/PrivacyScreen';
 import { EntryDetailScreen } from '../screens/EntryDetailScreen';
 import { LegalConsentScreen } from '../screens/LegalConsentScreen';
@@ -128,6 +131,9 @@ function RootStack(): React.JSX.Element {
             <Stack.Screen name="Paciente" component={PatientTabs} />
             <Stack.Screen name="HistoriaClinica" component={ClinicalRecordScreen} />
             <Stack.Screen name="EntradaHC" component={EntryDetailScreen} />
+            <Stack.Screen name="MediPassHistorial" component={MediPassHistoryScreen} />
+            <Stack.Screen name="MediPassVisible" component={MediPassVisibleScreen} />
+            <Stack.Screen name="TarjetaEmergencia" component={EmergencyCardScreen} />
             <Stack.Screen name="DatosEmergencia" component={EmergencyDataScreen} />
             <Stack.Screen name="Privacidad" component={PrivacyScreen} />
             <Stack.Screen name="Profesional" component={ProfessionalProfileScreen} />

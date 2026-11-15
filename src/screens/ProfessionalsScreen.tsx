@@ -13,6 +13,7 @@ import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { SearchFilterBar, type ActiveFilter } from '../shared/ui/SearchFilterBar';
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, spacing } from '../shared/ui/theme';
+import { useTabBarSpace } from '../navigation/use-tab-bar-space';
 
 /**
  * Sacar un turno, paso 1: buscar al profesional (ENG-132). Equivalente mobile
@@ -24,6 +25,7 @@ import { colors, spacing } from '../shared/ui/theme';
  */
 export function ProfessionalsScreen(): React.JSX.Element {
   const navigation = useNavigation();
+  const espacioBarra = useTabBarSpace();
   const [busqueda, setBusqueda] = useState('');
   const [filtros, setFiltros] = useState<CatalogFilters>(EMPTY_FILTERS);
   const buscado = useDebouncedValue(busqueda);
@@ -156,7 +158,7 @@ export function ProfessionalsScreen(): React.JSX.Element {
             onPress={() => navigation.navigate('Profesional', { id: item.id })}
           />
         )}
-        contentContainerStyle={styles.lista}
+        contentContainerStyle={[styles.lista, { paddingBottom: espacioBarra + spacing.lg }]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         onEndReachedThreshold={0.4}

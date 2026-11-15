@@ -1,10 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   createEmergencyCard,
   disableEmergencyCard,
   fetchEmergencyCard,
   fetchAccesses,
+  fetchHistory,
   fetchMyCode,
   fetchScope,
   fetchVitalBlock,
@@ -16,6 +17,7 @@ import { proximaConsultaDelCodigo } from '../lib/medipass';
 
 export const CODIGO_KEY = ['medipass', 'code'] as const;
 const ACCESOS_KEY = ['medipass', 'accesses'] as const;
+const HISTORIAL_KEY = ['medipass', 'historial'] as const;
 
 /**
  * El código vigente (ENG-72). Se vuelve a pedir justo cuando vence, así el QR
@@ -59,7 +61,11 @@ export function useRevokeAccess() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: revokeAccess,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ACCESOS_KEY }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ACCESOS_KEY });
+      // El historial muestra el acceso recién cortado como "Lo cortaste vos".
+      void queryClient.invalidateQueries({ queryKey: HISTORIAL_KEY });
+    },
   });
 }
 
@@ -126,5 +132,20 @@ export function useDisableEmergencyCard() {
         queryClient.invalidateQueries({ queryKey: TARJETA_KEY }),
         queryClient.invalidateQueries({ queryKey: ACCESOS_KEY }),
       ]),
+  });
+}
+
+/**
+ * El historial de accesos (ENG-76), de a páginas: `fetchNextPage` trae los
+ * anteriores. Se refresca con los accesos de ahora, para que el que se abre o
+ * se cierra mientras se mira aparezca sin salir de la pantalla.
+ */
+export function useHistory() {
+  return useInfiniteQuery({
+    queryKey: HISTORIAL_KEY,
+    queryFn: ({ pageParam }) => fetchHistory(pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (ultima) => (ultima.hayMas ? ultima.pagina + 1 : undefined),
+    refetchInterval: 30_000,
   });
 }

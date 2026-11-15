@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -118,17 +119,30 @@ export function MediPassCode(): React.JSX.Element {
 
   return (
     <View style={styles.card}>
-      <View accessibilityRole="image" accessibilityLabel={`Código QR del MediPass ${texto}`}>
+      <View style={styles.eyebrow}>
+        <Ionicons name="shield-checkmark" size={14} color={colors.brandHover} />
+        <Text style={styles.eyebrowTexto}>PASE DE EMERGENCIA</Text>
+      </View>
+      <View
+        accessibilityRole="image"
+        accessibilityLabel={`Código QR del MediPass ${texto}`}
+        style={styles.qr}
+      >
         {qr}
       </View>
       {/* Sin `selectable`: se dicta, no se copia, y el portapapeles lo leen otras apps. */}
-      <Text style={styles.codigo}>{texto}</Text>
+      <View style={styles.codigoPildora}>
+        <Text style={styles.codigo}>{texto}</Text>
+      </View>
       <View style={styles.barra}>
         <View
           style={[styles.relleno, { width: `${Math.min(100, (restante / ROTACION_MS) * 100)}%` }]}
         />
       </View>
-      <Text style={styles.cuenta}>Se renueva en {cuentaRegresiva(restante)}</Text>
+      <View style={styles.cuentaFila}>
+        <Ionicons name="refresh" size={13} color={colors.muted} />
+        <Text style={styles.cuenta}>Se renueva en {cuentaRegresiva(restante)}</Text>
+      </View>
     </View>
   );
 }
@@ -141,12 +155,32 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     gap: spacing.md,
   },
+  eyebrow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  eyebrowTexto: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    letterSpacing: 1.4,
+    color: colors.brandHover,
+  },
+  qr: {
+    padding: spacing.sm,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.lineSoft,
+  },
+  codigoPildora: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceTeal,
+  },
   codigo: {
     fontFamily: fonts.bold,
-    fontSize: fontSize.md,
-    letterSpacing: 1.5,
+    fontSize: fontSize.lg + 3,
+    letterSpacing: 3,
     color: colors.brandDeep,
   },
+  cuentaFila: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   barra: {
     alignSelf: 'stretch',
     height: 4,

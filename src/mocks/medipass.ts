@@ -1,4 +1,9 @@
-import type { MediPassAccess, MediPassCode, VitalBlock } from '../features/medipass/types';
+import type {
+  MediPassAccess,
+  MediPassCode,
+  MediPassHistory,
+  VitalBlock,
+} from '../features/medipass/types';
 import { ROTACION_MS } from '../features/medipass/lib/medipass';
 
 /**
@@ -68,3 +73,48 @@ export const accesosDemo = {
     accesos = crearAccesos(ahora ?? new Date());
   },
 };
+
+/**
+ * El historial de ejemplo (`GET /medipass/me/historial`): uno abierto ahora,
+ * uno que se cerró solo y uno que el paciente cortó. Con otros nombres que los
+ * accesos de ahora, para que los tests no los confundan.
+ */
+export function historialDemo(ahora: Date = new Date()): MediPassHistory {
+  const hace = (min: number) => new Date(ahora.getTime() - min * 60_000).toISOString();
+  return {
+    pagina: 1,
+    hayMas: false,
+    accesos: [
+      {
+        sesionId: 'h1',
+        consultante: { nombre: 'Dra. Laura Méndez', matricula: 'MP 33210' },
+        origen: 'CODIGO',
+        inicio: hace(6),
+        vence: hace(-24),
+        revocadoEl: null,
+        estado: 'ACTIVO',
+        vistas: [{ recurso: 'VITAL', etiqueta: 'Datos vitales', el: hace(6) }],
+      },
+      {
+        sesionId: 'h2',
+        consultante: { nombre: 'Guardia Sanatorio Allende', matricula: null },
+        origen: 'TARJETA',
+        inicio: hace(60 * 26),
+        vence: hace(60 * 26 - 30),
+        revocadoEl: null,
+        estado: 'VENCIDO',
+        vistas: [],
+      },
+      {
+        sesionId: 'h3',
+        consultante: { nombre: 'Dr. Martín Pérez', matricula: 'MP 11111' },
+        origen: 'CODIGO',
+        inicio: hace(60 * 50),
+        vence: hace(60 * 50 - 30),
+        revocadoEl: hace(60 * 50 - 4),
+        estado: 'REVOCADO',
+        vistas: [],
+      },
+    ],
+  };
+}

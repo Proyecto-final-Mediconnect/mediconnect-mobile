@@ -11,9 +11,9 @@ import type { PickedFile } from '../features/patient-documents/types';
 export type PatientTabParamList = {
   Inicio: undefined;
   Turnos: undefined;
+  MediPass: undefined;
   /** Sacar un turno: la búsqueda de profesionales (ENG-132). */
   Reservar: undefined;
-  MediPass: undefined;
   Perfil: undefined;
 };
 
@@ -29,6 +29,12 @@ export type RootStackParamList = {
   Paciente: NavigatorScreenParams<PatientTabParamList>;
   HistoriaClinica: undefined;
   EntradaHC: { id: string };
+  /** Quién abrió el MediPass, completo (ENG-76). */
+  MediPassHistorial: undefined;
+  /** Lo que ve quien escanea el MediPass, con un interruptor por bloque (ENG-149). */
+  MediPassVisible: undefined;
+  /** La tarjeta de emergencia del MediPass (ENG-176). */
+  TarjetaEmergencia: undefined;
   /** Cargar y editar los datos de emergencia del MediPass (ENG-136). */
   DatosEmergencia: undefined;
   /** Los derechos ARCO de la Ley 25.326 (ENG-86). */

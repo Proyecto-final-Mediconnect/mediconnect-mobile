@@ -14,7 +14,9 @@ import { renderApp } from '../test/render-app';
 async function abrirMediPass(...respuestas: Parameters<typeof renderApp>): Promise<void> {
   await renderApp(...respuestas);
   fireEvent.click(screen.getByRole('tab', { name: 'MediPass' }));
-  await screen.findByText('Tarjeta de emergencia');
+  // La tarjeta tiene su pantalla, a un toque desde el MediPass.
+  fireEvent.click(await screen.findByRole('button', { name: 'Tarjeta de emergencia' }));
+  await screen.findByRole('heading', { name: 'Tarjeta de emergencia' });
 }
 
 function pasarA(estado: 'hidden' | 'visible'): void {

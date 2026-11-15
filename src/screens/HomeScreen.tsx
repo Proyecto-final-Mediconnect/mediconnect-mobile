@@ -1,5 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Svg, { Polyline } from 'react-native-svg';
 
 import { useSessionUser } from '../features/auth/session';
 import { CompactAppointmentRow } from '../features/appointments/components/CompactAppointmentRow';
@@ -7,15 +8,16 @@ import { NextAppointmentCard } from '../features/appointments/components/NextApp
 import { useMyAppointments } from '../features/appointments/hooks/use-appointments';
 import {
   formatSentenceDay,
-  whenIs,
   nextAppointment,
   professionalName,
   splitByTime,
 } from '../features/appointments/lib/appointments';
 import { greeting, laterAppointments, pastProfessionals } from '../features/appointments/lib/home';
-import { joinStateOf } from '../features/appointments/lib/join-window';
 import type { Appointment } from '../features/appointments/types';
+import type { MediPassAccess } from '../features/medipass/types';
 import { PastProfessionalCard } from '../features/catalog/components/PastProfessionalCard';
+import { useAccesses } from '../features/medipass/hooks/use-medipass';
+import { estadoDeAcceso } from '../features/medipass/lib/medipass';
 import { NotificationsBell } from '../features/notifications/components/NotificationsBell';
 import { PatientSummaryTiles } from '../features/patient-summary/components/PatientSummaryTiles';
 import { PendingReviewCards } from '../features/reviews/components/PendingReviewCards';
@@ -51,6 +53,7 @@ export function HomeScreen(): React.JSX.Element {
   const navigation = useNavigation();
   const { firstName } = useSessionUser();
   const turnos = useMyAppointments();
+  const accesos = useAccesses();
   const bandeja = useConversations();
   const sinLeer = bandeja.data ? totalUnread(bandeja.data.conversaciones) : 0;
   // Cada 15 segundos: alcanza para que el botón de la sala aparezca a tiempo
@@ -77,8 +80,9 @@ export function HomeScreen(): React.JSX.Element {
         <ScreenHeader
           hero
           tone="dark"
+          backdrop={<Latido />}
           title={firstName ? `${greeting(ahora)}, ${firstName}` : greeting(ahora)}
-          subtitle={turnos.data ? subtitulo(proxima, ahora) : ' '}
+          subtitle={alertaMediPass(accesos.data, ahora)}
           trailing={<NotificationsBell />}
         />
       }
@@ -192,21 +196,49 @@ export function HomeScreen(): React.JSX.Element {
   );
 }
 
-/** Lo que dice la franja debajo del saludo. */
-function subtitulo(proxima: Appointment | null, ahora: Date): string {
-  if (!proxima) return 'No tenés turnos próximos.';
+/**
+ * El trazo del corazón del logo, como en el ingreso: de fondo en la franja,
+ * tenue y abajo, para que el inicio tenga la identidad de la marca sin
+ * competir con el saludo.
+ */
+function Latido(): React.JSX.Element {
+  return (
+    <View
+      style={styles.latido}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <Svg width="100%" height={40} viewBox="0 0 320 56" preserveAspectRatio="none">
+        <Polyline
+          points="0,30 170,30 182,30 192,8 206,50 216,22 224,30 320,30"
+          fill="none"
+          stroke={colors.brandBright}
+          strokeOpacity={0.18}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    </View>
+  );
+}
 
-  const sala = joinStateOf(proxima, ahora);
-  if (sala.kind === 'OPEN') {
-    return Date.parse(proxima.scheduledAt) > ahora.getTime()
-      ? `Tu consulta con ${professionalName(proxima)} empieza pronto.`
-      : `Tu consulta con ${professionalName(proxima)} está en curso.`;
-  }
-
-  return `Tu próximo turno es ${whenIs(proxima, ahora)}.`;
+/**
+ * Debajo del saludo, solo lo urgente que no está en otro lado del inicio: que
+ * alguien esté viendo el MediPass ahora. Lo del próximo turno ya lo dice la
+ * tarjeta de abajo; repetirlo acá sobraba.
+ */
+function alertaMediPass(accesos: MediPassAccess[] | undefined, ahora: Date): string | undefined {
+  const vigentes = (accesos ?? []).filter((a) => estadoDeAcceso(a, ahora).estado === 'VIGENTE');
+  if (vigentes.length === 0) return undefined;
+  if (vigentes.length === 1) return `${vigentes[0]!.consultante} está viendo tu MediPass ahora.`;
+  return `${vigentes.length} personas están viendo tu MediPass ahora.`;
 }
 
 const styles = StyleSheet.create({
+  // Entre el saludo y la tarjeta que se monta encima, sin cruzar el texto.
+  latido: { position: 'absolute', left: 0, right: 0, bottom: 34 },
   cargando: { minHeight: 160 },
   seccion: { gap: spacing.sm, marginTop: spacing.sm },
   seccionCabecera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

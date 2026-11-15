@@ -45,7 +45,22 @@ describe('Inicio', () => {
 
     expect(await screen.findByRole('button', { name: 'Entrar a la sala' })).toBeInTheDocument();
     expect(screen.getAllByText('Valeria Ocampo').length).toBeGreaterThan(0);
-    expect(screen.getByText(/empieza pronto/)).toBeInTheDocument();
+  });
+
+  it('sin nadie mirando el MediPass, debajo del saludo no hay nada', async () => {
+    await renderApp(http.get(`${API_URL}/medipass/me/accesses`, () => HttpResponse.json([])));
+
+    expect(screen.queryByText(/viendo tu MediPass/)).not.toBeInTheDocument();
+  });
+
+  it('debajo del saludo avisa solo si alguien está viendo el MediPass ahora', async () => {
+    await renderApp();
+
+    // Los datos de ejemplo traen dos accesos vigentes.
+    expect(
+      await screen.findByText('2 personas están viendo tu MediPass ahora.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Tu próximo turno es/)).not.toBeInTheDocument();
   });
 
   it('avisa del turno que falta pagar', async () => {

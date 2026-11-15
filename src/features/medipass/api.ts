@@ -4,6 +4,7 @@ import type {
   EmergencyCardStatus,
   MediPassAccess,
   MediPassCode,
+  MediPassHistory,
   MediPassScope,
   VitalBlock,
 } from './types';
@@ -84,5 +85,15 @@ export function disableEmergencyCard(): Promise<void> {
   return apiRequest<void>('/medipass/me/emergency-card', {
     method: 'DELETE',
     fallbackMessage: 'No pudimos desactivar la tarjeta. Probá de nuevo.',
+  });
+}
+
+/**
+ * `GET /medipass/me/historial?pagina=N`: quién abrió el MediPass, cuándo y qué
+ * miró (ENG-76), de a páginas, del más reciente al más viejo.
+ */
+export function fetchHistory(pagina: number): Promise<MediPassHistory> {
+  return apiRequest<MediPassHistory>(`/medipass/me/historial?pagina=${pagina}`, {
+    fallbackMessage: 'No pudimos cargar quién abrió tu MediPass.',
   });
 }

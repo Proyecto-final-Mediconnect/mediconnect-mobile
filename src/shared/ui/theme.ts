@@ -27,6 +27,8 @@ export const colors = {
   dangerSoft: '#fbecef',
   /** El rojo de error sobre el azul noche: `danger` no llega al contraste ahí. */
   dangerOnNight: '#f4a3b3',
+  /** `dangerOnNight` muy suave: el fondo de una etiqueta roja sobre la noche. */
+  dangerOnNightSoft: 'rgba(244, 163, 179, 0.14)',
   /** `danger` presionado. */
   dangerPressed: '#b93a54',
   /** Tarjetas y fondos sutiles sobre el azul noche (MediPass). */

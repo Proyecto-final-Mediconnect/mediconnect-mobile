@@ -20,6 +20,12 @@ async function abrirMediPass(...respuestas: Parameters<typeof renderApp>): Promi
   await screen.findByText('Dra. Valeria Ocampo');
 }
 
+/** Entra a una de las pantallas que se abren desde el MediPass. */
+async function entrarA(fila: string): Promise<void> {
+  fireEvent.click(await screen.findByRole('button', { name: fila }));
+  await screen.findByRole('heading', { name: fila });
+}
+
 describe('Mi MediPass (ENG-117)', () => {
   afterEach(() => {
     vi.useRealTimers();
@@ -57,12 +63,14 @@ describe('Mi MediPass (ENG-117)', () => {
     await abrirMediPass(
       http.get(`${API_URL}/medipass/me/vital`, () => HttpResponse.json({ nombre: 'Marina Sosa' })),
     );
+    await entrarA('Lo que ve quien lo escanea');
 
     expect((await screen.findAllByText('Sin cargar')).length).toBeGreaterThan(0);
   });
 
   it('muestra lo que ve quien lo escanea', async () => {
     await abrirMediPass();
+    await entrarA('Lo que ve quien lo escanea');
 
     expect(await screen.findByText('Penicilina')).toBeInTheDocument();
     expect(screen.getByText('0 Rh+')).toBeInTheDocument();
@@ -128,6 +136,7 @@ describe('Mi MediPass (ENG-117)', () => {
   // ENG-149: el paciente elige qué ve quien escanea, desde la misma ficha.
   it('apagar un bloque lo marca como oculto para quien escanea', async () => {
     await abrirMediPass();
+    await entrarA('Lo que ve quien lo escanea');
 
     const interruptor = await screen.findByLabelText('Mostrar medicación a quien escanea');
     fireEvent.click(interruptor);
@@ -191,6 +200,7 @@ describe('Mi MediPass (ENG-117)', () => {
           : HttpResponse.json({ vital: true, medicacion: true, condiciones: true, contacto: true }),
       ),
     );
+    await entrarA('Lo que ve quien lo escanea');
 
     expect(
       await screen.findByText(/No pudimos cargar qué bloques ve quien escanea/),
@@ -201,5 +211,34 @@ describe('Mi MediPass (ENG-117)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
 
     expect(await screen.findByLabelText('Mostrar medicación a quien escanea')).toBeInTheDocument();
+  });
+
+  it('las otras partes se abren desde filas que dicen lo último', async () => {
+    await abrirMediPass();
+
+    expect(await screen.findByText(/^Último: Dra\. Laura Méndez · /)).toBeInTheDocument();
+    expect(await screen.findByText(/^\d de 5 datos visibles$/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tarjeta de emergencia' })).toBeInTheDocument();
+  });
+
+  it('muestra quién abrió el MediPass y cómo quedó cada acceso', async () => {
+    await abrirMediPass();
+    await entrarA('Quién abrió tu MediPass');
+    expect(await screen.findByText('ABIERTO AHORA')).toBeInTheDocument();
+    expect(screen.getByText('CERRADO')).toBeInTheDocument();
+    expect(screen.getByText('LO CORTASTE VOS')).toBeInTheDocument();
+    expect(screen.getByText('Dr. Martín Pérez')).toBeInTheDocument();
+    expect(screen.getByText(/^Cortaste el acceso a las \d\d:\d\d\.$/)).toBeInTheDocument();
+  });
+
+  it('sin accesos todavía, lo dice', async () => {
+    await abrirMediPass(
+      http.get(`${API_URL}/medipass/me/historial`, () =>
+        HttpResponse.json({ accesos: [], pagina: 1, hayMas: false }),
+      ),
+    );
+    await entrarA('Quién abrió tu MediPass');
+
+    expect(await screen.findByText('Nadie abrió tu MediPass todavía.')).toBeInTheDocument();
   });
 });
