@@ -2,16 +2,14 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '../../../shared/ui/Button';
-import { Chip } from '../../../shared/ui/Chip';
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
 import { useMyReviews } from '../hooks/use-reviews';
-import { STATUS_LABELS, STATUS_TONES } from '../lib/reviews';
 import { ReviewSheet } from './ReviewSheet';
 import { Stars } from './Stars';
 
 /**
  * La reseña de una consulta que ya se hizo, en el detalle del turno (ENG-80): el
- * botón para dejarla o, si ya la dejó, en qué quedó.
+ * botón para dejarla o, si ya la dejó, la reseña.
  *
  * Mientras cargan las reseñas no se muestra nada, y si fallan, un aviso con
  * "Reintentar" y no el botón: ofrecer "Dejar una reseña" sin saber si ya la dejó
@@ -57,11 +55,17 @@ export function AppointmentReview({
           <>
             <View style={styles.encabezado}>
               <Stars value={resena.rating} size={20} />
-              <Chip label={STATUS_LABELS[resena.status]} tone={STATUS_TONES[resena.status]} />
             </View>
             {resena.comment ? <Text style={styles.comentario}>“{resena.comment}”</Text> : null}
-            {resena.status === 'RECHAZADA' && resena.moderationReason ? (
-              <Text style={styles.motivo}>Motivo: {resena.moderationReason}</Text>
+            {/* Solo reseñas viejas: de cuando había moderación. */}
+            {resena.status === 'RECHAZADA' ? (
+              <Text style={styles.motivo}>
+                No se publicó{resena.moderationReason ? `: ${resena.moderationReason}` : '.'}
+              </Text>
+            ) : null}
+            {/* Quedó sin resolver porque ya no hay moderadores: no está en el perfil. */}
+            {resena.status === 'PENDIENTE_MODERACION' ? (
+              <Text style={styles.pendiente}>Tu reseña todavía no está publicada.</Text>
             ) : null}
           </>
         ) : (
@@ -120,6 +124,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   motivo: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.danger },
+  pendiente: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.muted },
   invitacion: {
     fontFamily: fonts.medium,
     fontSize: fontSize.md,

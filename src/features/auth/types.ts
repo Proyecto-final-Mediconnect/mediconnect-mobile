@@ -1,5 +1,6 @@
-/** Roles de dominio de MediConnect (espeja `user_role` de la base). Igual que en la web. */
-export type UserRole = 'PACIENTE' | 'PROFESIONAL' | 'MODERADOR';
+/** Roles de dominio de MediConnect. Igual que en la web: `user_role` en la base
+ *  conserva MODERADOR, pero no se usa (no hay moderación). */
+export type UserRole = 'PACIENTE' | 'PROFESIONAL';
 
 /**
  * El usuario de la sesión, tal como lo devuelve `GET /me`. El `role` sale de

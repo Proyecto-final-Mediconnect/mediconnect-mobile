@@ -72,6 +72,7 @@ const ICONOS: Record<string, IconName> = {
   TURNO_CANCELADO: 'close-circle-outline',
   RECORDATORIO_24H: 'time-outline',
   RECORDATORIO_1H: 'time-outline',
+  // Ya no se generan (no hay moderación), pero quedan los viejos en la bandeja.
   RESENA_MODERADA: 'star-outline',
 };
 

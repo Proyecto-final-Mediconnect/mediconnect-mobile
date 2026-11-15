@@ -102,7 +102,7 @@ describe('sesión del paciente', () => {
       completarYEnviar(PROFESIONAL.email, 'Password1');
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'La app de MediConnect es para pacientes. Si sos profesional o moderador, ingresá desde la web.',
+        'La app de MediConnect es para pacientes. Si sos profesional, ingresá desde la web.',
       );
       expect(__secureStore.items.size).toBe(0);
       expect(screen.queryByRole('tab')).not.toBeInTheDocument();

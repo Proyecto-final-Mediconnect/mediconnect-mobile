@@ -1,4 +1,4 @@
-import type { RatingSummary, ReviewStatus } from '../types';
+import type { RatingSummary } from '../types';
 
 /** Lo que entra en el comentario, igual que el backend. */
 export const MAX_COMMENT = 1000;
@@ -31,18 +31,6 @@ export function hasRating(rating: RatingSummary | null | undefined): rating is R
 export function ratingSummaryText(rating: RatingSummary): string {
   return `${formatAverage(rating.average)} · ${reviewsCount(rating.count)}`;
 }
-
-export const STATUS_LABELS: Record<ReviewStatus, string> = {
-  PENDIENTE_MODERACION: 'En revisión',
-  APROBADA: 'Publicada',
-  RECHAZADA: 'No publicada',
-};
-
-export const STATUS_TONES: Record<ReviewStatus, 'warning' | 'ok' | 'danger'> = {
-  PENDIENTE_MODERACION: 'warning',
-  APROBADA: 'ok',
-  RECHAZADA: 'danger',
-};
 
 const FECHA = new Intl.DateTimeFormat('es-AR', {
   timeZone: 'America/Argentina/Buenos_Aires',
