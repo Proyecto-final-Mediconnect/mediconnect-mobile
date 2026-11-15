@@ -3,6 +3,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path, Polyline } from 'react-native-svg';
 
 import { colors, fonts, fontSize, spacing } from '../shared/ui/theme';
 import type { PatientTabParamList } from './types';
@@ -12,7 +13,7 @@ type IconName = ComponentProps<typeof Ionicons>['name'];
 const TABS: Record<keyof PatientTabParamList, { label: string; icon: [IconName, IconName] }> = {
   Inicio: { label: 'Inicio', icon: ['home', 'home-outline'] },
   Turnos: { label: 'Turnos', icon: ['calendar', 'calendar-outline'] },
-  MediPass: { label: 'MediPass', icon: ['qr-code', 'qr-code'] },
+  MediPass: { label: 'MediPass', icon: ['heart', 'heart-outline'] },
   Reservar: { label: 'Reservar', icon: ['add-circle', 'add-circle-outline'] },
   Perfil: { label: 'Perfil', icon: ['person', 'person-outline'] },
 };
@@ -76,7 +77,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps): React.JSX.Elem
                       pressed && styles.centroPresionado,
                     ]}
                   >
-                    <Ionicons name="qr-code" size={24} color={colors.white} />
+                    <Latido fondo={activa ? colors.brandHover : colors.night} />
                   </View>
                   <Text
                     style={[styles.rotulo, styles.rotuloCentro, { color }, activa && styles.activo]}
@@ -105,6 +106,30 @@ export function TabBar({ state, navigation }: BottomTabBarProps): React.JSX.Elem
         );
       })}
     </View>
+  );
+}
+
+/**
+ * El corazón con el latido del logo de MediConnect, el mismo que va en el
+ * centro del QR del MediPass. El trazo toma el color del botón, así parece
+ * recortado.
+ */
+function Latido({ fondo }: { fondo: string }): React.JSX.Element {
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24">
+      <Path
+        d="M12 21.4s-7.6-4.8-9.9-9.5A5.6 5.6 0 0 1 12 5.9a5.6 5.6 0 0 1 9.9 6c-2.3 4.7-9.9 9.5-9.9 9.5z"
+        fill={colors.white}
+      />
+      <Polyline
+        points="4.6,13 8.8,13 10.5,9.4 13,16.6 14.7,11.8 15.8,13 19.4,13"
+        fill="none"
+        stroke={fondo}
+        strokeWidth={1.9}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
   );
 }
 
