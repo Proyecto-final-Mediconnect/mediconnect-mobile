@@ -35,8 +35,11 @@ export type RootStackParamList = {
   Privacidad: undefined;
   /** Perfil público de un profesional (ENG-132). */
   Profesional: { id: string };
-  /** Disponibilidad y reserva con un profesional (ENG-133). */
-  Reservar: { professionalId: string };
+  /**
+   * Disponibilidad y reserva con un profesional (ENG-133). Con `rescheduleId`,
+   * la misma grilla mueve ese turno en vez de reservar uno nuevo (ENG-66).
+   */
+  Reservar: { professionalId: string; rescheduleId?: string };
   /** Pagar un turno reservado con MercadoPago (ENG-168). */
   Pago: { appointmentId: string };
   /** El detalle de un turno propio, con lo que pasó desde la reserva. */

@@ -100,6 +100,23 @@ export const turnosDemo = {
     );
     return nuevo;
   },
+  /** Mueve un turno, como `PATCH /appointments/:id/reschedule`: una sola vez. */
+  reprogramar(id: string, date: string, startTime: string): Appointment | null {
+    const actual = turnos.find((t) => t.id === id);
+    if (!actual || actual.rescheduledAt) return null;
+    const instante = desdeArgentina(date, startTime);
+    const movido: Appointment = {
+      ...actual,
+      scheduledAt: instante.toISOString(),
+      date,
+      startTime,
+      rescheduledAt: new Date().toISOString(),
+    };
+    turnos = turnos
+      .map((t) => (t.id === id ? movido : t))
+      .sort((a, b) => Date.parse(a.scheduledAt) - Date.parse(b.scheduledAt));
+    return movido;
+  },
   /** Para los tests: vuelve al estado inicial. */
   reiniciar(ahora?: Date): void {
     turnos = crearTurnosDemo(ahora);

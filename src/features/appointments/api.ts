@@ -63,3 +63,25 @@ export function bookAppointment(input: BookAppointmentInput): Promise<Appointmen
     fallbackMessage: 'No se pudo reservar el turno.',
   });
 }
+
+/**
+ * `PATCH /appointments/:id/reschedule`: mueve un turno propio a otro horario del
+ * mismo profesional (ENG-66). Es el mismo turno, con el mismo pago. Las reglas
+ * (una sola vez, un pagado solo con la anticipación del reembolso total) las
+ * aplica el backend, que contesta con el motivo en español.
+ */
+export function rescheduleAppointment({
+  appointmentId,
+  date,
+  startTime,
+}: {
+  appointmentId: string;
+  date: string;
+  startTime: string;
+}): Promise<Appointment> {
+  return apiRequest<Appointment>(`/appointments/${encodeURIComponent(appointmentId)}/reschedule`, {
+    method: 'PATCH',
+    body: { date, startTime },
+    fallbackMessage: 'No se pudo reprogramar el turno.',
+  });
+}

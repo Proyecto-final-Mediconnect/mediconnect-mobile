@@ -32,9 +32,10 @@ export function useSpecialties() {
   return useQuery({ queryKey: ['specialties'], queryFn: listSpecialties, staleTime: 60 * 60_000 });
 }
 
-export function usePublicProfile(id: string) {
+export function usePublicProfile(id: string, enabled = true) {
   return useQuery({
     queryKey: ['professionals', 'public', id],
     queryFn: () => fetchPublicProfile(id),
+    enabled: enabled && id !== '',
   });
 }

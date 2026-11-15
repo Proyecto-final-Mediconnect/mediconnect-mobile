@@ -29,6 +29,8 @@ export interface Appointment {
    */
   createdAt?: string | null;
   cancelledAt?: string | null;
+  /** Cuándo se movió de horario (ENG-66), o `null` si nunca: se reprograma una sola vez. */
+  rescheduledAt?: string | null;
   /** En qué quedó el reembolso de un turno cancelado o liberado que estaba pago
    *  (ENG-174). `null` si no hubo; falta con un backend anterior. */
   refundState?: AppointmentRefundState | null;
