@@ -185,9 +185,19 @@ export function fromRow(row: RealtimeMessageRow): ChatMessage {
 /**
  * `Date` no parsea igual en todos los navegadores el formato de Postgres (Safari
  * rechaza el espacio y el offset `+00` sin minutos), así que se lleva primero a
- * ISO-8601 estricto.
+ * ISO-8601 estricto. Postgres también manda microsegundos (`.568123`) y Hermes
+ * no siempre parsea más de tres dígitos de fracción: se recortan a milisegundos.
+ *
+ * Lanza si el valor no es una fecha: `new Date(...).toISOString()` ya lanzaría
+ * un `RangeError` poco claro. Quien la llama desde un callback de Realtime debe
+ * atrapar el error y pedir los mensajes al backend en lugar de perder el evento.
  */
-function toIso(value: string): string {
-  const strict = value.replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00');
-  return new Date(strict).toISOString();
+export function toIso(value: string): string {
+  const strict = value
+    .replace(' ', 'T')
+    .replace(/(\.\d{3})\d+/, '$1')
+    .replace(/([+-]\d{2})$/, '$1:00');
+  const date = new Date(strict);
+  if (Number.isNaN(date.getTime())) throw new Error(`Fecha inválida: ${value}`);
+  return date.toISOString();
 }

@@ -121,6 +121,8 @@ export function subscribeToConversation(
   conversationId: string,
   onMessage: (message: ChatMessage) => void,
   onStatus: (status: RealtimeStatus) => void,
+  /** El evento llegó pero no se pudo leer (fecha rara): conviene pedir al backend. */
+  onUnreadable?: () => void,
 ): () => void {
   if (!isRealtimeConfigured()) {
     onStatus('sin-conexion');
@@ -149,7 +151,19 @@ export function subscribeToConversation(
           table: 'messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => onMessage(fromRow(payload.new)),
+        (payload) => {
+          // Esto corre dentro del callback del socket: una excepción acá
+          // perdería el evento en silencio. Se avisa para que se pida al backend.
+          let message: ChatMessage;
+          try {
+            message = fromRow(payload.new);
+          } catch (err) {
+            console.warn('Realtime: no se pudo leer un mensaje del socket.', err);
+            onUnreadable?.();
+            return;
+          }
+          onMessage(message);
+        },
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') onStatus('en-vivo');
@@ -166,31 +180,100 @@ export function subscribeToConversation(
   };
 }
 
+interface SharedInbox {
+  listeners: Set<() => void>;
+  statusListeners: Set<(status: RealtimeStatus) => void>;
+  status: RealtimeStatus;
+  stopped: boolean;
+  stop: () => void;
+}
+
+/** La única suscripción `inbox`, compartida por todos los que la piden. */
+let inbox: SharedInbox | null = null;
+
+/** `true` si el canal de la bandeja está unido: la consulta periódica puede aflojar. */
+export function isInboxLive(): boolean {
+  return inbox?.status === 'en-vivo';
+}
+
+function setInboxStatus(shared: SharedInbox, status: RealtimeStatus): void {
+  shared.status = status;
+  shared.statusListeners.forEach((listener) => listener(status));
+}
+
 /**
  * Escucha **cualquier** mensaje nuevo mío, de cualquier conversación, para que
  * la bandeja y el contador de no leídos se actualicen sin esperar el refetch ni
  * recargar. Sin `filter`: quien decide qué llega es la RLS de `messages`, que
  * solo deja pasar las conversaciones de las que soy parte.
+ *
+ * Hay **un solo canal** `inbox` para todos los suscriptores (Home y Mensajes
+ * conviven en el stack): `supabase.channel('inbox')` devuelve el canal que ya
+ * existe, y sumarle un `.on(...)` a uno ya suscripto tira error. Se cuentan los
+ * suscriptores y el canal se baja recién cuando se va el último.
  */
-export function subscribeToInbox(onChange: () => void): () => void {
-  if (!isRealtimeConfigured()) return () => {};
-  let stopped = false;
-  let stop = () => {};
+export function subscribeToInbox(
+  onChange: () => void,
+  onStatus?: (status: RealtimeStatus) => void,
+): () => void {
+  if (!isRealtimeConfigured()) {
+    onStatus?.('sin-conexion');
+    return () => {};
+  }
 
-  void realtimeClient().then(async (supabase) => {
-    if (stopped || !supabase) return;
-    await authorized(supabase);
-    if (stopped) return;
-    const channel = supabase
-      .channel('inbox')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, onChange)
-      .subscribe();
-    stop = () => void supabase.removeChannel(channel);
-  });
+  let shared = inbox;
+  if (shared) {
+    shared.listeners.add(onChange);
+    if (onStatus) {
+      shared.statusListeners.add(onStatus);
+      onStatus(shared.status);
+    }
+  } else {
+    const created: SharedInbox = {
+      listeners: new Set([onChange]),
+      statusListeners: new Set(onStatus ? [onStatus] : []),
+      status: 'conectando',
+      stopped: false,
+      stop: () => {},
+    };
+    shared = created;
+    inbox = created;
+    onStatus?.('conectando');
+    void realtimeClient().then(async (supabase) => {
+      if (created.stopped) return;
+      if (!supabase) {
+        setInboxStatus(created, 'sin-conexion');
+        return;
+      }
+      await authorized(supabase);
+      if (created.stopped) return;
+      const channel = supabase
+        .channel('inbox')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () =>
+          created.listeners.forEach((listener) => listener()),
+        )
+        .subscribe((status) => {
+          if (created.stopped) return;
+          if (status === 'SUBSCRIBED') setInboxStatus(created, 'en-vivo');
+          else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            setInboxStatus(created, 'sin-conexion');
+          }
+        });
+      created.stop = () => void supabase.removeChannel(channel);
+    });
+  }
 
+  const mine = shared;
+  let done = false;
   return () => {
-    stopped = true;
-    stop();
+    if (done) return;
+    done = true;
+    mine.listeners.delete(onChange);
+    if (onStatus) mine.statusListeners.delete(onStatus);
+    if (mine.listeners.size > 0) return;
+    mine.stopped = true;
+    mine.stop();
+    if (inbox === mine) inbox = null;
   };
 }
 
@@ -317,6 +400,10 @@ export function subscribeToChatSignals(
  */
 export function disconnectRealtime(): void {
   generation++;
+  if (inbox) {
+    inbox.stopped = true;
+    inbox = null;
+  }
   cached = null;
   pending = null;
   const old = client;

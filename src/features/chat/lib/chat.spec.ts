@@ -5,10 +5,12 @@ import {
   formatDayLabel,
   formatHour,
   formatInboxTime,
+  fromRow,
   initialsOf,
   layoutMessages,
   mergeMessages,
   previewOf,
+  toIso,
   totalUnread,
 } from './chat';
 
@@ -133,5 +135,45 @@ describe('bandeja', () => {
   it('las iniciales son la primera y la última palabra', () => {
     expect(initialsOf('Ana María García')).toBe('AG');
     expect(initialsOf('valeria')).toBe('V');
+  });
+});
+
+describe('fechas de Realtime (fromRow / toIso)', () => {
+  it('normaliza el formato de Postgres a ISO', () => {
+    expect(toIso('2026-10-26 18:17:07.568+00')).toBe('2026-10-26T18:17:07.568Z');
+    expect(toIso('2026-10-26T18:17:07+00:00')).toBe('2026-10-26T18:17:07.000Z');
+  });
+
+  it('con microsegundos recorta a milisegundos (Hermes no parsea más)', () => {
+    expect(toIso('2026-10-26 18:17:07.568123+00')).toBe('2026-10-26T18:17:07.568Z');
+    expect(toIso('2026-10-26 18:17:07.5+00')).toBe('2026-10-26T18:17:07.500Z');
+  });
+
+  it('una fecha inválida lanza un error claro, no un RangeError', () => {
+    expect(() => toIso('basura')).toThrow('Fecha inválida: basura');
+    expect(() =>
+      fromRow({
+        id: 'm',
+        conversation_id: 'c',
+        sender_id: 'u',
+        content: 'x',
+        created_at: 'basura',
+        read_at: null,
+      }),
+    ).toThrow('Fecha inválida');
+  });
+
+  it('fromRow pasa también read_at por el mismo camino', () => {
+    const m = fromRow({
+      id: 'm',
+      conversation_id: 'c',
+      sender_id: 'u',
+      content: null,
+      created_at: '2026-10-26 18:17:07.568123+00',
+      read_at: '2026-10-26 18:18:00+00',
+    });
+    expect(m.enviadoEl).toBe('2026-10-26T18:17:07.568Z');
+    expect(m.leidoEl).toBe('2026-10-26T18:18:00.000Z');
+    expect(m.contenido).toBe('');
   });
 });

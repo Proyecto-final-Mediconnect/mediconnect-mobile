@@ -27,6 +27,7 @@ import {
   useSendMessage,
   useStartConversation,
 } from '../features/chat/hooks/use-chat';
+import { useTypingAnnouncement } from '../features/chat/hooks/use-typing-announcement';
 import { formatHour, layoutMessages, type MessageRow } from '../features/chat/lib/chat';
 import { UploadSourceSheet } from '../features/patient-documents/components/UploadSourceSheet';
 import { formatSize } from '../features/patient-documents/lib/document-file';
@@ -276,6 +277,7 @@ function Chat({
 }: ChatProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const { abierto: tecladoAbierto, margen } = useKeyboardHeight();
+  useTypingAnnouncement(escribiendo);
   const [texto, setTexto] = useState('');
   const [archivo, setArchivo] = useState<PickedFile | null>(null);
   const [eligiendo, setEligiendo] = useState(false);

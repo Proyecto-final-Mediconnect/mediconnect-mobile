@@ -367,3 +367,181 @@ describe('realtime', () => {
     expect(supabase.createClient).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Un cliente que se comporta como realtime-js: `channel(topic)` devuelve el
+ * canal que ya existe, y sumarle un `.on('postgres_changes')` a uno ya
+ * suscripto tira error (el bug de Home + Mensajes con el canal `inbox`).
+ */
+function realtimeLikeClient() {
+  const channels = new Map<string, ReturnType<typeof stubChannel>>();
+  function stubChannel(topic: string) {
+    const handlers: (() => void)[] = [];
+    let subscribed = false;
+    let onStatus: ((status: string) => void) | undefined;
+    const channel = {
+      topic,
+      handlers,
+      on: vi.fn((_type: string, _filter: unknown, cb: () => void) => {
+        if (subscribed) {
+          throw new Error(
+            `cannot add postgres_changes callbacks for realtime:${topic} after subscribe()`,
+          );
+        }
+        handlers.push(cb);
+        return channel;
+      }),
+      subscribe: vi.fn((cb?: (status: string) => void) => {
+        subscribed = true;
+        onStatus = cb;
+        cb?.('SUBSCRIBED');
+        return channel;
+      }),
+      emit: (status: string) => onStatus?.(status),
+    };
+    return channel;
+  }
+  return {
+    channels,
+    channel: vi.fn((topic: string) => {
+      if (!channels.has(topic)) channels.set(topic, stubChannel(topic));
+      return channels.get(topic)!;
+    }),
+    removeChannel: vi.fn((channel: { topic: string }) => channels.delete(channel.topic)),
+    removeAllChannels: vi.fn(),
+    realtime: { disconnect: vi.fn(), setAuth: vi.fn().mockResolvedValue(undefined) },
+  };
+}
+
+describe('la bandeja compartida (Home y Mensajes)', () => {
+  const env = { url: 'https://x.supabase.co', key: 'k' };
+
+  it('dos suscriptores comparten un solo canal y los dos reciben el INSERT', async () => {
+    const fake = realtimeLikeClient();
+    supabase.createClient.mockImplementation(() => fake);
+    const { subscribeToInbox } = await load(env);
+    const home = vi.fn();
+    const mensajes = vi.fn();
+
+    subscribeToInbox(home);
+    subscribeToInbox(mensajes);
+    await settled();
+
+    expect(fake.channel).toHaveBeenCalledTimes(1);
+    const canal = fake.channels.get('inbox')!;
+    expect(canal.on).toHaveBeenCalledTimes(1);
+    canal.handlers[0]!();
+    expect(home).toHaveBeenCalledTimes(1);
+    expect(mensajes).toHaveBeenCalledTimes(1);
+  });
+
+  it('el suscriptor que llega con el canal ya unido no rompe ni se queda sin estado', async () => {
+    const fake = realtimeLikeClient();
+    supabase.createClient.mockImplementation(() => fake);
+    const { subscribeToInbox, isInboxLive } = await load(env);
+    subscribeToInbox(vi.fn());
+    await settled();
+
+    const onStatus = vi.fn();
+    expect(() => subscribeToInbox(vi.fn(), onStatus)).not.toThrow();
+    expect(onStatus).toHaveBeenCalledWith('en-vivo');
+    expect(isInboxLive()).toBe(true);
+  });
+
+  it('al irse uno el canal sigue; al irse el último se baja una sola vez', async () => {
+    const fake = realtimeLikeClient();
+    supabase.createClient.mockImplementation(() => fake);
+    const { subscribeToInbox, isInboxLive } = await load(env);
+    const home = vi.fn();
+    const mensajes = vi.fn();
+    const bajarHome = subscribeToInbox(home);
+    const bajarMensajes = subscribeToInbox(mensajes);
+    await settled();
+
+    bajarMensajes();
+    expect(fake.removeChannel).not.toHaveBeenCalled();
+    fake.channels.get('inbox')!.handlers[0]!();
+    expect(home).toHaveBeenCalledTimes(1);
+    expect(mensajes).not.toHaveBeenCalled();
+
+    bajarHome();
+    bajarHome();
+    expect(fake.removeChannel).toHaveBeenCalledTimes(1);
+    expect(isInboxLive()).toBe(false);
+
+    // Una suscripción nueva después arma un canal nuevo.
+    subscribeToInbox(vi.fn());
+    await settled();
+    expect(fake.channel).toHaveBeenCalledTimes(2);
+  });
+
+  it('si se va el único suscriptor antes de que cargue supabase-js, no queda canal', async () => {
+    const fake = realtimeLikeClient();
+    supabase.createClient.mockImplementation(() => fake);
+    const { subscribeToInbox } = await load(env);
+
+    subscribeToInbox(vi.fn())();
+    await settled();
+
+    expect(fake.channel).not.toHaveBeenCalled();
+  });
+
+  it('el estado del canal llega a los suscriptores', async () => {
+    const fake = realtimeLikeClient();
+    supabase.createClient.mockImplementation(() => fake);
+    const { subscribeToInbox, isInboxLive } = await load(env);
+    const onStatus = vi.fn();
+    subscribeToInbox(vi.fn(), onStatus);
+    await settled();
+
+    expect(onStatus).toHaveBeenNthCalledWith(1, 'conectando');
+    expect(onStatus).toHaveBeenLastCalledWith('en-vivo');
+    fake.channels.get('inbox')!.emit('CLOSED');
+    expect(onStatus).toHaveBeenLastCalledWith('sin-conexion');
+    expect(isInboxLive()).toBe(false);
+  });
+});
+
+describe('un evento de mensaje ilegible', () => {
+  it('no se pierde con una excepción: avisa para pedirlo al backend', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let handler: ((payload: { new: unknown }) => void) | undefined;
+    supabase.createClient.mockImplementation(() => {
+      const channel = {
+        on: vi.fn((_t: string, _f: unknown, cb: typeof handler) => {
+          handler = cb;
+          return channel;
+        }),
+        subscribe: vi.fn(() => channel),
+      };
+      return {
+        channel: vi.fn(() => channel),
+        removeChannel: vi.fn(),
+        realtime: { setAuth: vi.fn().mockResolvedValue(undefined) },
+      };
+    });
+    const { subscribeToConversation } = await load({ url: 'https://x.supabase.co', key: 'k' });
+    const onMessage = vi.fn();
+    const onUnreadable = vi.fn();
+
+    subscribeToConversation('c-1', onMessage, vi.fn(), onUnreadable);
+    await settled();
+
+    const row = {
+      id: 'm1',
+      conversation_id: 'c-1',
+      sender_id: 'u',
+      content: 'hola',
+      read_at: null,
+    };
+    expect(() => handler!({ new: { ...row, created_at: 'no es una fecha' } })).not.toThrow();
+    expect(onMessage).not.toHaveBeenCalled();
+    expect(onUnreadable).toHaveBeenCalledTimes(1);
+
+    // Con microsegundos, que Postgres manda, sí se lee.
+    handler!({ new: { ...row, created_at: '2026-10-26 18:17:07.568123+00' } });
+    expect(onMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'm1', enviadoEl: '2026-10-26T18:17:07.568Z' }),
+    );
+  });
+});
