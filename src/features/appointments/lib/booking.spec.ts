@@ -7,6 +7,7 @@ import {
   firstDayWithSlots,
   freeSlots,
   monthGrid,
+  monthWeeks,
   monthsOf,
 } from './booking';
 
@@ -68,5 +69,32 @@ describe('freeSlots y firstDayWithSlots', () => {
 describe('dayParts', () => {
   it('arma día de la semana, número y mes', () => {
     expect(dayParts('2026-10-02')).toEqual({ weekday: 'vie', day: '2', month: 'oct' });
+  });
+});
+
+describe('monthWeeks', () => {
+  it('parte el mes en semanas completas de siete celdas', () => {
+    // Noviembre de 2026 arranca domingo: seis huecos adelante y treinta días.
+    const semanas = monthWeeks('2026-11');
+    expect(semanas).toHaveLength(6);
+    expect(semanas.every((s) => s.length === 7)).toBe(true);
+    expect(semanas[0]).toEqual([null, null, null, null, null, null, '2026-11-01']);
+    expect(semanas[5]).toEqual(['2026-11-30', null, null, null, null, null, null]);
+  });
+});
+
+describe('freeSlots ordena por hora', () => {
+  it('devuelve los libres en orden aunque lleguen desordenados', () => {
+    const d: AvailabilityDay = {
+      date: '2026-10-05',
+      weekday: 1,
+      fullyBlocked: false,
+      slots: [
+        { startTime: '14:00', durationMinutes: 30, status: 'AVAILABLE' },
+        { startTime: '08:30', durationMinutes: 30, status: 'AVAILABLE' },
+        { startTime: '10:00', durationMinutes: 30, status: 'BOOKED' },
+      ],
+    };
+    expect(freeSlots(d).map((s) => s.startTime)).toEqual(['08:30', '14:00']);
   });
 });

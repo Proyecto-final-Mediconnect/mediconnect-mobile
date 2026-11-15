@@ -5,10 +5,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Sheet } from '../../../shared/ui/Sheet';
 import { colors, fonts, fontSize, spacing } from '../../../shared/ui/theme';
 import { formatMonth } from '../lib/appointments';
-import { freeSlots, monthGrid, monthsOf } from '../lib/booking';
+import { freeSlots, monthWeeks, monthsOf } from '../lib/booking';
 import type { AvailabilityDay } from '../types';
 
-const SEMANA = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+/** Dos letras y no una: con una sola, martes y miércoles quedaban los dos "M". */
+const SEMANA = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
 
 /**
  * El calendario para elegir el día (el mismo que "Ver calendario" de la web):
@@ -41,6 +42,8 @@ export function DayCalendarSheet({
 
   const clave = meses[mes];
   const porFecha = new Map(days.map((d) => [d.date, d]));
+  // La disponibilidad arranca hoy en Argentina: el primer día es "hoy".
+  const hoy = days[0]?.date;
 
   return (
     <Sheet visible={visible} title="Elegí el día" onDismiss={onDismiss}>
@@ -71,50 +74,75 @@ export function DayCalendarSheet({
           </View>
 
           <View style={styles.grilla}>
-            {SEMANA.map((d, i) => (
-              <Text key={`${d}${i}`} style={[styles.celda, styles.semana]}>
-                {d}
-              </Text>
-            ))}
-            {monthGrid(clave).map((fecha, i) => {
-              if (!fecha) return <View key={`h${i}`} style={styles.celda} />;
-              const conLugar = freeSlots(porFecha.get(fecha)).length > 0;
-              const activo = fecha === selected;
-              const numero = String(Number(fecha.slice(8)));
-              return (
-                <Pressable
-                  key={fecha}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Día ${numero}${conLugar ? '' : ', sin horarios'}`}
-                  aria-selected={activo}
-                  disabled={!conLugar}
-                  onPress={() => {
-                    onSelect(fecha);
-                    onDismiss();
-                  }}
-                  style={styles.celda}
-                >
-                  <View
-                    style={[styles.dia, conLugar && styles.diaLibre, activo && styles.diaActivo]}
-                  >
-                    <Text
-                      style={[
-                        styles.diaTexto,
-                        !conLugar && styles.diaTextoApagado,
-                        activo && styles.diaTextoActivo,
-                      ]}
+            <View style={styles.fila}>
+              {SEMANA.map((d) => (
+                <Text key={d} style={[styles.celda, styles.semana]}>
+                  {d}
+                </Text>
+              ))}
+            </View>
+            {monthWeeks(clave).map((semana, s) => (
+              <View key={`s${s}`} style={styles.fila}>
+                {semana.map((fecha, i) => {
+                  if (!fecha) return <View key={`h${i}`} style={styles.celda} />;
+                  const conLugar = freeSlots(porFecha.get(fecha)).length > 0;
+                  const activo = fecha === selected;
+                  const esHoy = fecha === hoy;
+                  const numero = String(Number(fecha.slice(8)));
+                  return (
+                    <Pressable
+                      key={fecha}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Día ${numero}${conLugar ? '' : ', sin horarios'}${esHoy ? ', hoy' : ''}`}
+                      aria-selected={activo}
+                      disabled={!conLugar}
+                      onPress={() => {
+                        onSelect(fecha);
+                        onDismiss();
+                      }}
+                      style={styles.celda}
                     >
-                      {numero}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })}
+                      <View
+                        style={[
+                          styles.dia,
+                          conLugar && styles.diaLibre,
+                          esHoy && !activo && styles.diaHoy,
+                          activo && styles.diaActivo,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.diaTexto,
+                            !conLugar && styles.diaTextoApagado,
+                            activo && styles.diaTextoActivo,
+                          ]}
+                        >
+                          {numero}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))}
           </View>
-          <Text style={styles.nota}>Los días resaltados tienen horarios libres.</Text>
+          <View style={styles.leyenda}>
+            <Referencia estilo={styles.diaLibre} texto="Con horarios libres" />
+            <Referencia estilo={styles.diaActivo} texto="Elegido" />
+            <Referencia estilo={styles.diaHoy} texto="Hoy" />
+          </View>
         </View>
       ) : null}
     </Sheet>
+  );
+}
+
+function Referencia({ estilo, texto }: { estilo: object; texto: string }): React.JSX.Element {
+  return (
+    <View style={styles.referencia}>
+      <View style={[styles.muestra, estilo]} />
+      <Text style={styles.nota}>{texto}</Text>
+    </View>
   );
 }
 
@@ -123,9 +151,15 @@ const styles = StyleSheet.create({
   cabecera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   mes: { fontFamily: fonts.display, fontSize: fontSize.lg, color: colors.brandDeep },
   apagado: { opacity: 0.3 },
-  grilla: { flexDirection: 'row', flexWrap: 'wrap' },
-  celda: { width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 3 },
-  semana: { fontFamily: fonts.bold, fontSize: fontSize.xs, color: colors.mutedSoft },
+  grilla: { gap: 2 },
+  fila: { flexDirection: 'row' },
+  celda: { flex: 1, alignItems: 'center', paddingVertical: 3 },
+  semana: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    color: colors.mutedSoft,
+    textAlign: 'center',
+  },
   dia: {
     width: 38,
     height: 38,
@@ -135,13 +169,12 @@ const styles = StyleSheet.create({
   },
   diaLibre: { backgroundColor: colors.surfaceTeal },
   diaActivo: { backgroundColor: colors.brandDeep },
+  diaHoy: { borderWidth: 1.5, borderColor: colors.brand },
   diaTexto: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.brandDeep },
   diaTextoApagado: { color: colors.mutedSoft },
   diaTextoActivo: { color: colors.white },
-  nota: {
-    fontFamily: fonts.medium,
-    fontSize: fontSize.xs,
-    color: colors.muted,
-    textAlign: 'center',
-  },
+  leyenda: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.md },
+  referencia: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  muestra: { width: 12, height: 12, borderRadius: 6 },
+  nota: { fontFamily: fonts.medium, fontSize: fontSize.xs, color: colors.muted },
 });

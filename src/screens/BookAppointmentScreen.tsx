@@ -74,6 +74,11 @@ export function BookAppointmentScreen(): React.JSX.Element {
   const [horario, setHorario] = useState<AvailabilitySlot | null>(null);
   const [reservado, setReservado] = useState<Appointment | null>(null);
   const [movido, setMovido] = useState<Appointment | null>(null);
+  // Ancho de la grilla de horarios, para que entren tres por fila exactos y la
+  // fila quede alineada con los bordes de la pantalla (con un 31 % fijo sobraba
+  // un margen desparejo a la derecha).
+  const [anchoHorarios, setAnchoHorarios] = useState(0);
+  const anchoHorario = anchoHorarios > 0 ? Math.floor((anchoHorarios - spacing.sm * 2) / 3) : '31%';
 
   const dias = useMemo(() => disponibilidad.data?.days ?? [], [disponibilidad.data]);
   const dia = diaElegido ?? firstDayWithSlots(dias);
@@ -225,7 +230,7 @@ export function BookAppointmentScreen(): React.JSX.Element {
         <EmptyState
           icon="calendar-clear-outline"
           title="No hay horarios libres"
-          description={`${nombre} no tiene turnos disponibles en las próximas dos semanas.`}
+          description={`${nombre} no tiene turnos disponibles en los próximos dos meses.`}
           action={{ label: 'Buscar otro profesional', onPress: () => navigation.goBack() }}
         />
       </Screen>
@@ -274,10 +279,12 @@ export function BookAppointmentScreen(): React.JSX.Element {
         contentContainerStyle={styles.dias}
         accessibilityRole="tablist"
       >
-        {dias.map((d) => {
+        {dias.map((d, i) => {
           const partes = dayParts(d.date);
           const conLugar = freeSlots(d).length > 0;
           const activo = d.date === dia;
+          // El rango arranca hoy en Argentina: el primer día es "hoy".
+          const esHoy = i === 0;
           return (
             <Pressable
               key={d.date}
@@ -287,10 +294,15 @@ export function BookAppointmentScreen(): React.JSX.Element {
               aria-disabled={!conLugar}
               disabled={!conLugar}
               onPress={() => setDiaElegido(d.date)}
-              style={[styles.dia, activo && styles.diaActivo, !conLugar && styles.diaSinLugar]}
+              style={[
+                styles.dia,
+                esHoy && styles.diaHoy,
+                activo && styles.diaActivo,
+                !conLugar && styles.diaSinLugar,
+              ]}
             >
               <Text style={[styles.diaSemana, activo && styles.diaTextoActivo]}>
-                {partes.weekday}
+                {esHoy ? 'hoy' : partes.weekday}
               </Text>
               <Text style={[styles.diaNumero, activo && styles.diaTextoActivo]}>{partes.day}</Text>
               <Text style={[styles.diaMes, activo && styles.diaTextoActivo]}>{partes.month}</Text>
@@ -300,14 +312,18 @@ export function BookAppointmentScreen(): React.JSX.Element {
       </ScrollView>
 
       <Text style={styles.seccion}>HORARIOS LIBRES</Text>
-      <View style={styles.horarios}>
+      <View style={styles.horarios} onLayout={(e) => setAnchoHorarios(e.nativeEvent.layout.width)}>
         {libres.map((slot) => (
           <Pressable
             key={slot.startTime}
             accessibilityRole="button"
             accessibilityLabel={`${aMover ? 'Mover a las' : 'Reservar a las'} ${slot.startTime}`}
             onPress={() => setHorario(slot)}
-            style={({ pressed }) => [styles.horario, pressed && styles.horarioPresionado]}
+            style={({ pressed }) => [
+              styles.horario,
+              { width: anchoHorario },
+              pressed && styles.horarioPresionado,
+            ]}
           >
             <Text style={styles.horarioTexto}>{slot.startTime}</Text>
           </Pressable>
@@ -400,11 +416,22 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     backgroundColor: colors.white,
   },
+  diaHoy: { borderColor: colors.brand },
   diaActivo: { backgroundColor: colors.brandDeep, borderColor: colors.brandDeep },
   diaSinLugar: { opacity: 0.4 },
-  diaSemana: { fontFamily: fonts.semibold, fontSize: fontSize.xs, color: colors.muted },
+  diaSemana: {
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.xs,
+    color: colors.muted,
+    textTransform: 'uppercase',
+  },
   diaNumero: { fontFamily: fonts.display, fontSize: fontSize.xl, color: colors.brandDeep },
-  diaMes: { fontFamily: fonts.semibold, fontSize: fontSize.xs, color: colors.muted },
+  diaMes: {
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.xs,
+    color: colors.muted,
+    textTransform: 'uppercase',
+  },
   diaTextoActivo: { color: colors.white },
   seccion: {
     marginTop: spacing.md,
@@ -416,7 +443,6 @@ const styles = StyleSheet.create({
   },
   horarios: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   horario: {
-    width: '31%',
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
