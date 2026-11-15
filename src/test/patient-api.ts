@@ -9,6 +9,7 @@ import { matchesSearch } from '../features/catalog/lib/catalog';
 import { disponibilidadDe, ESPECIALIDADES, perfilDe, PROFESIONALES } from '../mocks/catalog';
 import { crearHistoriaDemo } from '../mocks/clinical-record';
 import { accesosDemo, codigoDemo, VITAL_DEMO } from '../mocks/medipass';
+import { avisosDemo } from '../mocks/notifications';
 import { PACIENTE_DEMO } from '../mocks/patient';
 import { API_URL, server } from './msw-server';
 
@@ -144,6 +145,12 @@ export function servirDatosDelPaciente(): void {
       return confirmacion === 'ELIMINAR MI CUENTA'
         ? new HttpResponse(null, { status: 204 })
         : HttpResponse.json({ message: 'Falta la frase.' }, { status: 400 });
+    }),
+    // Avisos de la campanita (ENG-69).
+    http.get(`${API_URL}/notifications/me`, () => HttpResponse.json(avisosDemo.bandeja())),
+    http.patch(`${API_URL}/notifications/:id/read`, ({ params }) => {
+      avisosDemo.marcarLeido(String(params.id));
+      return new HttpResponse(null, { status: 204 });
     }),
     http.get(`${API_URL}/appointments/me`, () => HttpResponse.json(turnosDemo.listar())),
     http.get(`${API_URL}/medipass/me`, () => HttpResponse.json(codigoDemo())),

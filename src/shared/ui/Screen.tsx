@@ -122,6 +122,8 @@ interface ScreenHeaderProps {
   children?: ReactNode;
   /** La acción principal de la pantalla, a la derecha del título ("Nuevo turno"). */
   action?: { label: string; icon: ComponentProps<typeof Ionicons>['name']; onPress: () => void };
+  /** Un control propio a la derecha del título, en lugar de `action`: la campanita del inicio. */
+  trailing?: ReactNode;
 }
 
 /**
@@ -137,6 +139,7 @@ export function ScreenHeader({
   hero = false,
   children,
   action,
+  trailing,
 }: ScreenHeaderProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const oscuro = tone === 'dark';
@@ -182,7 +185,9 @@ export function ScreenHeader({
             <Ionicons name={action.icon} size={16} color={colors.brandHover} />
             <Text style={styles.accionTexto}>{action.label}</Text>
           </Pressable>
-        ) : null}
+        ) : (
+          trailing
+        )}
       </View>
       {subtitle ? (
         <Text style={[styles.subtitulo, oscuro && styles.subtituloDark]}>{subtitle}</Text>
@@ -246,7 +251,12 @@ const styles = StyleSheet.create({
   },
   accionPresionada: { backgroundColor: colors.line },
   accionTexto: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.brandHover },
-  titulo: { fontFamily: fonts.display, fontSize: fontSize.xl, color: colors.brandDeep },
+  titulo: {
+    flexShrink: 1,
+    fontFamily: fonts.display,
+    fontSize: fontSize.xl,
+    color: colors.brandDeep,
+  },
   tituloDark: { fontSize: fontSize.xxl, color: colors.white },
   subtitulo: {
     marginTop: spacing.xs,

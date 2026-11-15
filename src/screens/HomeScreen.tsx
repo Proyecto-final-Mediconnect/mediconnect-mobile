@@ -16,6 +16,7 @@ import { greeting, laterAppointments, pastProfessionals } from '../features/appo
 import { joinStateOf } from '../features/appointments/lib/join-window';
 import type { Appointment } from '../features/appointments/types';
 import { PastProfessionalCard } from '../features/catalog/components/PastProfessionalCard';
+import { NotificationsBell } from '../features/notifications/components/NotificationsBell';
 import { PatientSummaryTiles } from '../features/patient-summary/components/PatientSummaryTiles';
 import { PendingReviewCards } from '../features/reviews/components/PendingReviewCards';
 import { useConversations } from '../features/chat/hooks/use-chat';
@@ -78,6 +79,7 @@ export function HomeScreen(): React.JSX.Element {
           tone="dark"
           title={firstName ? `${greeting(ahora)}, ${firstName}` : greeting(ahora)}
           subtitle={turnos.data ? subtitulo(proxima, ahora) : ' '}
+          trailing={<NotificationsBell />}
         />
       }
     >
