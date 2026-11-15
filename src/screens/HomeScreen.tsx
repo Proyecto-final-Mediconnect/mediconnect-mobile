@@ -1,11 +1,13 @@
 import { useNavigation } from '@react-navigation/native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Svg, { Polyline } from 'react-native-svg';
 
 import { useSessionUser } from '../features/auth/session';
 import { CompactAppointmentRow } from '../features/appointments/components/CompactAppointmentRow';
 import { NextAppointmentCard } from '../features/appointments/components/NextAppointmentCard';
 import { useMyAppointments } from '../features/appointments/hooks/use-appointments';
 import {
+  formatLongDay,
   formatSentenceDay,
   whenIs,
   nextAppointment,
@@ -22,6 +24,7 @@ import { PendingReviewCards } from '../features/reviews/components/PendingReview
 import { useConversations } from '../features/chat/hooks/use-chat';
 import { totalUnread } from '../features/chat/lib/chat';
 import { useNow } from '../shared/hooks/use-now';
+import { enArgentina } from '../shared/lib/argentina-time';
 import { Notice } from '../shared/ui/Notice';
 import { QuickTile } from '../shared/ui/QuickTile';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
@@ -77,6 +80,8 @@ export function HomeScreen(): React.JSX.Element {
         <ScreenHeader
           hero
           tone="dark"
+          eyebrow={formatLongDay(enArgentina(ahora).date).toUpperCase()}
+          backdrop={<Latido />}
           title={firstName ? `${greeting(ahora)}, ${firstName}` : greeting(ahora)}
           subtitle={turnos.data ? subtitulo(proxima, ahora) : ' '}
           trailing={<NotificationsBell />}
@@ -192,6 +197,34 @@ export function HomeScreen(): React.JSX.Element {
   );
 }
 
+/**
+ * El trazo del corazón del logo, como en el ingreso: de fondo en la franja,
+ * tenue y abajo, para que el inicio tenga la identidad de la marca sin
+ * competir con el saludo.
+ */
+function Latido(): React.JSX.Element {
+  return (
+    <View
+      style={styles.latido}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <Svg width="100%" height={48} viewBox="0 0 320 56" preserveAspectRatio="none">
+        <Polyline
+          points="0,30 170,30 182,30 192,8 206,50 216,22 224,30 320,30"
+          fill="none"
+          stroke={colors.brandBright}
+          strokeOpacity={0.18}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    </View>
+  );
+}
+
 /** Lo que dice la franja debajo del saludo. */
 function subtitulo(proxima: Appointment | null, ahora: Date): string {
   if (!proxima) return 'No tenés turnos próximos.';
@@ -207,6 +240,7 @@ function subtitulo(proxima: Appointment | null, ahora: Date): string {
 }
 
 const styles = StyleSheet.create({
+  latido: { position: 'absolute', left: 0, right: 0, bottom: 64 },
   cargando: { minHeight: 160 },
   seccion: { gap: spacing.sm, marginTop: spacing.sm },
   seccionCabecera: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

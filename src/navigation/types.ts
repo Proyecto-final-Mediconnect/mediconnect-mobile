@@ -11,9 +11,9 @@ import type { PickedFile } from '../features/patient-documents/types';
 export type PatientTabParamList = {
   Inicio: undefined;
   Turnos: undefined;
+  MediPass: undefined;
   /** Sacar un turno: la búsqueda de profesionales (ENG-132). */
   Reservar: undefined;
-  MediPass: undefined;
   Perfil: undefined;
 };
 

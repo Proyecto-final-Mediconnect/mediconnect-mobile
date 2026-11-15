@@ -124,6 +124,10 @@ interface ScreenHeaderProps {
   action?: { label: string; icon: ComponentProps<typeof Ionicons>['name']; onPress: () => void };
   /** Un control propio a la derecha del título, en lugar de `action`: la campanita del inicio. */
   trailing?: ReactNode;
+  /** Un rótulo chico sobre el título: la fecha de hoy en el inicio. */
+  eyebrow?: string;
+  /** Lo que va de fondo en la franja, detrás del texto: el trazo del latido del inicio. */
+  backdrop?: ReactNode;
 }
 
 /**
@@ -140,6 +144,8 @@ export function ScreenHeader({
   children,
   action,
   trailing,
+  eyebrow,
+  backdrop,
 }: ScreenHeaderProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const oscuro = tone === 'dark';
@@ -154,6 +160,7 @@ export function ScreenHeader({
       ]}
     >
       <BarraDeEstado tone={tone} />
+      {backdrop}
       {onBack ? (
         <Pressable
           accessibilityRole="button"
@@ -169,6 +176,9 @@ export function ScreenHeader({
           />
           <Text style={[styles.volverTexto, oscuro && { color: colors.onNight }]}>Volver</Text>
         </Pressable>
+      ) : null}
+      {eyebrow ? (
+        <Text style={[styles.eyebrow, oscuro && styles.eyebrowDark]}>{eyebrow}</Text>
       ) : null}
       <View style={styles.tituloFila}>
         <Text accessibilityRole="header" style={[styles.titulo, oscuro && styles.tituloDark]}>
@@ -234,6 +244,14 @@ const styles = StyleSheet.create({
   headerDark: { backgroundColor: colors.night },
   volver: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: spacing.sm },
   volverTexto: { fontFamily: fonts.semibold, fontSize: fontSize.md, color: colors.brandHover },
+  eyebrow: {
+    marginBottom: spacing.xs,
+    fontFamily: fonts.bold,
+    fontSize: fontSize.xs,
+    letterSpacing: 1.4,
+    color: colors.brandHover,
+  },
+  eyebrowDark: { color: colors.brandBright },
   tituloFila: {
     flexDirection: 'row',
     alignItems: 'center',

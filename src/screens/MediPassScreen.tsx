@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ComponentProps } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AccessList } from '../features/medipass/components/AccessList';
@@ -14,6 +15,7 @@ import {
   useScope,
   useVitalBlock,
 } from '../features/medipass/hooks/use-medipass';
+import { estadoDeAcceso } from '../features/medipass/lib/medipass';
 import type { MediPassAccess, VitalBlock } from '../features/medipass/types';
 import { useNow } from '../shared/hooks/use-now';
 import { Button } from '../shared/ui/Button';
@@ -75,13 +77,19 @@ export function MediPassScreen(): React.JSX.Element {
         <ScreenHeader
           tone="dark"
           title="Mi MediPass"
-          subtitle="Mostrale este código a un profesional: ve solo lo que figura abajo."
+          subtitle="Mostralo o dictá el código: quien lo abre ve solo lo que elegís abajo."
         />
       }
     >
       <MediPassCode />
 
-      <Text style={styles.seccion}>Accediendo ahora</Text>
+      <Seccion
+        icon="eye-outline"
+        titulo="Accediendo ahora"
+        enVivo={
+          accesos.data?.filter((a) => estadoDeAcceso(a, ahora).estado === 'VIGENTE').length ?? 0
+        }
+      />
       {accesos.data ? (
         <AccessList accesses={accesos.data} now={ahora} onRevoke={setARevocar} />
       ) : accesos.isError ? (
@@ -96,7 +104,7 @@ export function MediPassScreen(): React.JSX.Element {
         </View>
       )}
 
-      <Text style={styles.seccion}>Lo que ve quien lo escanea</Text>
+      <Seccion icon="options-outline" titulo="Lo que ve quien lo escanea" />
       {vital.data ? (
         <>
           <Text style={styles.ayuda}>
@@ -151,7 +159,7 @@ export function MediPassScreen(): React.JSX.Element {
         </View>
       )}
 
-      <Text style={styles.seccion}>Tarjeta de emergencia</Text>
+      <Seccion icon="card-outline" titulo="Tarjeta de emergencia" />
       <EmergencyCardSection nombre={vital.data?.nombre ?? ''} />
 
       <ConfirmSheet
@@ -175,12 +183,70 @@ export function MediPassScreen(): React.JSX.Element {
   );
 }
 
+/** El título de cada parte, con su ícono; "Accediendo ahora" dice cuántos hay en vivo. */
+function Seccion({
+  icon,
+  titulo,
+  enVivo = 0,
+}: {
+  icon: ComponentProps<typeof Ionicons>['name'];
+  titulo: string;
+  enVivo?: number;
+}): React.JSX.Element {
+  return (
+    <View style={styles.seccion}>
+      <View style={styles.seccionIcono}>
+        <Ionicons name={icon} size={16} color={colors.brandBright} />
+      </View>
+      <Text accessibilityRole="header" style={styles.seccionTitulo}>
+        {titulo}
+      </Text>
+      {enVivo > 0 ? (
+        <View style={styles.enVivo}>
+          <View style={styles.enVivoPunto} />
+          <Text style={styles.enVivoTexto}>{enVivo} EN VIVO</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   seccion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     marginTop: spacing.lg,
+  },
+  seccionIcono: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.nightIcon,
+  },
+  seccionTitulo: {
+    flex: 1,
     fontFamily: fonts.display,
-    fontSize: fontSize.lg + 3,
+    fontSize: fontSize.lg + 2,
     color: colors.white,
+  },
+  enVivo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: colors.brandBrightSoft,
+  },
+  enVivoPunto: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.brandBright },
+  enVivoTexto: {
+    fontFamily: fonts.bold,
+    fontSize: fontSize.micro,
+    letterSpacing: 0.8,
+    color: colors.brandBright,
   },
   cargando: { minHeight: 120 },
   ayuda: {
