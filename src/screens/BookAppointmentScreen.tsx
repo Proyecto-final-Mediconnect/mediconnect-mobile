@@ -21,6 +21,7 @@ import { formatPrice, formatSentenceDay } from '../features/appointments/lib/app
 import {
   bookingRange,
   dayParts,
+  esHoy,
   firstDayWithSlots,
   freeSlots,
 } from '../features/appointments/lib/booking';
@@ -279,30 +280,30 @@ export function BookAppointmentScreen(): React.JSX.Element {
         contentContainerStyle={styles.dias}
         accessibilityRole="tablist"
       >
-        {dias.map((d, i) => {
+        {dias.map((d) => {
           const partes = dayParts(d.date);
           const conLugar = freeSlots(d).length > 0;
           const activo = d.date === dia;
-          // El rango arranca hoy en Argentina: el primer día es "hoy".
-          const esHoy = i === 0;
+          // "Hoy" por la fecha real en Argentina, no por la posición en el arreglo.
+          const hoy = esHoy(d.date);
           return (
             <Pressable
               key={d.date}
               accessibilityRole="tab"
-              accessibilityLabel={`${partes.weekday} ${partes.day} ${partes.month}`}
+              accessibilityLabel={`${partes.weekday} ${partes.day} ${partes.month}${hoy ? ', hoy' : ''}`}
               aria-selected={activo}
               aria-disabled={!conLugar}
               disabled={!conLugar}
               onPress={() => setDiaElegido(d.date)}
               style={[
                 styles.dia,
-                esHoy && styles.diaHoy,
+                hoy && styles.diaHoy,
                 activo && styles.diaActivo,
                 !conLugar && styles.diaSinLugar,
               ]}
             >
               <Text style={[styles.diaSemana, activo && styles.diaTextoActivo]}>
-                {esHoy ? 'hoy' : partes.weekday}
+                {hoy ? 'hoy' : partes.weekday}
               </Text>
               <Text style={[styles.diaNumero, activo && styles.diaTextoActivo]}>{partes.day}</Text>
               <Text style={[styles.diaMes, activo && styles.diaTextoActivo]}>{partes.month}</Text>

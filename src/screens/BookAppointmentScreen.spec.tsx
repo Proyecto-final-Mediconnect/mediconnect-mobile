@@ -39,6 +39,17 @@ describe('Reservar un turno (ENG-133)', () => {
     expect(screen.getByRole('button', { name: 'Reservar a las 09:30' })).toBeInTheDocument();
   });
 
+  it('la tira marca "hoy" solo en el día de hoy y lo dice a los lectores de pantalla', async () => {
+    await abrirReserva();
+
+    const hoy = screen
+      .getAllByRole('tab')
+      .filter((t) => /, hoy$/.test(t.getAttribute('aria-label') ?? ''));
+    expect(hoy).toHaveLength(1);
+    const numero = String(Number(diaArgentino(new Date()).slice(8)));
+    expect(hoy[0]?.getAttribute('aria-label')).toContain(` ${numero} `);
+  });
+
   // Hoy no tiene lugar: abre en el primer día que sí, y ofrece solo los libres.
   it('muestra los horarios libres del primer día con lugar', async () => {
     await abrirReserva();

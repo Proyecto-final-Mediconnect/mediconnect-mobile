@@ -8,6 +8,16 @@ import type { AvailabilityDay, AvailabilitySlot } from '../types';
  */
 export const BOOKING_WINDOW_DAYS = 60;
 
+/**
+ * Si `fecha` (`YYYY-MM-DD`) es hoy en Argentina. Se compara con el día real y no
+ * con la posición en el arreglo: el rango se fija al montar la pantalla y la
+ * respuesta puede quedar en caché, así que pasada la medianoche el primer día
+ * ya no es hoy.
+ */
+export function esHoy(fecha: string, ahora: Date = new Date()): boolean {
+  return fecha === diaArgentino(ahora);
+}
+
 /** Desde hoy, en Argentina, hasta el final del horizonte. */
 export function bookingRange(now: Date): { from: string; to: string } {
   return { from: diaArgentino(now), to: diaArgentino(now, BOOKING_WINDOW_DAYS - 1) };

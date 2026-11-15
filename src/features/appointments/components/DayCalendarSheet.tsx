@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Sheet } from '../../../shared/ui/Sheet';
 import { colors, fonts, fontSize, spacing } from '../../../shared/ui/theme';
 import { formatMonth } from '../lib/appointments';
-import { freeSlots, monthWeeks, monthsOf } from '../lib/booking';
+import { esHoy, freeSlots, monthWeeks, monthsOf } from '../lib/booking';
 import type { AvailabilityDay } from '../types';
 
 /** Dos letras y no una: con una sola, martes y miércoles quedaban los dos "M". */
@@ -42,8 +42,6 @@ export function DayCalendarSheet({
 
   const clave = meses[mes];
   const porFecha = new Map(days.map((d) => [d.date, d]));
-  // La disponibilidad arranca hoy en Argentina: el primer día es "hoy".
-  const hoy = days[0]?.date;
 
   return (
     <Sheet visible={visible} title="Elegí el día" onDismiss={onDismiss}>
@@ -87,13 +85,13 @@ export function DayCalendarSheet({
                   if (!fecha) return <View key={`h${i}`} style={styles.celda} />;
                   const conLugar = freeSlots(porFecha.get(fecha)).length > 0;
                   const activo = fecha === selected;
-                  const esHoy = fecha === hoy;
+                  const hoy = esHoy(fecha);
                   const numero = String(Number(fecha.slice(8)));
                   return (
                     <Pressable
                       key={fecha}
                       accessibilityRole="button"
-                      accessibilityLabel={`Día ${numero}${conLugar ? '' : ', sin horarios'}${esHoy ? ', hoy' : ''}`}
+                      accessibilityLabel={`Día ${numero}${conLugar ? '' : ', sin horarios'}${hoy ? ', hoy' : ''}`}
                       aria-selected={activo}
                       disabled={!conLugar}
                       onPress={() => {
@@ -106,7 +104,7 @@ export function DayCalendarSheet({
                         style={[
                           styles.dia,
                           conLugar && styles.diaLibre,
-                          esHoy && !activo && styles.diaHoy,
+                          hoy && !activo && styles.diaHoy,
                           activo && styles.diaActivo,
                         ]}
                       >
@@ -137,7 +135,13 @@ export function DayCalendarSheet({
   );
 }
 
-function Referencia({ estilo, texto }: { estilo: object; texto: string }): React.JSX.Element {
+function Referencia({
+  estilo,
+  texto,
+}: {
+  estilo: StyleProp<ViewStyle>;
+  texto: string;
+}): React.JSX.Element {
   return (
     <View style={styles.referencia}>
       <View style={[styles.muestra, estilo]} />
