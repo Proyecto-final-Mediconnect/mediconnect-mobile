@@ -87,6 +87,15 @@ export function canCancel(appointment: Appointment, now: Date = new Date()): boo
   return isActive(appointment) && Date.parse(appointment.scheduledAt) > now.getTime();
 }
 
+/**
+ * Si se le puede ofrecer reprogramar (ENG-66): lo mismo que cancelar, una sola
+ * vez y con profesional conocido. Que un pagado esté dentro del plazo del
+ * reembolso total lo dice la política; el backend es la fuente de verdad.
+ */
+export function canReschedule(appointment: Appointment, now: Date = new Date()): boolean {
+  return canCancel(appointment, now) && !appointment.rescheduledAt && !!appointment.professional;
+}
+
 function finDe(appointment: Appointment): number {
   return Date.parse(appointment.scheduledAt) + appointment.durationMinutes * 60_000;
 }

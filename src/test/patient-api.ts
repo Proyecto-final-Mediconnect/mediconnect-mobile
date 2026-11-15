@@ -264,6 +264,19 @@ export function servirDatosDelPaciente(): void {
         ? HttpResponse.json(perfil)
         : HttpResponse.json({ message: 'Ese profesional no existe.' }, { status: 404 });
     }),
+    http.patch(`${API_URL}/appointments/:id/reschedule`, async ({ params, request }) => {
+      const body = (await request.json()) as { date: string; startTime: string };
+      const movido = turnosDemo.reprogramar(String(params.id), body.date, body.startTime);
+      return movido
+        ? HttpResponse.json(movido)
+        : HttpResponse.json(
+            {
+              message:
+                'Este turno ya se reprogramó una vez. Si necesitás otro horario, cancelalo y reservá uno nuevo.',
+            },
+            { status: 409 },
+          );
+    }),
     http.post(`${API_URL}/appointments`, async ({ request }) => {
       const body = (await request.json()) as {
         professionalId: string;

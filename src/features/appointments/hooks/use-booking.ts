@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { bookAppointment, fetchAvailability } from '../api';
+import { bookAppointment, fetchAvailability, rescheduleAppointment } from '../api';
 import { MY_APPOINTMENTS_KEY } from './use-appointments';
 
 export function availabilityKey(professionalId: string, from: string, to: string) {
@@ -24,6 +24,19 @@ export function useBookAppointment() {
 
   return useMutation({
     mutationFn: bookAppointment,
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: MY_APPOINTMENTS_KEY });
+      void queryClient.invalidateQueries({ queryKey: ['availability'] });
+    },
+  });
+}
+
+/** Reprograma un turno (ENG-66). Después, lo mismo que al reservar. */
+export function useRescheduleAppointment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: rescheduleAppointment,
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: MY_APPOINTMENTS_KEY });
       void queryClient.invalidateQueries({ queryKey: ['availability'] });

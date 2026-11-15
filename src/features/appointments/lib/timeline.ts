@@ -111,6 +111,15 @@ export function appointmentTimeline(
     });
   }
 
+  if (appointment.rescheduledAt) {
+    pasos.push({
+      key: 'reprogramado',
+      title: 'Lo reprogramaste',
+      when: cuando(appointment.rescheduledAt),
+      tone: 'done',
+    });
+  }
+
   if (status === 'CANCELADO') {
     pasos.push({
       key: 'fin',

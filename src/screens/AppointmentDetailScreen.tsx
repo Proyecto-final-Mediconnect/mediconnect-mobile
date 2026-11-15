@@ -10,6 +10,7 @@ import {
 } from '../features/appointments/hooks/use-appointments';
 import {
   canCancel,
+  canReschedule,
   formatLongDay,
   formatPrice,
   formatSentenceDay,
@@ -21,6 +22,7 @@ import {
 import { joinStateOf } from '../features/appointments/lib/join-window';
 import { appointmentTimeline, type TimelineStep } from '../features/appointments/lib/timeline';
 import { ProfessionalAvatar } from '../features/catalog/components/ProfessionalAvatar';
+import { usePublicProfile } from '../features/catalog/hooks/use-catalog';
 import { getPaymentStatus } from '../features/payments/api';
 import { AppointmentReview } from '../features/reviews/components/AppointmentReview';
 import { usePendingReviews } from '../features/reviews/hooks/use-reviews';
@@ -28,7 +30,7 @@ import { canPay } from '../features/payments/lib/payment';
 import { DeviceCheckButton } from '../features/video/components/DeviceCheckButton';
 import { JoinConsultationButton } from '../features/video/components/JoinConsultationButton';
 import type { RootStackParamList } from '../navigation/types';
-import { refundOutcomeText } from '../features/cancellation-policy/policy';
+import { refundOutcomeText, refundPercentFor } from '../features/cancellation-policy/policy';
 import { useRefundNotice } from '../features/cancellation-policy/use-refund-notice';
 import { useNow } from '../shared/hooks/use-now';
 import { Button } from '../shared/ui/Button';
@@ -72,6 +74,18 @@ export function AppointmentDetailScreen(): React.JSX.Element {
   const devolucion = useRefundNotice(confirmando ? turno : null, ahora);
   /** Qué pasó con la devolución al cancelar desde acá (ENG-65). */
   const [resultadoDevolucion, setResultadoDevolucion] = useState<string | null>(null);
+  // Un turno pagado se reprograma solo con la anticipación del reembolso total
+  // (ENG-66): se adelanta el aviso con la política del perfil, como en la web.
+  const reprogramable = turno !== null && canReschedule(turno, ahora);
+  const perfil = usePublicProfile(
+    turno?.professional?.id ?? '',
+    reprogramable && turno?.status === 'CONFIRMADO',
+  );
+  const politica = perfil.data?.cancellationPolicy;
+  const reprogramacionCerrada =
+    turno?.status === 'CONFIRMADO' &&
+    politica !== undefined &&
+    refundPercentFor(politica, new Date(turno.scheduledAt), ahora) < 100;
   const pago = useQuery({
     queryKey: ['payment', params.appointmentId, 'detalle'],
     queryFn: () => getPaymentStatus(params.appointmentId),
@@ -201,6 +215,25 @@ export function AppointmentDetailScreen(): React.JSX.Element {
             fullWidth
           />
         ) : null}
+        {reprogramable && profesional && !reprogramacionCerrada ? (
+          <Button
+            label="Reprogramar"
+            variant="secondary"
+            onPress={() =>
+              navigation.navigate('Reservar', {
+                professionalId: profesional.id,
+                rescheduleId: turno.id,
+              })
+            }
+            fullWidth
+          />
+        ) : null}
+        {reprogramable && reprogramacionCerrada && politica ? (
+          <Text style={styles.nota}>
+            Con menos de {politica.hoursFullRefund} horas ya no se puede reprogramar: si necesitás
+            otro horario, cancelalo y reservá uno nuevo.
+          </Text>
+        ) : null}
         {canCancel(turno, ahora) ? (
           <Button
             label="Cancelar el turno"
@@ -283,6 +316,13 @@ function Paso({ paso, ultimo }: { paso: TimelineStep; ultimo: boolean }): React.
 }
 
 const styles = StyleSheet.create({
+  nota: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.sm,
+    lineHeight: 19,
+    color: colors.muted,
+    textAlign: 'center',
+  },
   card: {
     backgroundColor: colors.white,
     borderWidth: 1,

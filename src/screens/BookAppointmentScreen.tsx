@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { StackActions, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useMemo, useRef, useState } from 'react';
 import {
   Pressable,
@@ -11,7 +11,12 @@ import {
 } from 'react-native';
 
 import { DayCalendarSheet } from '../features/appointments/components/DayCalendarSheet';
-import { useAvailability, useBookAppointment } from '../features/appointments/hooks/use-booking';
+import { useMyAppointments } from '../features/appointments/hooks/use-appointments';
+import {
+  useAvailability,
+  useBookAppointment,
+  useRescheduleAppointment,
+} from '../features/appointments/hooks/use-booking';
 import { formatPrice, formatSentenceDay } from '../features/appointments/lib/appointments';
 import {
   bookingRange,
@@ -40,6 +45,9 @@ const AVISO_PAGO = 'Tenés 15 minutos para pagarlo. Si no, el horario se libera 
  *
  * El turno queda reservado sin pagar y, como ENG-101 libera los turnos no
  * pagados a los 15 minutos, la app lo dice y ofrece pagarlo ahí mismo (ENG-168).
+ *
+ * Con `rescheduleId`, la misma grilla mueve ese turno (ENG-66): es el mismo
+ * turno, con el mismo pago, y se puede mover una sola vez.
  */
 export function BookAppointmentScreen(): React.JSX.Element {
   const navigation = useNavigation();
@@ -48,12 +56,24 @@ export function BookAppointmentScreen(): React.JSX.Element {
   const [rango] = useState(() => bookingRange(new Date()));
   const disponibilidad = useAvailability(params.professionalId, rango.from, rango.to);
   const reservar = useBookAppointment();
+  const reprogramar = useRescheduleAppointment();
+  const { rescheduleId } = params;
+  const turnos = useMyAppointments();
+  // Solo un turno propio y con este profesional: si no está, no se reprograma
+  // nada (y tampoco se cae a reservar uno nuevo).
+  const aMover = rescheduleId
+    ? (turnos.data?.find(
+        (t) => t.id === rescheduleId && t.professional?.id === params.professionalId,
+      ) ?? null)
+    : null;
+  const envio = rescheduleId ? reprogramar : reservar;
 
   const [diaElegido, setDiaElegido] = useState<string | null>(null);
   const [verCalendario, setVerCalendario] = useState(false);
   const tira = useRef<ScrollViewInstance>(null);
   const [horario, setHorario] = useState<AvailabilitySlot | null>(null);
   const [reservado, setReservado] = useState<Appointment | null>(null);
+  const [movido, setMovido] = useState<Appointment | null>(null);
 
   const dias = useMemo(() => disponibilidad.data?.days ?? [], [disponibilidad.data]);
   const dia = diaElegido ?? firstDayWithSlots(dias);
@@ -67,7 +87,7 @@ export function BookAppointmentScreen(): React.JSX.Element {
 
   const header = (
     <ScreenHeader
-      title="Elegí un horario"
+      title={rescheduleId ? 'Reprogramar turno' : 'Elegí un horario'}
       subtitle={nombre || ' '}
       onBack={() => navigation.goBack()}
     />
@@ -114,6 +134,72 @@ export function BookAppointmentScreen(): React.JSX.Element {
     );
   }
 
+  if (movido) {
+    const pagado = movido.status === 'CONFIRMADO';
+    return (
+      <Screen header={<ScreenHeader title="Turno reprogramado" />}>
+        <View style={styles.listo}>
+          <View style={[styles.listoIcono, styles.listoIconoOk]}>
+            <Ionicons name="checkmark" size={32} color={colors.brandHover} />
+          </View>
+          <Text style={[styles.listoEyebrow, styles.listoEyebrowOk]}>LISTO</Text>
+          <Text accessibilityRole="header" style={styles.listoTitulo}>
+            Movimos tu turno
+          </Text>
+          <Text style={styles.listoDetalle}>
+            Con {nombre}, el {formatSentenceDay(movido.date, movido.startTime)}.{' '}
+            {pagado
+              ? 'El pago queda como estaba: no se vuelve a cobrar.'
+              : 'Todavía falta pagarlo para confirmarlo.'}
+          </Text>
+        </View>
+        {!pagado ? (
+          <Button
+            label="Pagar ahora"
+            variant="accent"
+            onPress={() => navigation.navigate('Pago', { appointmentId: movido.id })}
+            fullWidth
+          />
+        ) : null}
+        <Button
+          label="Ver el turno"
+          variant={pagado ? 'primary' : 'secondary'}
+          onPress={() =>
+            // Se vuelve al detalle de donde vino, no se apila otro igual.
+            navigation.dispatch(StackActions.popTo('Turno', { appointmentId: movido.id }))
+          }
+          fullWidth
+        />
+        <Button
+          label="Volver al inicio"
+          variant="ghost"
+          onPress={() => navigation.navigate('Paciente', { screen: 'Inicio' })}
+          fullWidth
+        />
+      </Screen>
+    );
+  }
+
+  if (rescheduleId && turnos.isPending) {
+    return (
+      <Screen scroll={false} header={header}>
+        <LoadingState label="Buscando tu turno…" />
+      </Screen>
+    );
+  }
+
+  if (rescheduleId && !aMover) {
+    return (
+      <Screen scroll={false} header={header}>
+        <EmptyState
+          icon="calendar-outline"
+          title="No encontramos el turno"
+          description="Puede que ya se haya cancelado o que no sea tuyo."
+        />
+      </Screen>
+    );
+  }
+
   if (disponibilidad.isPending) {
     return (
       <Screen scroll={false} header={header}>
@@ -148,7 +234,7 @@ export function BookAppointmentScreen(): React.JSX.Element {
 
   function cerrarConfirmacion(): void {
     setHorario(null);
-    reservar.reset();
+    envio.reset();
   }
 
   /** Elegir un día desde el calendario también corre la tira hasta él. */
@@ -160,6 +246,12 @@ export function BookAppointmentScreen(): React.JSX.Element {
 
   return (
     <Screen header={header}>
+      {aMover ? (
+        <Notice
+          icon="swap-horizontal-outline"
+          message={`Tu turno ahora: el ${formatSentenceDay(aMover.date, aMover.startTime)}. Elegí el nuevo horario. Un turno se puede reprogramar una sola vez.`}
+        />
+      ) : null}
       <View style={styles.diasCabecera}>
         <Text style={styles.seccion}>DÍA</Text>
         <Pressable
@@ -213,7 +305,7 @@ export function BookAppointmentScreen(): React.JSX.Element {
           <Pressable
             key={slot.startTime}
             accessibilityRole="button"
-            accessibilityLabel={`Reservar a las ${slot.startTime}`}
+            accessibilityLabel={`${aMover ? 'Mover a las' : 'Reservar a las'} ${slot.startTime}`}
             onPress={() => setHorario(slot)}
             style={({ pressed }) => [styles.horario, pressed && styles.horarioPresionado]}
           >
@@ -222,7 +314,13 @@ export function BookAppointmentScreen(): React.JSX.Element {
         ))}
       </View>
 
-      {precio !== null ? (
+      {aMover ? (
+        <Text style={styles.pie}>
+          {aMover.status === 'CONFIRMADO'
+            ? 'Ya está pagado: moverlo no cuesta nada.'
+            : `Todavía falta pagarlo: sigue saliendo ${formatPrice(aMover.price)}.`}
+        </Text>
+      ) : precio !== null ? (
         <Text style={styles.pie}>
           La videoconsulta sale {formatPrice(precio)}. Se paga después de reservar.
         </Text>
@@ -238,22 +336,36 @@ export function BookAppointmentScreen(): React.JSX.Element {
 
       <ConfirmSheet
         visible={horario !== null}
-        title="¿Reservar el turno?"
+        title={aMover ? '¿Mover el turno?' : '¿Reservar el turno?'}
         message={
-          horario && dia
-            ? `Con ${nombre}, el ${formatSentenceDay(dia, horario.startTime)} (${horario.durationMinutes} min)${
-                precio !== null ? `, por ${formatPrice(precio)}` : ''
-              }. ${AVISO_PAGO}${politica ? `\n\n${describePolicy(politica)}` : ''}`
-            : ''
+          aMover && horario && dia
+            ? `Pasa del ${formatSentenceDay(aMover.date, aMover.startTime)} al ${formatSentenceDay(dia, horario.startTime)}, con ${nombre}. Es el mismo turno${aMover.status === 'CONFIRMADO' ? ', con el mismo pago' : ''}. Después no se puede volver a reprogramar.`
+            : horario && dia
+              ? `Con ${nombre}, el ${formatSentenceDay(dia, horario.startTime)} (${horario.durationMinutes} min)${
+                  precio !== null ? `, por ${formatPrice(precio)}` : ''
+                }. ${AVISO_PAGO}${politica ? `\n\n${describePolicy(politica)}` : ''}`
+              : ''
         }
-        confirmLabel="Reservar turno"
+        confirmLabel={aMover ? 'Mover el turno' : 'Reservar turno'}
         dismissLabel="Elegir otro horario"
         confirmVariant="primary"
-        pending={reservar.isPending}
-        error={reservar.isError ? reservar.error.message : null}
+        pending={envio.isPending}
+        error={envio.isError ? envio.error.message : null}
         onDismiss={cerrarConfirmacion}
         onConfirm={() => {
           if (!horario || !dia) return;
+          if (aMover) {
+            reprogramar.mutate(
+              { appointmentId: aMover.id, date: dia, startTime: horario.startTime },
+              {
+                onSuccess: (turno) => {
+                  setHorario(null);
+                  setMovido(turno);
+                },
+              },
+            );
+            return;
+          }
           reservar.mutate(
             { professionalId: params.professionalId, date: dia, startTime: horario.startTime },
             {
@@ -332,6 +444,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.warm,
   },
+  listoIconoOk: { backgroundColor: colors.surfaceTeal },
+  listoEyebrowOk: { color: colors.brandHover },
   listoEyebrow: {
     fontFamily: fonts.bold,
     fontSize: fontSize.xs,
