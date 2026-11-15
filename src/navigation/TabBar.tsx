@@ -22,11 +22,10 @@ const TABS: Record<keyof PatientTabParamList, { label: string; icon: [IconName, 
  * La barra de tabs del paciente: una barra azul noche, redondeada y separada de
  * los bordes, que flota sobre el fondo de la pantalla.
  *
- * El MediPass va en el centro, en un recuadro teal con el corazón y el latido
- * del logo (el mismo que va en el centro del QR) y su nombre abajo: es lo
- * que distingue a
- * MediConnect y lo que se abre con apuro, en una guardia, así que se encuentra
- * sin buscarlo. Queda dentro de la barra, sin sobresalir sobre el contenido.
+ * El MediPass va en el centro, con el corazón y el latido del logo en teal (el
+ * mismo que va en el centro del QR): es lo que distingue a
+ * MediConnect y lo que se abre con apuro, en una guardia, así que el color lo
+ * hace encontrar sin buscarlo.
  *
  * Las demás tabs: ícono y rótulo, la activa en blanco y las otras en el celeste
  * tenue de la noche (`onNight`, que se lee sobre el azul). Cada una ocupa su
@@ -69,30 +68,18 @@ export function TabBar({ state, navigation }: BottomTabBarProps): React.JSX.Elem
                 accessibilityLabel={tab.label}
                 aria-selected={activa}
                 onPress={alTocar}
-                style={styles.tab}
+                style={({ pressed }) => [styles.tab, pressed && styles.presionada]}
               >
-                {({ pressed }) => (
-                  <>
-                    <View
-                      style={[
-                        styles.centro,
-                        activa && styles.centroActivo,
-                        pressed && styles.centroPresionado,
-                      ]}
-                    >
-                      <Latido />
-                    </View>
-                    <Text
-                      style={[
-                        styles.rotulo,
-                        activa && styles.activo,
-                        { color: activa ? colors.white : colors.onNight },
-                      ]}
-                    >
-                      {tab.label}
-                    </Text>
-                  </>
-                )}
+                <Latido />
+                <Text
+                  style={[
+                    styles.rotulo,
+                    activa && styles.activo,
+                    { color: activa ? colors.white : colors.onNight },
+                  ]}
+                >
+                  {tab.label}
+                </Text>
               </Pressable>
             );
           }
@@ -119,20 +106,20 @@ export function TabBar({ state, navigation }: BottomTabBarProps): React.JSX.Elem
 
 /**
  * El corazón con el latido del logo de MediConnect, el mismo que va en el
- * centro del QR del MediPass: corazón oscuro y el trazo en el teal del recuadro,
+ * centro del QR del MediPass: corazón teal y el trazo en el azul de la barra,
  * así parece recortado.
  */
 function Latido(): React.JSX.Element {
   return (
-    <Svg width={18} height={18} viewBox="0 0 24 24">
+    <Svg width={24} height={24} viewBox="0 0 24 24">
       <Path
         d="M12 21.4s-7.6-4.8-9.9-9.5A5.6 5.6 0 0 1 12 5.9a5.6 5.6 0 0 1 9.9 6c-2.3 4.7-9.9 9.5-9.9 9.5z"
-        fill={colors.inkDeep}
+        fill={colors.brandBright}
       />
       <Polyline
         points="4.6,13 8.8,13 10.5,9.4 13,16.6 14.7,11.8 15.8,13 19.4,13"
         fill="none"
-        stroke={colors.brand}
+        stroke={colors.night}
         strokeWidth={1.9}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -162,15 +149,4 @@ const styles = StyleSheet.create({
   presionada: { opacity: 0.6 },
   rotulo: { fontFamily: fonts.semibold, fontSize: fontSize.xs, letterSpacing: 0.2 },
   activo: { fontFamily: fonts.bold },
-  centro: {
-    width: 32,
-    height: 26,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.brand,
-  },
-  // Abierto: un aro blanco alrededor, para que se note dónde está el paciente.
-  centroActivo: { borderWidth: 2, borderColor: colors.white },
-  centroPresionado: { transform: [{ scale: 0.94 }] },
 });
