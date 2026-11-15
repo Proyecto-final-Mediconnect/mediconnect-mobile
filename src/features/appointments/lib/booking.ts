@@ -8,15 +8,30 @@ import type { AvailabilityDay, AvailabilitySlot } from '../types';
  */
 export const BOOKING_WINDOW_DAYS = 60;
 
+/**
+ * Si `fecha` (`YYYY-MM-DD`) es hoy en Argentina. Se compara con el día real y no
+ * con la posición en el arreglo: el rango se fija al montar la pantalla y la
+ * respuesta puede quedar en caché, así que pasada la medianoche el primer día
+ * ya no es hoy.
+ */
+export function esHoy(fecha: string, ahora: Date = new Date()): boolean {
+  return fecha === diaArgentino(ahora);
+}
+
 /** Desde hoy, en Argentina, hasta el final del horizonte. */
 export function bookingRange(now: Date): { from: string; to: string } {
   return { from: diaArgentino(now), to: diaArgentino(now, BOOKING_WINDOW_DAYS - 1) };
 }
 
-/** Los horarios que se pueden reservar de un día. */
+/**
+ * Los horarios que se pueden reservar de un día, ordenados por hora: el backend
+ * los arma de varios bloques de agenda y nada garantiza que lleguen en orden.
+ */
 export function freeSlots(day: AvailabilityDay | undefined): AvailabilitySlot[] {
   if (!day || day.fullyBlocked) return [];
-  return day.slots.filter((slot) => slot.status === 'AVAILABLE');
+  return day.slots
+    .filter((slot) => slot.status === 'AVAILABLE')
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
 }
 
 /** El primer día con algún horario libre, para abrir la pantalla ahí. */
@@ -53,4 +68,20 @@ export function monthGrid(monthKey: string): (string | null)[] {
     ...Array.from({ length: huecos }, () => null),
     ...Array.from({ length: largo }, (_, i) => `${monthKey}-${String(i + 1).padStart(2, '0')}`),
   ];
+}
+
+/**
+ * La grilla del mes partida en semanas de siete celdas, con la última completada
+ * con huecos. Se pinta fila por fila y no con `flexWrap` sobre celdas de
+ * `100 / 7 %`: el redondeo de ese porcentaje mandaba el domingo a la fila de
+ * abajo en algunos anchos de pantalla y desalineaba todo el mes.
+ */
+export function monthWeeks(monthKey: string): (string | null)[][] {
+  const celdas = monthGrid(monthKey);
+  const semanas: (string | null)[][] = [];
+  for (let i = 0; i < celdas.length; i += 7) {
+    const semana = celdas.slice(i, i + 7);
+    semanas.push([...semana, ...Array.from({ length: 7 - semana.length }, () => null)]);
+  }
+  return semanas;
 }
