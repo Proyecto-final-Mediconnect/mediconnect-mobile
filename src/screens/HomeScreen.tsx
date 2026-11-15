@@ -21,7 +21,7 @@ import { estadoDeAcceso } from '../features/medipass/lib/medipass';
 import { NotificationsBell } from '../features/notifications/components/NotificationsBell';
 import { PatientSummaryTiles } from '../features/patient-summary/components/PatientSummaryTiles';
 import { PendingReviewCards } from '../features/reviews/components/PendingReviewCards';
-import { useConversations } from '../features/chat/hooks/use-chat';
+import { useConversations, useInboxRealtime } from '../features/chat/hooks/use-chat';
 import { totalUnread } from '../features/chat/lib/chat';
 import { useNow } from '../shared/hooks/use-now';
 import { Notice } from '../shared/ui/Notice';
@@ -55,6 +55,7 @@ export function HomeScreen(): React.JSX.Element {
   const turnos = useMyAppointments();
   const accesos = useAccesses();
   const bandeja = useConversations();
+  useInboxRealtime();
   const sinLeer = bandeja.data ? totalUnread(bandeja.data.conversaciones) : 0;
   // Cada 15 segundos: alcanza para que el botón de la sala aparezca a tiempo
   // sin redibujar la pantalla a cada segundo.

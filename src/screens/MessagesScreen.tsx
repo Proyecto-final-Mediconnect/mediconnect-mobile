@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '../features/auth/session';
 import { Avatar } from '../features/chat/components/Avatar';
-import { useConversations } from '../features/chat/hooks/use-chat';
+import { useConversations, useInboxRealtime } from '../features/chat/hooks/use-chat';
 import { formatInboxTime, previewOf } from '../features/chat/lib/chat';
 import type { ChatCounterpart, ConversationSummary } from '../features/chat/types';
 import { Screen, ScreenHeader } from '../shared/ui/Screen';
@@ -24,6 +24,7 @@ export function MessagesScreen(): React.JSX.Element {
   const navigation = useNavigation();
   const { id: myId } = useSessionUser();
   const bandeja = useConversations();
+  useInboxRealtime();
   const { refetch } = bandeja;
 
   // Al volver de una conversación, la bandeja tiene que mostrar lo último y

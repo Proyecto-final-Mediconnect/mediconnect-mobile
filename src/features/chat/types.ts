@@ -61,3 +61,9 @@ export interface MessagesPage {
   mensajes: ChatMessage[];
   hayMas: boolean;
 }
+
+/** `GET /conversations/realtime-token`. */
+export interface RealtimeToken {
+  accessToken: string;
+  expiraEl: string;
+}
