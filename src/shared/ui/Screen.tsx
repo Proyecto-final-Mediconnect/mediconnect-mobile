@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, fonts, fontSize, spacing } from './theme';
+import { useTabBarSpace } from '../../navigation/use-tab-bar-space';
 
 /**
  * Las dos superficies del canvas: `light` es el fondo gris claro con header
@@ -76,6 +77,8 @@ export function Screen({
   padded = true,
 }: ScreenProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
+  // En las tabs, la barra flota encima: lo último no tiene que quedar debajo.
+  const barra = useTabBarSpace();
   const fondo = tone === 'dark' ? styles.dark : styles.light;
   const cuerpo = (
     <View
@@ -84,6 +87,9 @@ export function Screen({
         !padded && styles.sinMargen,
         !!hero && styles.sobreHero,
         !header && !hero && { paddingTop: insets.top + spacing.lg },
+        // Con scroll, el espacio va al final del contenido; sin scroll lo pone
+        // la lista de la pantalla (ver `useTabBarSpace`).
+        scroll && barra > 0 && { paddingBottom: barra + spacing.lg },
       ]}
     >
       {children}

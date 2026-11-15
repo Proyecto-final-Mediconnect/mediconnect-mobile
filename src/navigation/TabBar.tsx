@@ -1,6 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import type { ComponentProps } from 'react';
+import {
+  BottomTabBarHeightCallbackContext,
+  type BottomTabBarProps,
+} from '@react-navigation/bottom-tabs';
+import { useContext, type ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Polyline } from 'react-native-svg';
@@ -20,7 +23,8 @@ const TABS: Record<keyof PatientTabParamList, { label: string; icon: [IconName, 
 
 /**
  * La barra de tabs del paciente: una barra azul noche, redondeada y separada de
- * los bordes, que flota sobre el fondo de la pantalla.
+ * los bordes, que flota de verdad: va encima del contenido, sin franja de fondo,
+ * y la pantalla se ve alrededor y por debajo al desplazarse.
  *
  * El MediPass va en el centro, con el corazón y el latido del logo en teal (el
  * mismo que va en el centro del QR): es lo que distingue a
@@ -33,17 +37,17 @@ const TABS: Record<keyof PatientTabParamList, { label: string; icon: [IconName, 
  */
 export function TabBar({ state, navigation }: BottomTabBarProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
-  // Lo que se ve alrededor de la barra es el fondo de la pantalla: noche en el
-  // MediPass, claro en las demás.
+  // Las pantallas de las tabs usan este alto para dejar lugar abajo
+  // (`useTabBarSpace`): la barra flota encima y no ocupa lugar propio.
+  const informarAlto = useContext(BottomTabBarHeightCallbackContext);
   const enMediPass = state.routes[state.index]?.name === 'MediPass';
 
   return (
     <View
-      style={[
-        styles.fondo,
-        { backgroundColor: enMediPass ? colors.night : colors.surface },
-        { paddingBottom: Math.max(insets.bottom, spacing.md) },
-      ]}
+      // Solo la barra recibe toques: alrededor se sigue tocando la pantalla.
+      pointerEvents="box-none"
+      onLayout={(e) => informarAlto?.(e.nativeEvent.layout.height)}
+      style={[styles.flota, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}
     >
       <View accessibilityRole="tablist" style={[styles.barra, enMediPass && styles.barraEnNoche]}>
         {state.routes.map((route, index) => {
@@ -129,7 +133,13 @@ function Latido(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  fondo: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
+  flota: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: spacing.md,
+  },
   barra: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -37,6 +37,7 @@ import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { SearchFilterBar, type ActiveFilter } from '../shared/ui/SearchFilterBar';
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
+import { useTabBarSpace } from '../navigation/use-tab-bar-space';
 
 /**
  * Mis turnos (ENG-115), en una sola lista: arriba los próximos con sus acciones,
@@ -49,6 +50,7 @@ import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
  */
 export function AppointmentsScreen(): React.JSX.Element {
   const navigation = useNavigation();
+  const espacioBarra = useTabBarSpace();
   const turnos = useMyAppointments();
   const tirar = usePullToRefresh(turnos.refetch);
   const cancelar = useCancelAppointment();
@@ -209,7 +211,7 @@ export function AppointmentsScreen(): React.JSX.Element {
             </View>
           )
         }
-        contentContainerStyle={styles.lista}
+        contentContainerStyle={[styles.lista, { paddingBottom: espacioBarra + spacing.lg }]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={
