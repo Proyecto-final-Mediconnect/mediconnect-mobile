@@ -149,3 +149,45 @@ export function previewOf(message: ChatMessage | null, myId: string): string {
     (message.adjunto ? `📎 ${attachmentKind(message.adjunto)}` : '');
   return message.autorId === myId ? `Vos: ${texto}` : texto;
 }
+
+/** Fila de `messages` tal como la entrega Realtime (Postgres Changes). */
+export interface RealtimeMessageRow {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string | null;
+  attachment_mime?: string | null;
+  attachment_size?: number | null;
+  created_at: string;
+  read_at: string | null;
+}
+
+/**
+ * Pasa una fila de Realtime a la forma de la API. Postgres manda las fechas como
+ * `2026-10-26 18:17:07.568+00`; se normalizan a ISO para que comparen bien con
+ * las que vienen por HTTP.
+ */
+export function fromRow(row: RealtimeMessageRow): ChatMessage {
+  return {
+    id: row.id,
+    conversacionId: row.conversation_id,
+    autorId: row.sender_id,
+    contenido: row.content ?? '',
+    enviadoEl: toIso(row.created_at),
+    leidoEl: row.read_at ? toIso(row.read_at) : null,
+    adjunto:
+      row.attachment_mime && row.attachment_size
+        ? { tipo: row.attachment_mime, tamano: row.attachment_size }
+        : null,
+  };
+}
+
+/**
+ * `Date` no parsea igual en todos los navegadores el formato de Postgres (Safari
+ * rechaza el espacio y el offset `+00` sin minutos), así que se lleva primero a
+ * ISO-8601 estricto.
+ */
+function toIso(value: string): string {
+  const strict = value.replace(' ', 'T').replace(/([+-]\d{2})$/, '$1:00');
+  return new Date(strict).toISOString();
+}

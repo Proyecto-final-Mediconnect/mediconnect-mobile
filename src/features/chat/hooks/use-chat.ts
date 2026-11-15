@@ -6,7 +6,7 @@ import {
   type InfiniteData,
   type QueryClient,
 } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { ApiError } from '../../../shared/lib/api-client';
@@ -19,21 +19,30 @@ import {
   sendMessage,
 } from '../api';
 import { mergeMessages } from '../lib/chat';
+import {
+  subscribeToChatSignals,
+  subscribeToConversation,
+  subscribeToInbox,
+  type ChatSignals,
+  type RealtimeStatus,
+} from '../lib/realtime';
 import type { PickedFile } from '../../patient-documents/types';
 import type { ChatMessage, MessagesPage } from '../types';
 
 /**
  * Datos del chat en la app (ENG-152).
  *
- * ## Por qué consulta cada pocos segundos y no usa Realtime
+ * ## Tiempo real y consulta de respaldo
  *
- * La web recibe los mensajes por Supabase Realtime (ADR-011). La app, en cambio,
- * pregunta al backend cada `POLL_INTERVAL_MS` mientras la conversación está
- * abierta y la app en primer plano. Realtime en React Native suma
- * `supabase-js` con sus polyfills, y la URL y la clave de Supabase dentro del
- * build. Para un chat de consulta médica, donde nadie espera respuesta al
- * segundo, cuatro segundos no se notan, y el camino es el mismo HTTP con
- * Bearer que ya usa el resto de la app.
+ * Con `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_ANON_KEY` cargadas, la
+ * conversación abierta se conecta a Supabase Realtime (ADR-011): mensajes en
+ * vivo, "escribiendo…" y "Leído" al momento, igual que la web. El socket se abre
+ * recién al entrar a un chat (`supabase-js` se importa en diferido).
+ *
+ * La consulta cada `POLL_INTERVAL_MS` **sigue siendo el respaldo**: sin esas
+ * variables es el único camino, y con el socket en vivo baja a
+ * `LIVE_RECONCILE_MS`, porque un stream puede perder un evento. Es el mismo HTTP
+ * con Bearer que usa el resto de la app.
  *
  * Los mensajes que la app manda le llegan a la web en vivo igual: Realtime
  * escucha los INSERT de la tabla, no importa quién los hizo.
@@ -45,7 +54,11 @@ const messagesKey = (conversationId: string) => ['chat', 'messages', conversatio
 /** Cada cuánto se buscan mensajes nuevos de la conversación abierta. */
 export const POLL_INTERVAL_MS = 4_000;
 /** Cada cuánto se refresca la bandeja, para que el contador de no leídos no quede viejo. */
-export const INBOX_REFRESH_MS = 30_000;
+export const INBOX_REFRESH_MS = 15_000;
+/** Con el socket en vivo, la consulta es solo una reconciliación de fondo. */
+export const LIVE_RECONCILE_MS = 15_000;
+/** Cuánto sigue la burbuja de "escribiendo" sin un aviso nuevo. */
+export const TYPING_VISIBLE_MS = 4_000;
 
 /** Un 4xx no se arregla reintentando: ni una conversación ajena ni un id que no existe. */
 const retryUnlessClientError = (failureCount: number, error: Error): boolean =>
@@ -72,7 +85,7 @@ export function useConversations() {
  * hay: un `refetch` del `useInfiniteQuery` volvería a pedir, una por una, todas
  * las páginas que el paciente fue abriendo para atrás.
  */
-export function useMessages(conversationId: string | undefined) {
+export function useMessages(conversationId: string | undefined, live = false) {
   const queryClient = useQueryClient();
   const query = useInfiniteQuery({
     queryKey: messagesKey(conversationId ?? ''),
@@ -92,9 +105,12 @@ export function useMessages(conversationId: string | undefined) {
       detenido = true;
       clearInterval(timer);
     };
-    const timer = setInterval(() => {
-      if (appActive()) reconcileLatest(queryClient, conversationId, alFallar);
-    }, POLL_INTERVAL_MS);
+    const timer = setInterval(
+      () => {
+        if (appActive()) reconcileLatest(queryClient, conversationId, alFallar);
+      },
+      live ? LIVE_RECONCILE_MS : POLL_INTERVAL_MS,
+    );
     // Al volver a primer plano no se espera al próximo ciclo: lo que llegó
     // mientras el teléfono estaba bloqueado aparece apenas se lo desbloquea.
     const alVolver = AppState.addEventListener('change', (estado) => {
@@ -104,7 +120,7 @@ export function useMessages(conversationId: string | undefined) {
       clearInterval(timer);
       alVolver.remove();
     };
-  }, [conversationId, queryClient]);
+  }, [conversationId, live, queryClient]);
 
   const messages = useMemo(
     () => mergeMessages([], query.data?.pages.flatMap((page) => page.mensajes) ?? []),
@@ -185,6 +201,92 @@ function addToCache(
       };
     },
   );
+}
+
+/**
+ * Escucha la conversación abierta por Realtime y devuelve el estado del socket.
+ * Al quedar suscripto vuelve a pedir el historial: lo que llegó entre la carga
+ * inicial y la suscripción no viene por el socket.
+ */
+export function useConversationRealtime(conversationId: string | undefined): RealtimeStatus {
+  const queryClient = useQueryClient();
+  const [status, setStatus] = useState<RealtimeStatus>('conectando');
+
+  useEffect(() => {
+    if (!conversationId) return;
+    return subscribeToConversation(
+      conversationId,
+      (message) => {
+        addToCache(queryClient, conversationId, [message]);
+        void queryClient.invalidateQueries({ queryKey: CHAT_INBOX_KEY });
+      },
+      (next) => {
+        setStatus(next);
+        if (next === 'en-vivo') {
+          void queryClient.invalidateQueries({ queryKey: messagesKey(conversationId) });
+        }
+      },
+    );
+  }, [conversationId, queryClient]);
+
+  return status;
+}
+
+/**
+ * La bandeja en vivo: un mensaje nuevo mío, de cualquier conversación (incluida
+ * una que todavía no existía para mí), actualiza la lista y el contador sin
+ * esperar la consulta periódica.
+ */
+export function useInboxRealtime(): void {
+  const queryClient = useQueryClient();
+  useEffect(
+    () =>
+      subscribeToInbox(() => {
+        void queryClient.invalidateQueries({ queryKey: CHAT_INBOX_KEY });
+      }),
+    [queryClient],
+  );
+}
+
+/**
+ * Los avisos en vivo entre los dos dispositivos: "escribiendo…" (se apaga solo
+ * si dejan de llegar), "leí" (mis "Leído" aparecen al momento) y "mandé un
+ * mensaje" (el otro lo pide al backend sin esperar a Postgres Changes).
+ */
+export function useChatSignals(conversationId: string | undefined) {
+  const queryClient = useQueryClient();
+  const [othersTyping, setOthersTyping] = useState(false);
+  const signals = useRef<ChatSignals | null>(null);
+
+  useEffect(() => {
+    if (!conversationId) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const pedir = () => {
+      reconcileLatest(queryClient, conversationId, () => {});
+      void queryClient.invalidateQueries({ queryKey: CHAT_INBOX_KEY });
+    };
+    signals.current = subscribeToChatSignals(conversationId, {
+      onTyping: () => {
+        setOthersTyping(true);
+        clearTimeout(timer);
+        timer = setTimeout(() => setOthersTyping(false), TYPING_VISIBLE_MS);
+      },
+      onRead: pedir,
+      onMessage: pedir,
+    });
+    return () => {
+      clearTimeout(timer);
+      signals.current?.stop();
+      signals.current = null;
+    };
+  }, [conversationId, queryClient]);
+
+  const notifyTyping = useCallback(() => signals.current?.notifyTyping(), []);
+  const notifyRead = useCallback(() => signals.current?.notifyRead(), []);
+  const notifyMessage = useCallback(() => signals.current?.notifyMessage(), []);
+  const clearTyping = useCallback(() => setOthersTyping(false), []);
+
+  return { othersTyping, notifyTyping, notifyRead, notifyMessage, clearTyping };
 }
 
 export function useSendMessage(conversationId: string) {

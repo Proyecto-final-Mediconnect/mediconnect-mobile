@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { disconnectRealtime } from '../features/chat/lib/realtime';
 import { SessionProvider, useSession } from '../features/auth/session';
 import { BookAppointmentScreen } from '../screens/BookAppointmentScreen';
 import { ClinicalRecordScreen } from '../screens/ClinicalRecordScreen';
@@ -88,7 +89,11 @@ function RootStack(): React.JSX.Element {
   // en este celular no puede ver ni por un instante los turnos o la historia
   // del anterior.
   useEffect(() => {
-    if (state.status === 'signedOut') queryClient.clear();
+    if (state.status === 'signedOut') {
+      queryClient.clear();
+      // Corta el socket y olvida el token: el próximo en entrar no hereda el del anterior.
+      disconnectRealtime();
+    }
   }, [state.status, queryClient]);
 
   // Mientras se lee el secure store y se verifica la sesión, al abrir la app:

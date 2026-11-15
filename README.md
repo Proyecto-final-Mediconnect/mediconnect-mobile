@@ -41,11 +41,12 @@ cp .env.example .env   # completar con los valores del entorno local
 
 ### Variables de entorno
 
-| Variable              | Descripción                                                            |
-| --------------------- | ---------------------------------------------------------------------- |
-| `EXPO_PUBLIC_API_URL` | URL base de la API REST del backend.                                   |
-| `EXPO_PUBLIC_ENV`     | Entorno lógico: `development` \| `staging` \| `production`.            |
-| `EXPO_TOKEN`          | Token de Expo para EAS Build en CI (solo CI, no se expone al cliente). |
+| Variable                                                     | Descripción                                                                                                           |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_API_URL`                                        | URL base de la API REST del backend.                                                                                  |
+| `EXPO_PUBLIC_ENV`                                            | Entorno lógico: `development` \| `staging` \| `production`.                                                           |
+| `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Realtime del chat (mensajes en vivo, "escribiendo…", "Leído"). Sin ellas el chat sigue andando con consulta cada 4 s. |
+| `EXPO_TOKEN`                                                 | Token de Expo para EAS Build en CI (solo CI, no se expone al cliente).                                                |
 
 ### Apuntar la app al backend
 

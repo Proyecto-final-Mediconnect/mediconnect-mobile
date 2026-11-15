@@ -20,6 +20,8 @@ import { MessageAttachment } from '../features/chat/components/MessageAttachment
 import {
   useConversations,
   useMarkConversationRead,
+  useChatSignals,
+  useConversationRealtime,
   useMessages,
   useSendAttachment,
   useSendMessage,
@@ -91,7 +93,10 @@ function Conversation({
   conversationId: string;
   myId: string;
 }): React.JSX.Element {
-  const mensajes = useMessages(conversationId);
+  const estado = useConversationRealtime(conversationId);
+  const mensajes = useMessages(conversationId, estado === 'en-vivo');
+  const { othersTyping, notifyTyping, notifyRead, notifyMessage, clearTyping } =
+    useChatSignals(conversationId);
   const enviar = useSendMessage(conversationId);
   const enviarArchivo = useSendAttachment(conversationId);
   const marcarLeido = useMarkConversationRead(conversationId, myId);
@@ -109,11 +114,19 @@ function Conversation({
     // Si el PATCH falla se libera la marca: se reintenta al reabrir la pantalla
     // o cuando llegue otro mensaje (sin bucle de reintentos inmediatos).
     marcar(undefined, {
+      // Al otro le llega "leí" y ve el "Leído" al momento.
+      onSuccess: notifyRead,
       onError: () => {
         ultimoMarcado.current = null;
       },
     });
-  }, [ultimoSinLeer, marcar]);
+  }, [ultimoSinLeer, marcar, notifyRead]);
+
+  // Llegó lo que estaba escribiendo: la burbuja ya no tiene sentido.
+  const ultimoAjeno = mensajes.messages.findLast((m) => m.autorId !== myId)?.id;
+  useEffect(() => {
+    if (ultimoAjeno) clearTyping();
+  }, [ultimoAjeno, clearTyping]);
 
   // La lista va invertida —el último mensaje abajo y pegado al teclado—, así que
   // las filas van de la más nueva a la más vieja.
@@ -136,6 +149,8 @@ function Conversation({
         if (mensajes.hasNextPage && !mensajes.isFetchingNextPage) void mensajes.fetchNextPage();
       }}
       conversationId={conversationId}
+      escribiendo={othersTyping}
+      sinConexionEnVivo={estado === 'sin-conexion'}
       enviando={enviar.isPending || enviarArchivo.isPending}
       error={
         enviar.isError
@@ -146,13 +161,27 @@ function Conversation({
       }
       onEnviar={(texto, limpiar) => {
         enviarArchivo.reset();
-        enviar.mutate(texto, { onSuccess: limpiar });
+        enviar.mutate(texto, {
+          onSuccess: () => {
+            notifyMessage();
+            limpiar();
+          },
+        });
       }}
       onAdjuntar={(file, texto, limpiar) => {
         enviar.reset();
-        enviarArchivo.mutate({ file, contenido: texto || undefined }, { onSuccess: limpiar });
+        enviarArchivo.mutate(
+          { file, contenido: texto || undefined },
+          {
+            onSuccess: () => {
+              notifyMessage();
+              limpiar();
+            },
+          },
+        );
       }}
       onEscribir={() => {
+        notifyTyping();
         if (enviar.isError) enviar.reset();
         if (enviarArchivo.isError) enviarArchivo.reset();
       }}
@@ -224,6 +253,10 @@ interface ChatProps {
   onEscribir: () => void;
   /** Para pedir los archivos de los mensajes. Sin conversación todavía, no hay. */
   conversationId?: string;
+  /** La otra persona está escribiendo (Realtime). */
+  escribiendo?: boolean;
+  /** Realtime no conectó: los mensajes llegan con la consulta de respaldo. */
+  sinConexionEnVivo?: boolean;
 }
 
 /** La lista de mensajes y el campo para escribir, sin saber si la conversación ya existe. */
@@ -238,6 +271,8 @@ function Chat({
   onAdjuntar,
   onEscribir,
   conversationId,
+  escribiendo = false,
+  sinConexionEnVivo = false,
 }: ChatProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const { abierto: tecladoAbierto, margen } = useKeyboardHeight();
@@ -275,6 +310,11 @@ function Chat({
     // En iOS el teclado tapa la pantalla y el campo sube con él; en Android lo
     // resuelve el modo `resize` de la ventana, igual que en el ingreso.
     <Animated.View style={[styles.fill, Platform.OS === 'ios' && { paddingBottom: margen }]}>
+      {sinConexionEnVivo ? (
+        <Text style={styles.sinConexion}>
+          Sin conexión en vivo: los mensajes pueden tardar unos segundos.
+        </Text>
+      ) : null}
       {filas.length === 0 ? (
         <View style={styles.fill}>{vacio}</View>
       ) : (
@@ -287,6 +327,14 @@ function Chat({
           onEndReached={onLlegarAlPrincipio}
           onEndReachedThreshold={0.3}
           keyboardShouldPersistTaps="handled"
+          // Con la lista invertida, el encabezado queda abajo: ahí va el "escribiendo…".
+          ListHeaderComponent={
+            escribiendo ? (
+              <Text accessibilityLiveRegion="polite" style={styles.escribiendo}>
+                escribiendo…
+              </Text>
+            ) : undefined
+          }
           // Con la lista invertida, el "final" es arriba: el historial más viejo.
           ListFooterComponent={
             cargandoAnteriores ? (
@@ -451,6 +499,21 @@ function Burbuja({
 }
 
 const styles = StyleSheet.create({
+  escribiendo: {
+    marginTop: spacing.sm,
+    fontFamily: fonts.medium,
+    fontSize: fontSize.sm,
+    fontStyle: 'italic',
+    color: colors.muted,
+  },
+  sinConexion: {
+    padding: spacing.sm,
+    textAlign: 'center',
+    fontFamily: fonts.medium,
+    fontSize: fontSize.xs,
+    color: colors.warmInk,
+    backgroundColor: colors.warm,
+  },
   fill: { flex: 1 },
   lista: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   anteriores: { marginVertical: spacing.md },

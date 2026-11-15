@@ -7,6 +7,7 @@ import type {
   ConversationInbox,
   ConversationSummary,
   MessagesPage,
+  RealtimeToken,
 } from './types';
 
 /** Las mismas rutas que usa la web (ENG-70). El backend sirve a los dos clientes. */
@@ -91,4 +92,11 @@ export function getAttachmentUrl(id: string, messageId: string): Promise<Attachm
     conversationPath(id, `/messages/${encodeURIComponent(messageId)}/attachment`),
     { fallbackMessage: 'No pudimos abrir el archivo.' },
   );
+}
+
+/** `GET /conversations/realtime-token`: el JWT de la sesión, para el socket de Realtime. */
+export function getRealtimeToken(): Promise<RealtimeToken> {
+  return apiRequest<RealtimeToken>('/conversations/realtime-token', {
+    fallbackMessage: 'No pudimos conectar el chat en vivo.',
+  });
 }
