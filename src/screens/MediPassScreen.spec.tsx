@@ -202,4 +202,25 @@ describe('Mi MediPass (ENG-117)', () => {
 
     expect(await screen.findByLabelText('Mostrar medicación a quien escanea')).toBeInTheDocument();
   });
+
+  it('muestra quién abrió el MediPass y cómo quedó cada acceso', async () => {
+    await abrirMediPass();
+
+    expect(await screen.findByText('Quién abrió tu MediPass')).toBeInTheDocument();
+    expect(await screen.findByText('ABIERTO AHORA')).toBeInTheDocument();
+    expect(screen.getByText('CERRADO')).toBeInTheDocument();
+    expect(screen.getByText('LO CORTASTE VOS')).toBeInTheDocument();
+    expect(screen.getByText('Dr. Martín Pérez')).toBeInTheDocument();
+    expect(screen.getByText(/^Cortaste el acceso a las \d\d:\d\d\.$/)).toBeInTheDocument();
+  });
+
+  it('sin accesos todavía, lo dice', async () => {
+    await abrirMediPass(
+      http.get(`${API_URL}/medipass/me/historial`, () =>
+        HttpResponse.json({ accesos: [], pagina: 1, hayMas: false }),
+      ),
+    );
+
+    expect(await screen.findByText('Nadie abrió tu MediPass todavía.')).toBeInTheDocument();
+  });
 });

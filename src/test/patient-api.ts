@@ -8,7 +8,7 @@ import { refundPercentFor } from '../features/cancellation-policy/policy';
 import { matchesSearch } from '../features/catalog/lib/catalog';
 import { disponibilidadDe, ESPECIALIDADES, perfilDe, PROFESIONALES } from '../mocks/catalog';
 import { crearHistoriaDemo } from '../mocks/clinical-record';
-import { accesosDemo, codigoDemo, VITAL_DEMO } from '../mocks/medipass';
+import { accesosDemo, codigoDemo, historialDemo, VITAL_DEMO } from '../mocks/medipass';
 import { avisosDemo } from '../mocks/notifications';
 import { PACIENTE_DEMO } from '../mocks/patient';
 import { API_URL, server } from './msw-server';
@@ -156,6 +156,7 @@ export function servirDatosDelPaciente(): void {
     http.get(`${API_URL}/medipass/me`, () => HttpResponse.json(codigoDemo())),
     http.get(`${API_URL}/medipass/me/vital`, () => HttpResponse.json(VITAL_DEMO)),
     http.get(`${API_URL}/medipass/me/accesses`, () => HttpResponse.json(accesosDemo.listar())),
+    http.get(`${API_URL}/medipass/me/historial`, () => HttpResponse.json(historialDemo())),
     http.get(`${API_URL}/medipass/me/scope`, () => HttpResponse.json(scope)),
     http.put(`${API_URL}/medipass/me/scope`, async ({ request }) => {
       scope = (await request.json()) as typeof scope;

@@ -79,3 +79,27 @@ export interface MediPassScope {
   condiciones: boolean;
   contacto: boolean;
 }
+
+/** Cómo quedó un acceso del historial (ENG-76). */
+export type MediPassHistoryStatus = 'ACTIVO' | 'VENCIDO' | 'REVOCADO';
+
+/** Un acceso de un consultante al MediPass, con lo que miró (`GET /medipass/me/historial`). */
+export interface MediPassHistoryEntry {
+  sesionId: string;
+  consultante: { nombre: string | null; matricula: string | null };
+  /** Opcional por compatibilidad con un backend anterior a ENG-176. */
+  origen?: 'CODIGO' | 'TARJETA';
+  /** ISO-8601. */
+  inicio: string;
+  vence: string;
+  revocadoEl: string | null;
+  estado: MediPassHistoryStatus;
+  vistas: { recurso: string | null; etiqueta: string; el: string }[];
+}
+
+/** Una página del historial, del más reciente al más viejo. */
+export interface MediPassHistory {
+  accesos: MediPassHistoryEntry[];
+  pagina: number;
+  hayMas: boolean;
+}

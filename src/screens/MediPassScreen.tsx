@@ -3,6 +3,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useCallback, useState, type ComponentProps } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { AccessHistory } from '../features/medipass/components/AccessHistory';
 import { AccessList } from '../features/medipass/components/AccessList';
 import { EmergencyCardSection } from '../features/medipass/components/EmergencyCardSection';
 import { MediPassCode } from '../features/medipass/components/MediPassCode';
@@ -104,6 +105,13 @@ export function MediPassScreen(): React.JSX.Element {
         </View>
       )}
 
+      <Seccion icon="time-outline" titulo="Quién abrió tu MediPass" />
+      <Text style={styles.ayuda}>
+        Cada vez que alguien usa tu código o tu tarjeta queda registrado acá, con su nombre, su
+        matrícula si la dio y qué información vio.
+      </Text>
+      <AccessHistory />
+
       <Seccion icon="options-outline" titulo="Lo que ve quien lo escanea" />
       {vital.data ? (
         <>
@@ -140,12 +148,23 @@ export function MediPassScreen(): React.JSX.Element {
           ) : null}
           {/* Lo que se edita está en el perfil (ENG-136): desde acá se llega
               directo, y si está vacío se insiste. */}
-          <Button
-            label={vitalVacio(vital.data) ? 'Cargar mis datos de emergencia' : 'Editar mis datos'}
-            variant={vitalVacio(vital.data) ? 'accent' : 'secondary'}
-            onPress={() => navigation.navigate('DatosEmergencia')}
-            fullWidth
-          />
+          {vitalVacio(vital.data) ? (
+            <Button
+              label="Cargar mis datos de emergencia"
+              variant="accent"
+              onPress={() => navigation.navigate('DatosEmergencia')}
+              fullWidth
+            />
+          ) : (
+            <View style={styles.accion}>
+              <Button
+                label="Editar mis datos"
+                variant="night"
+                size="sm"
+                onPress={() => navigation.navigate('DatosEmergencia')}
+              />
+            </View>
+          )}
         </>
       ) : vital.isError ? (
         <ErrorState
@@ -249,6 +268,7 @@ const styles = StyleSheet.create({
     color: colors.brandBright,
   },
   cargando: { minHeight: 120 },
+  accion: { alignItems: 'flex-start' },
   ayuda: {
     fontFamily: fonts.medium,
     fontSize: fontSize.xs,

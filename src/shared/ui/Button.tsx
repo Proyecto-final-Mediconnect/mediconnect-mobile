@@ -5,7 +5,13 @@ import { colors, fonts, fontSize, radius, spacing } from './theme';
 interface ButtonProps {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'accent' | 'danger' | 'secondary' | 'ghost';
+  /**
+   * `night` y `nightDanger` son para el fondo azul noche (el MediPass): un
+   * contorno tenue con texto blanco, o en el rojo que se lee sobre la noche.
+   */
+  variant?: 'primary' | 'accent' | 'danger' | 'secondary' | 'ghost' | 'night' | 'nightDanger';
+  /** `sm`: acción secundaria compacta, que no ocupa todo el ancho de la pantalla. */
+  size?: 'md' | 'sm';
   disabled?: boolean;
   /** Muestra un indicador en lugar del texto y bloquea el botón. */
   loading?: boolean;
@@ -23,6 +29,7 @@ export function Button({
   disabled = false,
   loading = false,
   fullWidth = false,
+  size = 'md',
 }: ButtonProps): React.JSX.Element {
   const bloqueado = disabled || loading;
 
@@ -36,6 +43,7 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
+        size === 'sm' && styles.sm,
         styles[variant],
         pressed && pressedStyles[variant],
         fullWidth && styles.fullWidth,
@@ -45,7 +53,9 @@ export function Button({
       {loading ? (
         <ActivityIndicator color={labelStyles[variant].color} />
       ) : (
-        <Text style={[styles.label, labelStyles[variant]]}>{label}</Text>
+        <Text style={[styles.label, size === 'sm' && styles.labelSm, labelStyles[variant]]}>
+          {label}
+        </Text>
       )}
     </Pressable>
   );
@@ -69,6 +79,14 @@ const styles = StyleSheet.create({
     borderColor: colors.lineStrong,
   },
   ghost: { backgroundColor: 'transparent' },
+  night: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.nightBorder },
+  nightDanger: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.dangerOnNight,
+  },
+  sm: { minHeight: 38, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  labelSm: { fontSize: fontSize.sm },
   fullWidth: { alignSelf: 'stretch' },
   disabled: { opacity: 0.6 },
   label: { fontFamily: fonts.bold, fontSize: fontSize.md },
@@ -80,6 +98,8 @@ const pressedStyles = StyleSheet.create({
   danger: { backgroundColor: colors.dangerPressed },
   secondary: { borderColor: colors.brand },
   ghost: { backgroundColor: colors.surfaceTeal },
+  night: { backgroundColor: colors.nightCard },
+  nightDanger: { backgroundColor: colors.nightCard },
 });
 
 const labelStyles = StyleSheet.create({
@@ -88,4 +108,6 @@ const labelStyles = StyleSheet.create({
   danger: { color: colors.white },
   secondary: { color: colors.brandDeep },
   ghost: { color: colors.brandDeep },
+  night: { color: colors.white },
+  nightDanger: { color: colors.dangerOnNight },
 });

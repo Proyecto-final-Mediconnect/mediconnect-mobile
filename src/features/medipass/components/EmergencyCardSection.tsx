@@ -118,18 +118,20 @@ export function EmergencyCardSection({ nombre }: { nombre: string }): React.JSX.
             . Si la perdiste o la querés volver a ver, generá una nueva: la anterior deja de
             funcionar.
           </Text>
-          <Button
-            label="Generar una nueva"
-            variant="secondary"
-            onPress={() => setConfirmar('regenerar')}
-            fullWidth
-          />
-          <Button
-            label="Desactivar"
-            variant="ghost"
-            onPress={() => setConfirmar('desactivar')}
-            fullWidth
-          />
+          <View style={styles.acciones}>
+            <Button
+              label="Generar una nueva"
+              variant="night"
+              size="sm"
+              onPress={() => setConfirmar('regenerar')}
+            />
+            <Button
+              label="Desactivar"
+              variant="nightDanger"
+              size="sm"
+              onPress={() => setConfirmar('desactivar')}
+            />
+          </View>
         </View>
       ) : (
         <View style={styles.fila}>
@@ -186,6 +188,7 @@ const styles = StyleSheet.create({
   },
   cargando: { minHeight: 80 },
   fila: { gap: spacing.sm },
+  acciones: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   activa: {
     fontFamily: fonts.medium,
     fontSize: fontSize.sm,
