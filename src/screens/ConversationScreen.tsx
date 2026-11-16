@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSessionUser } from '../features/auth/session';
 import { Avatar } from '../features/chat/components/Avatar';
 import { MessageAttachment } from '../features/chat/components/MessageAttachment';
+import { TypingDots } from '../features/chat/components/TypingDots';
 import {
   useConversations,
   useMarkConversationRead,
@@ -329,14 +330,9 @@ function Chat({
           onEndReached={onLlegarAlPrincipio}
           onEndReachedThreshold={0.3}
           keyboardShouldPersistTaps="handled"
-          // Con la lista invertida, el encabezado queda abajo: ahí va el "escribiendo…".
-          ListHeaderComponent={
-            escribiendo ? (
-              <Text accessibilityLiveRegion="polite" style={styles.escribiendo}>
-                escribiendo…
-              </Text>
-            ) : undefined
-          }
+          // Con la lista invertida, el encabezado queda abajo: ahí van los tres puntos de
+          // "escribiendo", como en la web.
+          ListHeaderComponent={escribiendo ? <TypingDots /> : undefined}
           // Con la lista invertida, el "final" es arriba: el historial más viejo.
           ListFooterComponent={
             cargandoAnteriores ? (
@@ -501,13 +497,6 @@ function Burbuja({
 }
 
 const styles = StyleSheet.create({
-  escribiendo: {
-    marginTop: spacing.sm,
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    fontStyle: 'italic',
-    color: colors.muted,
-  },
   sinConexion: {
     padding: spacing.sm,
     textAlign: 'center',
