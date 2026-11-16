@@ -6,7 +6,6 @@ import {
   Animated,
   Image,
   Keyboard,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -69,7 +68,7 @@ export function LoginScreen(): React.JSX.Element {
   const passwordRef = useRef<TextInputInstance>(null);
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollViewInstance>(null);
-  const { abierto: teclado, margen: margenTeclado } = useKeyboardHeight();
+  const { abierto: teclado, margen: margenTeclado, onLayout } = useKeyboardHeight();
 
   // Con el teclado arriba la franja queda solo con el logo y el formulario sube
   // entero, a la par del teclado. Recién cuando el teclado terminó de subir, y
@@ -142,11 +141,11 @@ export function LoginScreen(): React.JSX.Element {
   }
 
   return (
-    // En iOS el margen de abajo es el teclado, animado a la par de él: la
+    // El margen de abajo es lo que tapa el teclado, animado a la par de él: la
     // pantalla se achica a lo que queda visible y el formulario sube junto con
-    // el teclado. En Android queda como estaba (sin margen): lo resuelve el modo
-    // de teclado de la ventana, y se confirma en el emulador (ENG-121).
-    <Animated.View style={[styles.fill, Platform.OS === 'ios' && { paddingBottom: margenTeclado }]}>
+    // el teclado. En Android, solo lo que la ventana no se achicó sola (en el
+    // APK, de borde a borde, no se achica; en Expo Go sí): `useKeyboardHeight`.
+    <Animated.View onLayout={onLayout} style={[styles.fill, { paddingBottom: margenTeclado }]}>
       <ScrollView
         ref={scrollRef}
         style={styles.fill}

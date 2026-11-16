@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   Animated,
   FlatList,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -277,7 +276,7 @@ function Chat({
   sinConexionEnVivo = false,
 }: ChatProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
-  const { abierto: tecladoAbierto, margen } = useKeyboardHeight();
+  const { abierto: tecladoAbierto, margen, onLayout } = useKeyboardHeight();
   useTypingAnnouncement(escribiendo);
   const [texto, setTexto] = useState('');
   const [archivo, setArchivo] = useState<PickedFile | null>(null);
@@ -310,9 +309,9 @@ function Chat({
   const aviso = problemaArchivo ?? error;
 
   return (
-    // En iOS el teclado tapa la pantalla y el campo sube con él; en Android lo
-    // resuelve el modo `resize` de la ventana, igual que en el ingreso.
-    <Animated.View style={[styles.fill, Platform.OS === 'ios' && { paddingBottom: margen }]}>
+    // El teclado tapa la pantalla y el campo sube con él. En Android, solo lo que
+    // la ventana no se achicó sola (ver `useKeyboardHeight`), igual que en el ingreso.
+    <Animated.View onLayout={onLayout} style={[styles.fill, { paddingBottom: margen }]}>
       {sinConexionEnVivo ? (
         <Text style={styles.sinConexion}>
           Sin conexión en vivo: los mensajes pueden tardar unos segundos.
