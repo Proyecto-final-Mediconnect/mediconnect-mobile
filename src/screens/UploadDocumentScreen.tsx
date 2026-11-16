@@ -1,16 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  Image,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useUploadDocument } from '../features/patient-documents/hooks/use-patient-documents';
 import {
@@ -61,7 +52,7 @@ export function UploadDocumentScreen(): React.JSX.Element {
   const { file } = useRoute<RouteProp<RootStackParamList, 'SubirDocumento'>>().params;
   const subir = useUploadDocument();
   const pdf = isPdf(file.mimeType);
-  const { margen: margenTeclado } = useKeyboardHeight();
+  const { margen: margenTeclado, onLayout } = useKeyboardHeight();
 
   const [tipo, setTipo] = useState<PatientDocumentType>('ESTUDIO');
   const [titulo, setTitulo] = useState(() => tituloSugerido(file.name, pdf));
@@ -112,10 +103,8 @@ export function UploadDocumentScreen(): React.JSX.Element {
       padded={false}
       header={<ScreenHeader title="Subir documento" onBack={() => navigation.goBack()} />}
     >
-      {/* Como en el ingreso: en iOS el formulario sube a la par del teclado. */}
-      <Animated.View
-        style={[styles.fill, Platform.OS === 'ios' && { paddingBottom: margenTeclado }]}
-      >
+      {/* Como en el ingreso: el formulario sube a la par del teclado (iOS y Android). */}
+      <Animated.View onLayout={onLayout} style={[styles.fill, { paddingBottom: margenTeclado }]}>
         <ScrollView
           style={styles.fill}
           contentContainerStyle={styles.contenido}
