@@ -1,0 +1,13 @@
+# gitleaks: reglas por defecto mas una excepcion puntual.
+#
+# La anon key de Supabase va en `eas.json` para que el APK tenga el chat en
+# tiempo real ("escribiendo" y "Leido") sin depender de quien lo compila. No es
+# un secreto: es la clave publica que ya viaja en la web y en la app, y lo que
+# protege los datos es la RLS. Se exceptua ese valor exacto, no el archivo:
+# cualquier otro secreto en `eas.json` sigue frenando el PR.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Anon key publica de Supabase (EXPO_PUBLIC_SUPABASE_ANON_KEY)"
+regexes = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlemR5ZndpbXpoYnJ0b3Fpd3dlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyODc1NjgsImV4cCI6MjA5ODg2MzU2OH0\.tfzCpLyY6eo6XdRE6Nxq-pUW09cGCRCsoxXz03nOn5Y']
