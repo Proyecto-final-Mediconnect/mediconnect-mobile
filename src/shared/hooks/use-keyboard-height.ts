@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Keyboard, Platform, type LayoutChangeEvent } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /** Aproximación de la curva con la que sube el teclado de iOS. */
 const CURVA_TECLADO = Easing.bezier(0.17, 0.59, 0.4, 0.77);
@@ -35,6 +36,11 @@ interface KeyboardHeight {
  * Por eso el margen es lo que el teclado tapa **menos lo que la ventana ya se
  * achicó**, medido con el `onLayout` del contenedor. Sirve para los dos casos
  * sin saber en cuál se está.
+ *
+ * Lo que tapa el teclado en Android es su alto **más la barra de navegación**:
+ * de borde a borde, React Native informa el alto del teclado sin esa barra, y el
+ * teclado igual la cubre. Sin sumarla, la fila de números del teclado tapaba el
+ * campo del chat. En Expo Go esa barra queda fuera de la app (inset 0).
  */
 export function useKeyboardHeight(): KeyboardHeight {
   const [abierto, setAbierto] = useState(false);
@@ -44,6 +50,10 @@ export function useKeyboardHeight(): KeyboardHeight {
   /** Alto del contenedor con el teclado cerrado, y el de ahora (Android). */
   const altoBase = useRef(0);
   const altoActual = useRef(0);
+  /** La barra de navegación de Android, que el alto informado del teclado no incluye. */
+  const { bottom: barraInferior } = useSafeAreaInsets();
+  const barra = useRef(barraInferior);
+  barra.current = barraInferior;
 
   const animar = useCallback(
     (valor: number, duracion: number) => {
@@ -62,7 +72,8 @@ export function useKeyboardHeight(): KeyboardHeight {
   const recalcularAndroid = useCallback(
     (duracion: number) => {
       const achicada = Math.max(0, altoBase.current - altoActual.current);
-      animar(Math.max(0, teclado.current - achicada), duracion);
+      const tapa = teclado.current > 0 ? teclado.current + barra.current : 0;
+      animar(Math.max(0, tapa - achicada), duracion);
     },
     [animar],
   );
