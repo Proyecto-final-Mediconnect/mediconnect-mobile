@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useSessionUser } from '../../auth/session';
-import { cancelAppointment, fetchMyAppointments } from '../api';
+import { cancelAppointment, fetchMyAppointments, requestFullRefund } from '../api';
 
 /**
  * Prefijo de la clave, el mismo que la web. Cada consulta le suma el id de la
@@ -24,5 +24,19 @@ export function useCancelAppointment() {
     // haber cambiado algo más —un reembolso, con ENG-65— y la lista tiene que
     // decir lo que dice el servidor.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: MY_APPOINTMENTS_KEY }),
+  });
+}
+
+/** El paciente elige el reembolso del 100 % de un turno a reprogramar (ENG-204). */
+export function useRequestFullRefund() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: requestFullRefund,
+    onSuccess: (_result, appointmentId) => {
+      void queryClient.invalidateQueries({ queryKey: MY_APPOINTMENTS_KEY });
+      // El detalle muestra el estado del pago: pasa a reembolsado.
+      void queryClient.invalidateQueries({ queryKey: ['payment', appointmentId] });
+    },
   });
 }

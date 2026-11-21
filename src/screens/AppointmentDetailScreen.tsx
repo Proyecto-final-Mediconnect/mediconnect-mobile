@@ -7,8 +7,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import {
   useCancelAppointment,
   useMyAppointments,
+  useRequestFullRefund,
 } from '../features/appointments/hooks/use-appointments';
 import {
+  awaitsPatientChoice,
   canCancel,
   canReschedule,
   formatLongDay,
@@ -20,7 +22,11 @@ import {
   statusTone,
 } from '../features/appointments/lib/appointments';
 import { joinStateOf } from '../features/appointments/lib/join-window';
-import { appointmentTimeline, type TimelineStep } from '../features/appointments/lib/timeline';
+import {
+  appointmentTimeline,
+  cuando,
+  type TimelineStep,
+} from '../features/appointments/lib/timeline';
 import { ProfessionalAvatar } from '../features/catalog/components/ProfessionalAvatar';
 import { usePublicProfile } from '../features/catalog/hooks/use-catalog';
 import { getPaymentStatus } from '../features/payments/api';
@@ -56,13 +62,17 @@ type IconName = ComponentProps<typeof Ionicons>['name'];
  * Turnos que habilitan el chat con el profesional: los pagos, hayan pasado o no.
  * Es `CHAT_ENABLING_STATUSES` del backend, que rechaza el resto con 403.
  */
-const HABILITAN_CHAT = new Set(['CONFIRMADO', 'COMPLETADO', 'NO_ASISTIO']);
+// `A_REPROGRAMAR` (ENG-204): el paciente pagó y el profesional canceló; es
+// cuando más sirve poder escribirle.
+const HABILITAN_CHAT = new Set(['CONFIRMADO', 'COMPLETADO', 'NO_ASISTIO', 'A_REPROGRAMAR']);
 
 export function AppointmentDetailScreen(): React.JSX.Element {
   const navigation = useNavigation();
   const { params } = useRoute<RouteProp<RootStackParamList, 'Turno'>>();
   const turnos = useMyAppointments();
   const cancelar = useCancelAppointment();
+  const reembolsar = useRequestFullRefund();
+  const [pidiendoReembolso, setPidiendoReembolso] = useState(false);
   const ahora = useNow(60_000);
   const [confirmando, setConfirmando] = useState(false);
 
@@ -128,6 +138,9 @@ export function AppointmentDetailScreen(): React.JSX.Element {
   // cámara y el micrófono antes, en una sala aparte.
   const puedeProbar = sala === 'OPEN' || sala === 'TOO_EARLY';
   const profesional = turno.professional;
+  // ENG-204: el profesional canceló un turno pagado y falta que el paciente elija.
+  const eligiendo = awaitsPatientChoice(turno);
+  const plazo = cuando(turno.reprogramDeadline);
 
   return (
     <Screen header={header}>
@@ -172,6 +185,37 @@ export function AppointmentDetailScreen(): React.JSX.Element {
         {puedeProbar ? <DeviceCheckButton /> : null}
       </View>
 
+      {eligiendo ? (
+        <View style={styles.eleccion} accessibilityRole="summary">
+          <Text style={styles.eleccionTitulo}>
+            {profesional
+              ? `${profesional.firstName} ${profesional.lastName} no va a poder atenderte`
+              : 'Tu profesional no va a poder atenderte'}
+          </Text>
+          {turno.cancellationReason ? (
+            <Text style={styles.eleccionTexto}>Motivo: “{turno.cancellationReason}”</Text>
+          ) : null}
+          <Text style={styles.eleccionTexto}>
+            No pagás nada más ni perdés lo que pagaste. Podés pedir el reembolso del 100 %
+            {plazo
+              ? `; si no elegís nada antes del ${plazo}, te lo devolvemos igual, automáticamente`
+              : ''}
+            .
+          </Text>
+          <Button
+            label="Pedir el reembolso del 100 %"
+            variant="accent"
+            onPress={() => setPidiendoReembolso(true)}
+            fullWidth
+          />
+        </View>
+      ) : null}
+      {turno.status === 'CANCELADO' &&
+      turno.cancelledBy !== 'PACIENTE' &&
+      turno.cancellationReason ? (
+        <Text style={styles.nota}>Motivo de la cancelación: “{turno.cancellationReason}”</Text>
+      ) : null}
+
       {/* Solo una consulta que ya se hizo se puede reseñar (ENG-80): el backend
           rechaza las demás con 409. */}
       {turno.status === 'COMPLETADO' || pendiente ? (
@@ -195,7 +239,8 @@ export function AppointmentDetailScreen(): React.JSX.Element {
       </View>
 
       <View style={styles.botones}>
-        {!isActive(turno) && profesional ? (
+        {/* Un turno a reprogramar se resuelve desde el aviso de arriba. */}
+        {!isActive(turno) && !eligiendo && profesional ? (
           <Button
             label={`Volver a reservar con ${profesional.firstName}`}
             onPress={() => navigation.navigate('Profesional', { id: profesional.id })}
@@ -243,6 +288,29 @@ export function AppointmentDetailScreen(): React.JSX.Element {
           />
         ) : null}
       </View>
+
+      <ConfirmSheet
+        visible={pidiendoReembolso}
+        title="¿Pedir el reembolso del 100 %?"
+        message={`Te devolvemos ${formatPrice(turno.price)}, todo lo que pagaste, al mismo medio de pago. El turno queda cancelado.`}
+        confirmLabel="Sí, quiero el reembolso"
+        dismissLabel="Volver"
+        pending={reembolsar.isPending}
+        error={reembolsar.isError ? reembolsar.error.message : null}
+        onDismiss={() => {
+          setPidiendoReembolso(false);
+          reembolsar.reset();
+        }}
+        onConfirm={() =>
+          reembolsar.mutate(turno.id, {
+            onSuccess: (resultado) => {
+              setResultadoDevolucion(refundOutcomeText(resultado.refund));
+              setPidiendoReembolso(false);
+              void pago.refetch();
+            },
+          })
+        }
+      />
 
       <ConfirmSheet
         visible={confirmando}
@@ -316,6 +384,19 @@ function Paso({ paso, ultimo }: { paso: TimelineStep; ultimo: boolean }): React.
 }
 
 const styles = StyleSheet.create({
+  eleccion: {
+    gap: spacing.md,
+    backgroundColor: colors.warm,
+    borderRadius: radius.card,
+    padding: spacing.lg,
+  },
+  eleccionTitulo: { fontFamily: fonts.bold, fontSize: fontSize.md, color: colors.warmInk },
+  eleccionTexto: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+    color: colors.warmInk,
+  },
   nota: {
     fontFamily: fonts.medium,
     fontSize: fontSize.sm,

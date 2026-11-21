@@ -29,6 +29,13 @@ export interface Appointment {
    */
   createdAt?: string | null;
   cancelledAt?: string | null;
+  /** Quién canceló (ADR-018): `PACIENTE`, `PROFESIONAL` o `SISTEMA`. Falta con
+   *  un backend anterior a ENG-204. */
+  cancelledBy?: string | null;
+  /** El motivo que dio el profesional al cancelar (ENG-204). */
+  cancellationReason?: string | null;
+  /** Hasta cuándo se puede elegir en un turno `A_REPROGRAMAR` (ISO-8601). */
+  reprogramDeadline?: string | null;
   /** Cuándo se movió de horario (ENG-66), o `null` si nunca: se reprograma una sola vez. */
   rescheduledAt?: string | null;
   /** En qué quedó el reembolso de un turno cancelado o liberado que estaba pago
@@ -62,6 +69,13 @@ export interface CancellationRefund {
 
 /** Lo que devuelve `PATCH /appointments/:id/cancel`. `refund` falta con un
  *  backend anterior a ENG-65. */
+/** Lo que devuelve pedir el reembolso total de un turno a reprogramar (ENG-204). */
+export interface FullRefundResult {
+  id: string;
+  status: 'CANCELADO';
+  refund: CancellationRefund;
+}
+
 export interface CancelledAppointment extends Appointment {
   refund?: CancellationRefund;
 }

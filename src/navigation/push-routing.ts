@@ -4,8 +4,10 @@ import { useEffect, useRef } from 'react';
 
 import {
   messagePushData,
+  pushTarget,
   registerForPush,
   type MessagePushData,
+  type PushTarget,
 } from '../infrastructure/notifications/push';
 import type { RootStackParamList } from './types';
 
@@ -81,7 +83,7 @@ export function usePushNotifications(
   navigationReady: boolean,
   signedOut: boolean,
 ): void {
-  const pending = useRef<MessagePushData | null>(null);
+  const pending = useRef<PushTarget | null>(null);
   // Los listeners se instalan una vez: leen el estado actual por estos refs.
   const listo = useRef(false);
   listo.current = signedIn && navigationReady;
@@ -89,12 +91,17 @@ export function usePushNotifications(
   sinSesion.current = signedOut;
 
   const openPending = useRef(() => {
-    const data = pending.current;
-    if (!data || !listo.current || !navigationRef.isReady()) return;
+    const target = pending.current;
+    if (!target || !listo.current || !navigationRef.isReady()) return;
     pending.current = null;
-    // Si no, al volver a abrir la app desde el ícono llevaría otra vez a este chat.
+    // Si no, al volver a abrir la app desde el ícono llevaría otra vez al mismo lugar.
     olvidarUltimoAviso();
-    navigationRef.navigate('Conversacion', conversationRoute(data));
+    if (target.kind === 'conversacion') {
+      navigationRef.navigate('Conversacion', conversationRoute(target.data));
+    } else {
+      // ENG-204: el aviso de un turno lleva a ese turno, donde están las opciones.
+      navigationRef.navigate('Turno', { appointmentId: target.appointmentId });
+    }
   }).current;
 
   useEffect(() => {
@@ -109,7 +116,7 @@ export function usePushNotifications(
         olvidarUltimoAviso();
         return;
       }
-      pending.current = messagePushData(response.notification.request.content.data);
+      pending.current = pushTarget(response.notification.request.content.data);
       openPending();
     };
     Notifications.getLastNotificationResponseAsync()
