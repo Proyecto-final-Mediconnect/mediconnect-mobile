@@ -23,7 +23,19 @@ export const MESSAGES_CHANNEL_ID = 'mensajes';
 export const APPOINTMENTS_CHANNEL_ID = 'turnos';
 
 /** Los avisos de un turno que llegan por push (ENG-204). */
-const APPOINTMENT_PUSH_TYPES = ['TURNO_CANCELADO_PROFESIONAL', 'REEMBOLSO_TOTAL'] as const;
+/**
+ * Los push que llevan a un turno (ENG-204, ENG-208): cambios, reembolsos,
+ * recordatorios y la confirmación del pago.
+ */
+const APPOINTMENT_PUSH_TYPES = [
+  'TURNO_CANCELADO_PROFESIONAL',
+  'REEMBOLSO_TOTAL',
+  'PLAZO_REPROGRAMACION_POR_VENCER',
+  'REEMBOLSO_ACTUALIZADO',
+  'PAGO_ACREDITADO',
+  'RECORDATORIO_24H',
+  'RECORDATORIO_1H',
+] as const;
 
 /** Lo que el backend pone en `data` del push de un turno. */
 export interface AppointmentPushData {

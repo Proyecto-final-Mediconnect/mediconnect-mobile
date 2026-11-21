@@ -72,6 +72,9 @@ const ICONOS: Record<string, IconName> = {
   TURNO_CANCELADO: 'close-circle-outline',
   TURNO_CANCELADO_PROFESIONAL: 'close-circle-outline',
   REEMBOLSO_TOTAL: 'cash-outline',
+  REEMBOLSO_ACTUALIZADO: 'cash-outline',
+  CANCELACION_CONFIRMADA: 'close-circle-outline',
+  PLAZO_REPROGRAMACION_POR_VENCER: 'time-outline',
   RECORDATORIO_24H: 'time-outline',
   RECORDATORIO_1H: 'time-outline',
   // Ya no se generan (no hay moderación), pero quedan los viejos en la bandeja.
