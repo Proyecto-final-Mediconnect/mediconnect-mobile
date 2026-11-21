@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { reprogramLead } from '../features/appointments/lib/reprogramCause';
 import { StackActions, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useMemo, useRef, useState } from 'react';
 import {
@@ -262,7 +263,7 @@ export function BookAppointmentScreen(): React.JSX.Element {
           icon="swap-horizontal-outline"
           message={
             desdeCancelacion
-              ? `${nombre} canceló tu turno del ${formatSentenceDay(aMover.date, aMover.startTime)}. Elegí el nuevo horario: no volvés a pagar y no cuenta como tu reprogramación.${plazo ? ` Tenés hasta el ${plazo}.` : ''}`
+              ? `${reprogramLead(aMover, nombre, formatSentenceDay(aMover.date, aMover.startTime))} Elegí el nuevo horario: no volvés a pagar y no cuenta como tu reprogramación.${plazo ? ` Tenés hasta el ${plazo}.` : ''}`
               : `Tu turno ahora: el ${formatSentenceDay(aMover.date, aMover.startTime)}. Elegí el nuevo horario. Un turno se puede reprogramar una sola vez.`
           }
         />

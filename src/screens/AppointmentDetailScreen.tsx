@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { reprogramHeadline, showsReason } from '../features/appointments/lib/reprogramCause';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ComponentProps } from 'react';
@@ -188,11 +189,12 @@ export function AppointmentDetailScreen(): React.JSX.Element {
       {eligiendo ? (
         <View style={styles.eleccion} accessibilityRole="summary">
           <Text style={styles.eleccionTitulo}>
-            {profesional
-              ? `${profesional.firstName} ${profesional.lastName} no va a poder atenderte`
-              : 'Tu profesional no va a poder atenderte'}
+            {reprogramHeadline(
+              turno,
+              profesional ? `${profesional.firstName} ${profesional.lastName}` : 'Tu profesional',
+            )}
           </Text>
-          {turno.cancellationReason ? (
+          {turno.cancellationReason && showsReason(turno) ? (
             <Text style={styles.eleccionTexto}>Motivo: “{turno.cancellationReason}”</Text>
           ) : null}
           <Text style={styles.eleccionTexto}>
