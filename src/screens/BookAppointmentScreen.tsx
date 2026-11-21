@@ -18,6 +18,7 @@ import {
   useRescheduleAppointment,
 } from '../features/appointments/hooks/use-booking';
 import { formatPrice, formatSentenceDay } from '../features/appointments/lib/appointments';
+import { cuando } from '../features/appointments/lib/timeline';
 import {
   bookingRange,
   dayParts,
@@ -68,6 +69,10 @@ export function BookAppointmentScreen(): React.JSX.Element {
       ) ?? null)
     : null;
   const envio = rescheduleId ? reprogramar : reservar;
+  // ENG-203: el turno que canceló el profesional. Se elige sin volver a pagar y
+  // no cuenta como la reprogramación del paciente.
+  const desdeCancelacion = aMover?.status === 'A_REPROGRAMAR';
+  const plazo = desdeCancelacion ? cuando(aMover?.reprogramDeadline) : null;
 
   const [diaElegido, setDiaElegido] = useState<string | null>(null);
   const [verCalendario, setVerCalendario] = useState(false);
@@ -255,7 +260,11 @@ export function BookAppointmentScreen(): React.JSX.Element {
       {aMover ? (
         <Notice
           icon="swap-horizontal-outline"
-          message={`Tu turno ahora: el ${formatSentenceDay(aMover.date, aMover.startTime)}. Elegí el nuevo horario. Un turno se puede reprogramar una sola vez.`}
+          message={
+            desdeCancelacion
+              ? `${nombre} canceló tu turno del ${formatSentenceDay(aMover.date, aMover.startTime)}. Elegí el nuevo horario: no volvés a pagar y no cuenta como tu reprogramación.${plazo ? ` Tenés hasta el ${plazo}.` : ''}`
+              : `Tu turno ahora: el ${formatSentenceDay(aMover.date, aMover.startTime)}. Elegí el nuevo horario. Un turno se puede reprogramar una sola vez.`
+          }
         />
       ) : null}
       <View style={styles.diasCabecera}>
@@ -356,7 +365,9 @@ export function BookAppointmentScreen(): React.JSX.Element {
         title={aMover ? '¿Mover el turno?' : '¿Reservar el turno?'}
         message={
           aMover && horario && dia
-            ? `Pasa del ${formatSentenceDay(aMover.date, aMover.startTime)} al ${formatSentenceDay(dia, horario.startTime)}, con ${nombre}. Es el mismo turno${aMover.status === 'CONFIRMADO' ? ', con el mismo pago' : ''}. Después no se puede volver a reprogramar.`
+            ? desdeCancelacion
+              ? `Tu turno con ${nombre} pasa al ${formatSentenceDay(dia, horario.startTime)}. Es el mismo turno, con el mismo pago: no volvés a pagar nada.`
+              : `Pasa del ${formatSentenceDay(aMover.date, aMover.startTime)} al ${formatSentenceDay(dia, horario.startTime)}, con ${nombre}. Es el mismo turno${aMover.status === 'CONFIRMADO' ? ', con el mismo pago' : ''}. Después no se puede volver a reprogramar.`
             : horario && dia
               ? `Con ${nombre}, el ${formatSentenceDay(dia, horario.startTime)} (${horario.durationMinutes} min)${
                   precio !== null ? `, por ${formatPrice(precio)}` : ''

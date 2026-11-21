@@ -196,15 +196,29 @@ export function AppointmentDetailScreen(): React.JSX.Element {
             <Text style={styles.eleccionTexto}>Motivo: “{turno.cancellationReason}”</Text>
           ) : null}
           <Text style={styles.eleccionTexto}>
-            No pagás nada más ni perdés lo que pagaste. Podés pedir el reembolso del 100 %
+            No pagás nada más ni perdés lo que pagaste: elegí otro horario o pedí el reembolso del
+            100 %
             {plazo
-              ? `; si no elegís nada antes del ${plazo}, te lo devolvemos igual, automáticamente`
+              ? `. Si no elegís nada antes del ${plazo}, te lo devolvemos igual, automáticamente`
               : ''}
             .
           </Text>
+          {profesional ? (
+            <Button
+              label="Elegir otro horario"
+              variant="accent"
+              onPress={() =>
+                navigation.navigate('Reservar', {
+                  professionalId: profesional.id,
+                  rescheduleId: turno.id,
+                })
+              }
+              fullWidth
+            />
+          ) : null}
           <Button
             label="Pedir el reembolso del 100 %"
-            variant="accent"
+            variant="secondary"
             onPress={() => setPidiendoReembolso(true)}
             fullWidth
           />

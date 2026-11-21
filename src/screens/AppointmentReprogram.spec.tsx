@@ -32,14 +32,25 @@ function aReprogramar(): Appointment {
 }
 
 /** El backend con el turno a reprogramar y el endpoint del reembolso. */
-function backend(): { pedidos: string[]; handlers: Parameters<typeof renderApp> } {
-  const registro = { pedidos: [] as string[] };
+function backend(): {
+  pedidos: string[];
+  reprogramados: unknown[];
+  handlers: Parameters<typeof renderApp>;
+} {
+  const registro = { pedidos: [] as string[], reprogramados: [] as unknown[] };
   let turno = aReprogramar();
   return Object.assign(registro, {
     handlers: [
       http.get(`${API_URL}/appointments/me`, () =>
         HttpResponse.json([turno, ...turnosDemo.listar()]),
       ),
+      // ENG-203: elegir otro horario desde A_REPROGRAMAR.
+      http.patch(`${API_URL}/appointments/:id/reschedule`, async ({ params, request }) => {
+        const body = (await request.json()) as { date: string; startTime: string };
+        registro.reprogramados.push({ id: String(params.id), ...body });
+        turno = { ...turno, status: 'CONFIRMADO', date: body.date, startTime: body.startTime };
+        return HttpResponse.json(turno);
+      }),
       http.patch(`${API_URL}/appointments/:id/full-refund`, ({ params }) => {
         registro.pedidos.push(String(params.id));
         turno = {
@@ -97,6 +108,26 @@ describe('Turno a reprogramar (ENG-204)', () => {
     expect(await screen.findByText(/Te devolvemos/)).toBeInTheDocument();
     expect(api.pedidos).toEqual([ID]);
     expect(await screen.findByText('Elegiste el reembolso del 100 %')).toBeInTheDocument();
+  });
+});
+
+describe('Elegir otro horario desde un turno a reprogramar (ENG-203)', () => {
+  it('lleva a la agenda en modo reprogramar, sin volver a pagar, y mueve el turno', async () => {
+    const api = backend();
+    await abrirDesdeElPush(...api.handlers);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Elegir otro horario' }));
+    await screen.findByRole('heading', { name: 'Reprogramar turno' });
+    expect(
+      await screen.findByText(/no volvés a pagar y no cuenta como tu reprogramación/),
+    ).toBeInTheDocument();
+
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Mover a las 09:30' }))[0]!);
+    expect(await screen.findByText(/no volvés a pagar nada/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Mover el turno' }));
+
+    expect(await screen.findByText('Movimos tu turno')).toBeInTheDocument();
+    expect(api.reprogramados).toEqual([expect.objectContaining({ id: ID, startTime: '09:30' })]);
   });
 });
 

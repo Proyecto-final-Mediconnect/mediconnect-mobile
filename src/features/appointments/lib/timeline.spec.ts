@@ -229,3 +229,22 @@ describe('appointmentTimeline cuando cancela el profesional (ENG-204)', () => {
     expect(titulos(pasos)).toContain('Venció el plazo para elegir otro horario');
   });
 });
+
+describe('appointmentTimeline después de elegir otro horario (ENG-203)', () => {
+  it('cuenta que lo canceló el profesional y que el paciente eligió otro horario', () => {
+    const pasos = appointmentTimeline(
+      turno('CONFIRMADO', {
+        professional: { id: 'pro', firstName: 'Ana', lastName: 'García' },
+        cancelledBy: 'PROFESIONAL',
+        cancelledAt: '2026-10-21T14:00:00Z',
+      }),
+      null,
+      AHORA,
+    );
+    expect(titulos(pasos).slice(2, 5)).toEqual([
+      'Ana García canceló el turno',
+      'Elegiste otro horario',
+      'Quedó confirmado',
+    ]);
+  });
+});
