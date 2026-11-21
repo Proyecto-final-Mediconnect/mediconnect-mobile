@@ -153,4 +153,19 @@ describe('qué avisos de turno se entienden (ENG-204)', () => {
     ).toBe('conversacion');
     expect(pushTarget({ tipo: 'X' })).toBeNull();
   });
+
+  it('los avisos de turno de ENG-208 también llevan al turno', () => {
+    for (const tipo of [
+      'PLAZO_REPROGRAMACION_POR_VENCER',
+      'REEMBOLSO_ACTUALIZADO',
+      'PAGO_ACREDITADO',
+      'RECORDATORIO_24H',
+      'RECORDATORIO_1H',
+    ]) {
+      expect(pushTarget({ tipo, appointmentId: 'a' })).toEqual({
+        kind: 'turno',
+        appointmentId: 'a',
+      });
+    }
+  });
 });
