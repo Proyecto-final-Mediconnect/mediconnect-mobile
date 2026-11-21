@@ -36,6 +36,12 @@ export interface Appointment {
   cancellationReason?: string | null;
   /** Hasta cuándo se puede elegir en un turno `A_REPROGRAMAR` (ISO-8601). */
   reprogramDeadline?: string | null;
+  /**
+   * ENG-237: por qué quedó a reprogramar si no fue una cancelación a mano: el
+   * profesional no se conectó (`AUSENCIA_PROFESIONAL`) o informó una falla
+   * técnica (`FALLA_TECNICA`). `null` o ausente es una cancelación.
+   */
+  reprogramCause?: 'AUSENCIA_PROFESIONAL' | 'FALLA_TECNICA' | null;
   /** Cuándo se movió de horario (ENG-66), o `null` si nunca: se reprograma una sola vez. */
   rescheduledAt?: string | null;
   /** En qué quedó el reembolso de un turno cancelado o liberado que estaba pago

@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react-native';
+import { reprogramStepTitle } from './reprogramCause';
 
 import { enArgentina } from '../../../shared/lib/argentina-time';
 import type { PaymentStatusView } from '../../payments/types';
@@ -127,7 +128,8 @@ export function appointmentTimeline(
     : 'Tu profesional';
   const canceloElProfesional: TimelineStep = {
     key: 'cancelado',
-    title: `${profesional} canceló el turno`,
+    // ENG-237: una consulta a la que no se conectó, o que falló, no se "canceló".
+    title: reprogramStepTitle(appointment, profesional),
     when: cuando(appointment.cancelledAt),
     tone: 'bad',
   };
