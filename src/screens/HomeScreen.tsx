@@ -67,6 +67,8 @@ export function HomeScreen(): React.JSX.Element {
   const sinPagar = proximos?.find(
     (t) => t.status === 'RESERVADO_SIN_PAGAR' && Date.parse(t.scheduledAt) > ahora.getTime(),
   );
+  // ENG-204: un turno que el profesional canceló espera que el paciente elija.
+  const aReprogramar = turnos.data?.find((t) => t.status === 'A_REPROGRAMAR');
   const siguientes = turnos.data ? laterAppointments(turnos.data, proxima, ahora) : [];
   const profesionales = turnos.data ? pastProfessionals(turnos.data, ahora) : [];
 
@@ -117,6 +119,14 @@ export function HomeScreen(): React.JSX.Element {
             label: 'Pagar',
             onPress: () => navigation.navigate('Pago', { appointmentId: sinPagar.id }),
           }}
+        />
+      ) : null}
+
+      {aReprogramar ? (
+        <Notice
+          icon="alert-circle-outline"
+          message={`${professionalName(aReprogramar)} canceló tu turno del ${formatSentenceDay(aReprogramar.date, aReprogramar.startTime)}. Elegí qué hacer: no perdés lo que pagaste.`}
+          action={{ label: 'Elegir', onPress: () => abrirTurno(aReprogramar) }}
         />
       ) : null}
 

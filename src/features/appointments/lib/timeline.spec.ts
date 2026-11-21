@@ -191,3 +191,41 @@ describe('appointmentTimeline', () => {
     });
   });
 });
+
+describe('appointmentTimeline cuando cancela el profesional (ENG-204)', () => {
+  const PRO = { id: 'pro', firstName: 'Ana', lastName: 'García' };
+  const base = {
+    professional: PRO,
+    cancelledBy: 'PROFESIONAL',
+    cancelledAt: '2026-10-21T14:00:00Z',
+    reprogramDeadline: '2026-10-23T14:00:00Z',
+  };
+
+  it('a reprogramar: quién canceló y qué tiene que elegir, con el plazo', () => {
+    const pasos = appointmentTimeline(turno('A_REPROGRAMAR', base), null, AHORA);
+    expect(titulos(pasos).slice(-3)).toEqual([
+      'Quedó confirmado',
+      'Ana García canceló el turno',
+      expect.stringMatching(/^Elegí otro horario o pedí el reembolso del 100 % \(hasta el /),
+    ]);
+    expect(pasos.at(-1)?.tone).toBe('current');
+  });
+
+  it('eligió el reembolso', () => {
+    const pasos = appointmentTimeline(
+      turno('CANCELADO', { ...base, refundState: { amount: 18_000, status: 'PROCESADO' } }),
+      null,
+      AHORA,
+    );
+    expect(titulos(pasos)).toContain('Elegiste el reembolso del 100 %');
+  });
+
+  it('venció el plazo', () => {
+    const pasos = appointmentTimeline(
+      turno('CANCELADO', { ...base, cancelledBy: 'SISTEMA' }),
+      null,
+      AHORA,
+    );
+    expect(titulos(pasos)).toContain('Venció el plazo para elegir otro horario');
+  });
+});

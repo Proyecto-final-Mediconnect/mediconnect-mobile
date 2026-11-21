@@ -19,6 +19,40 @@ import { apiRequest } from '../../shared/lib/api-client';
 /** El canal de Android de los avisos de mensajes. El backend manda a este. */
 export const MESSAGES_CHANNEL_ID = 'mensajes';
 
+/** El canal de Android de los avisos de turnos (ENG-204). Espeja `APPOINTMENTS_CHANNEL_ID` del backend. */
+export const APPOINTMENTS_CHANNEL_ID = 'turnos';
+
+/** Los avisos de un turno que llegan por push (ENG-204). */
+const APPOINTMENT_PUSH_TYPES = ['TURNO_CANCELADO_PROFESIONAL', 'REEMBOLSO_TOTAL'] as const;
+
+/** Lo que el backend pone en `data` del push de un turno. */
+export interface AppointmentPushData {
+  tipo: (typeof APPOINTMENT_PUSH_TYPES)[number];
+  appointmentId: string;
+}
+
+/** Lee la `data` de un aviso de turno; `null` si es otra cosa. */
+export function appointmentPushData(data: unknown): AppointmentPushData | null {
+  if (!data || typeof data !== 'object') return null;
+  const d = data as Record<string, unknown>;
+  const tipo = APPOINTMENT_PUSH_TYPES.find((t) => t === d.tipo);
+  if (!tipo || typeof d.appointmentId !== 'string' || d.appointmentId === '') return null;
+  return { tipo, appointmentId: d.appointmentId };
+}
+
+/** A dónde lleva tocar un aviso: la conversación del mensaje o el turno. */
+export type PushTarget =
+  { kind: 'conversacion'; data: MessagePushData } | { kind: 'turno'; appointmentId: string };
+
+/** Qué aviso es y a dónde lleva. `null` si la app no lo entiende. */
+export function pushTarget(data: unknown): PushTarget | null {
+  const mensaje = messagePushData(data);
+  if (mensaje) return { kind: 'conversacion', data: mensaje };
+  const turno = appointmentPushData(data);
+  if (turno) return { kind: 'turno', appointmentId: turno.appointmentId };
+  return null;
+}
+
 /** Para no volver a explicar el permiso en cada inicio si el paciente dijo "Ahora no". */
 const ASKED_KEY = 'push-permiso-explicado';
 
@@ -59,6 +93,13 @@ async function ensureChannel(): Promise<void> {
   await Notifications.setNotificationChannelAsync(MESSAGES_CHANNEL_ID, {
     name: 'Mensajes',
     description: 'Cuando un profesional te escribe.',
+    importance: Notifications.AndroidImportance.HIGH,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
+  });
+  // ENG-204: un cambio en un turno (el profesional lo canceló, el reembolso).
+  await Notifications.setNotificationChannelAsync(APPOINTMENTS_CHANNEL_ID, {
+    name: 'Turnos',
+    description: 'Cuando cambia un turno tuyo.',
     importance: Notifications.AndroidImportance.HIGH,
     lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
   });

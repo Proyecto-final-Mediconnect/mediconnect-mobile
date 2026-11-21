@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import type { Appointment } from '../types';
 import {
+  awaitsPatientChoice,
   canCancel,
   formatPrice,
   formatSentenceDay,
   formatShortDay,
+  isActive,
   nextAppointment,
   professionalName,
   splitByTime,
@@ -158,5 +160,15 @@ describe('formatSentenceDay y whenIs', () => {
     expect(whenIs(turno('2026-11-14', '15:00', '2026-11-14T18:00:00Z'), mediodia)).toBe(
       'hoy a las 15:00',
     );
+  });
+});
+
+describe('turno a reprogramar (ENG-204)', () => {
+  it('se nombra, se pinta como algo pendiente y espera la elección', () => {
+    expect(statusLabel('A_REPROGRAMAR')).toBe('A reprogramar');
+    expect(statusTone('A_REPROGRAMAR')).toBe('warning');
+    const t = { status: 'A_REPROGRAMAR' } as Appointment;
+    expect(awaitsPatientChoice(t)).toBe(true);
+    expect(isActive(t)).toBe(false);
   });
 });

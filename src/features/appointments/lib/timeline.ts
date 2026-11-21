@@ -90,7 +90,7 @@ export function appointmentTimeline(
   if (
     pago === 'APROBADO' ||
     (reembolso && pago !== 'RECHAZADO' && (status === 'CANCELADO' || status === 'LIBERADO')) ||
-    (!pago && ['CONFIRMADO', 'COMPLETADO', 'NO_ASISTIO'].includes(status))
+    (!pago && ['CONFIRMADO', 'COMPLETADO', 'NO_ASISTIO', 'A_REPROGRAMAR'].includes(status))
   ) {
     pasos.push({
       key: 'pago',
@@ -120,13 +120,59 @@ export function appointmentTimeline(
     });
   }
 
+  // ENG-204 (ADR-018): el profesional canceló. Se cuenta quién canceló y qué
+  // eligió el paciente (o que venció el plazo), no un "se canceló" genérico.
+  const profesional = appointment.professional
+    ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
+    : 'Tu profesional';
+  const canceloElProfesional: TimelineStep = {
+    key: 'cancelado',
+    title: `${profesional} canceló el turno`,
+    when: cuando(appointment.cancelledAt),
+    tone: 'bad',
+  };
+
+  if (status === 'A_REPROGRAMAR') {
+    const hasta = cuando(appointment.reprogramDeadline);
+    pasos.push(
+      { key: 'confirmado', title: 'Quedó confirmado', when: null, tone: 'done' },
+      canceloElProfesional,
+      {
+        key: 'eleccion',
+        title: `Elegí otro horario o pedí el reembolso del 100 %${hasta ? ` (hasta el ${hasta})` : ''}`,
+        when: null,
+        tone: 'current',
+      },
+    );
+    return pasos;
+  }
+
   if (status === 'CANCELADO') {
-    pasos.push({
-      key: 'fin',
-      title: 'Se canceló el turno',
-      when: cuando(appointment.cancelledAt),
-      tone: 'bad',
-    });
+    if (appointment.cancelledBy === 'PROFESIONAL' || appointment.cancelledBy === 'SISTEMA') {
+      pasos.push(canceloElProfesional);
+      if (appointment.cancelledBy === 'SISTEMA') {
+        pasos.push({
+          key: 'fin',
+          title: 'Venció el plazo para elegir otro horario',
+          when: null,
+          tone: 'bad',
+        });
+      } else if (reembolso) {
+        pasos.push({
+          key: 'fin',
+          title: 'Elegiste el reembolso del 100 %',
+          when: null,
+          tone: 'done',
+        });
+      }
+    } else {
+      pasos.push({
+        key: 'fin',
+        title: 'Se canceló el turno',
+        when: cuando(appointment.cancelledAt),
+        tone: 'bad',
+      });
+    }
     if (reembolso) pasos.push({ key: 'reembolso', when: null, ...reembolso });
     return pasos;
   }

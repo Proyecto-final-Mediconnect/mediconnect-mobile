@@ -21,6 +21,7 @@ const STATUS_LABELS: Record<string, string> = {
   COMPLETADO: 'Completado',
   NO_ASISTIO: 'No asistió',
   LIBERADO: 'Liberado',
+  A_REPROGRAMAR: 'A reprogramar',
 };
 
 export function statusLabel(status: string): string {
@@ -33,12 +34,22 @@ export function statusLabel(status: string): string {
  */
 export function statusTone(status: string): 'ok' | 'warning' | 'neutral' {
   if (status === 'CONFIRMADO') return 'ok';
-  if (status === 'RESERVADO_SIN_PAGAR') return 'warning';
+  // ENG-204: el profesional canceló y el paciente tiene que elegir. Pide algo.
+  if (status === 'RESERVADO_SIN_PAGAR' || status === 'A_REPROGRAMAR') return 'warning';
   return 'neutral';
 }
 
 export function isActive(appointment: Appointment): boolean {
   return ACTIVE_STATUSES.includes(appointment.status);
+}
+
+/**
+ * Un turno pagado que el profesional canceló y espera que el paciente elija
+ * otro horario o el reembolso (ENG-204, ADR-018). No ocupa el horario, pero
+ * tampoco terminó.
+ */
+export function awaitsPatientChoice(appointment: Appointment): boolean {
+  return appointment.status === 'A_REPROGRAMAR';
 }
 
 /**

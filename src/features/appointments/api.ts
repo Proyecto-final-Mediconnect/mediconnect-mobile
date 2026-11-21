@@ -5,6 +5,7 @@ import type {
   BookAppointmentInput,
   CancellationRefund,
   CancelledAppointment,
+  FullRefundResult,
 } from './types';
 
 /* API de turnos: los mismos endpoints que usa la web. */
@@ -25,6 +26,18 @@ export function cancelAppointment(id: string): Promise<CancelledAppointment> {
   return apiRequest<CancelledAppointment>(`/appointments/${id}/cancel`, {
     method: 'PATCH',
     fallbackMessage: 'No se pudo cancelar el turno.',
+  });
+}
+
+/**
+ * `PATCH /appointments/:id/full-refund` (ENG-204): el paciente elige el
+ * reembolso del 100 % de un turno que el profesional canceló. El turno queda
+ * cancelado.
+ */
+export function requestFullRefund(id: string): Promise<FullRefundResult> {
+  return apiRequest<FullRefundResult>(`/appointments/${encodeURIComponent(id)}/full-refund`, {
+    method: 'PATCH',
+    fallbackMessage: 'No se pudo pedir el reembolso.',
   });
 }
 
