@@ -1,6 +1,6 @@
-/** Roles de dominio de MediConnect. Igual que en la web: `user_role` en la base
- *  conserva MODERADOR, pero no se usa (no hay moderación). */
-export type UserRole = 'PACIENTE' | 'PROFESIONAL';
+/** Roles de dominio de MediConnect, igual que en la web. La app es solo para
+ *  pacientes: el profesional y el administrador (ENG-240) entran por la web. */
+export type UserRole = 'PACIENTE' | 'PROFESIONAL' | 'ADMINISTRADOR';
 
 /**
  * El usuario de la sesión, tal como lo devuelve `GET /me`. El `role` sale de
