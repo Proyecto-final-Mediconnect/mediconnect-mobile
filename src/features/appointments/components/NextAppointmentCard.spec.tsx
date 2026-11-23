@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { withDeadlines } from '../../../mocks/deadlines';
 import { render as renderBase, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { describe, expect, it } from 'vitest';
@@ -6,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import type { Appointment } from '../types';
 import { NextAppointmentCard } from './NextAppointmentCard';
 
-const TURNO: Appointment = {
+const TURNO: Appointment = withDeadlines({
   id: 'a1',
   scheduledAt: '2026-09-03T12:30:00.000Z',
   date: '2026-09-03',
@@ -17,7 +18,7 @@ const TURNO: Appointment = {
   status: 'CONFIRMADO',
   professional: { id: 'p1', firstName: 'Valeria', lastName: 'Ocampo' },
   patient: { id: 'q1', firstName: 'Marina', lastName: 'Sosa' },
-};
+});
 
 // El botón de la sala pide la sala con TanStack Query.
 function render(ui: ReactElement): void {

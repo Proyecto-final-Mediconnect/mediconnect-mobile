@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { withDeadlines } from '../../../mocks/deadlines';
 
 import type { Appointment } from '../types';
 import {
@@ -19,7 +20,7 @@ import {
 const NOW = new Date('2026-09-02T12:00:00.000Z');
 
 function turno(overrides: Partial<Appointment> = {}): Appointment {
-  return {
+  return withDeadlines({
     id: 'a1',
     scheduledAt: '2026-09-03T12:30:00.000Z',
     date: '2026-09-03',
@@ -31,7 +32,7 @@ function turno(overrides: Partial<Appointment> = {}): Appointment {
     professional: { id: 'p1', firstName: 'Valeria', lastName: 'Ocampo' },
     patient: { id: 'q1', firstName: 'Marina', lastName: 'Sosa' },
     ...overrides,
-  };
+  });
 }
 
 describe('nextAppointment', () => {

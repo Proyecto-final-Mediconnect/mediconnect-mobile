@@ -58,7 +58,7 @@ export function AppointmentsScreen(): React.JSX.Element {
   const [filtros, setFiltros] = useState<AgendaFilters>(EMPTY_AGENDA_FILTERS);
   const [verFiltros, setVerFiltros] = useState(false);
   const [aCancelar, setACancelar] = useState<Appointment | null>(null);
-  const devolucion = useRefundNotice(aCancelar, ahora);
+  const devolucion = useRefundNotice(aCancelar);
   /** Qué pasó con la devolución del último turno cancelado (ENG-65). Solo lo
    *  dice la respuesta de la cancelación, así que se muestra hasta que se cierra. */
   const [resultadoDevolucion, setResultadoDevolucion] = useState<string | null>(null);

@@ -6,12 +6,6 @@ import type { EmergencyScope, MediPassAccess, MediPassScope, VitalBlock } from '
  * Puras y testeadas, como el resto.
  */
 
-/**
- * Cada cuánto rota el código: los 5 minutos de ENG-72. Lo rota el servidor; acá
- * solo sirve para dibujar la barra de lo que falta.
- */
-export const ROTACION_MS = 5 * 60_000;
-
 /** Milisegundos hasta `expiraEl`, nunca negativo. */
 export function msHasta(expiraEl: string, now: Date): number {
   return Math.max(0, new Date(expiraEl).getTime() - now.getTime());

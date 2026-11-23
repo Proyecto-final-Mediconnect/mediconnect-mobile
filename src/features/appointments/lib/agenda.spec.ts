@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { withDeadlines } from '../../../mocks/deadlines';
 
 import type { Appointment } from '../types';
 import { agendaSections, filterAgenda, inPeriod, EMPTY_AGENDA_FILTERS } from './agenda';
@@ -6,7 +7,7 @@ import { agendaSections, filterAgenda, inPeriod, EMPTY_AGENDA_FILTERS } from './
 const AHORA = new Date('2026-10-21T15:00:00Z'); // 21/10, 12:00 en Argentina
 
 function turno(id: string, date: string, status: string, apellido = 'García'): Appointment {
-  return {
+  return withDeadlines({
     id,
     scheduledAt: `${date}T13:00:00Z`,
     date,
@@ -17,7 +18,7 @@ function turno(id: string, date: string, status: string, apellido = 'García'): 
     status,
     professional: { id: 'p', firstName: 'Ana', lastName: apellido },
     patient: null,
-  };
+  });
 }
 
 describe('agendaSections', () => {

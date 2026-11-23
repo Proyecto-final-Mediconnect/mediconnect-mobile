@@ -2,7 +2,7 @@
 // (toBeInTheDocument, toHaveTextContent, etc.).
 import '@testing-library/jest-dom/vitest';
 import { cleanup, configure } from '@testing-library/react';
-import { afterAll, afterEach, beforeAll } from 'vitest';
+import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 
 import { API_URL, server } from './src/test/msw-server';
 // El mismo módulo al que apunta el alias de `expo-secure-store`.
@@ -50,3 +50,16 @@ globalThis.ResizeObserver ??= class {
   unobserve(): void {}
   disconnect(): void {}
 };
+
+/**
+ * `usePublicConfig` (ENG-229) devuelve en todos los tests lo que responde hoy
+ * `GET /config`: así ningún test necesita un handler de MSW para `/config`.
+ * `getPublicConfig` queda real y tiene su propio test.
+ */
+vi.mock('./src/shared/config/public-config', async (importOriginal) => {
+  const { TEST_PUBLIC_CONFIG } = await import('./src/shared/config/test-public-config');
+  return {
+    ...(await importOriginal<typeof import('./src/shared/config/public-config')>()),
+    usePublicConfig: () => TEST_PUBLIC_CONFIG,
+  };
+});

@@ -4,7 +4,8 @@ import type {
   MediPassHistory,
   VitalBlock,
 } from '../features/medipass/types';
-import { ROTACION_MS } from '../features/medipass/lib/medipass';
+/** Cada cuánto rota el código en el backend (ENG-72): lo que informa `GET /config`. */
+const ROTACION_MS = 5 * 60_000;
 
 /**
  * MediPass de ejemplo para los tests: lo que contesta el backend falso (MSW).

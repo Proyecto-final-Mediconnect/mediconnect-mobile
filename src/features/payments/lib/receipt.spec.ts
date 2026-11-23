@@ -10,10 +10,11 @@ describe('comprobante y espera del pago (ENG-199)', () => {
     expect(paymentMethodLabel(null)).toBe('MercadoPago');
   });
 
-  it('cuenta los 15 minutos para pagar desde la reserva', () => {
-    const reserva = '2026-11-17T12:00:00.000Z';
-    expect(restanteParaPagar(reserva, new Date('2026-11-17T12:03:00.000Z'))).toBe(12 * 60_000);
-    expect(restanteParaPagar(reserva, new Date('2026-11-17T12:30:00.000Z'))).toBe(0);
+  it('cuenta hasta el plazo que manda el backend en el turno (ENG-229)', () => {
+    const vence = '2026-11-17T12:15:00.000Z';
+    expect(restanteParaPagar(vence, new Date('2026-11-17T12:03:00.000Z'))).toBe(12 * 60_000);
+    expect(restanteParaPagar(vence, new Date('2026-11-17T12:30:00.000Z'))).toBe(0);
+    expect(restanteParaPagar(null, new Date())).toBeNull();
     expect(restanteParaPagar(undefined, new Date())).toBeNull();
     expect(formatRestante(65_500)).toBe('1:06');
   });

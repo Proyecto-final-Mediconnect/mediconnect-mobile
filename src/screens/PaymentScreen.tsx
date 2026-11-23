@@ -260,7 +260,7 @@ export function PaymentScreen(): React.JSX.Element {
   // Antes de abrir MercadoPago, o de vuelta sin un resultado definitivo.
   const sePuedePagar = canPay(turno);
   const esperando = fase !== 'inicio' && resultado !== 'RECHAZADO';
-  const restante = restanteParaPagar(turno.createdAt, ahora);
+  const restante = restanteParaPagar(turno.paymentDueAt, ahora);
 
   return (
     <Screen header={header}>
