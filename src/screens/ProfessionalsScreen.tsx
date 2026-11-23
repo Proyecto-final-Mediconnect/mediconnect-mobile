@@ -182,8 +182,16 @@ export function ProfessionalsScreen(): React.JSX.Element {
           completandoBusqueda ? undefined : (
             <EmptyState
               icon="search-outline"
-              title="No hay profesionales con esos filtros"
-              description="Probá con otra especialidad u otro precio."
+              title={
+                buscado.trim() !== ''
+                  ? `No hay resultados para “${buscado.trim()}”`
+                  : 'No hay profesionales con esos filtros'
+              }
+              description={
+                buscado.trim() !== ''
+                  ? 'Revisá cómo está escrito o probá con otra especialidad.'
+                  : 'Probá con otra especialidad u otro precio.'
+              }
               action={hayFiltros ? { label: 'Limpiar filtros', onPress: limpiar } : undefined}
             />
           )

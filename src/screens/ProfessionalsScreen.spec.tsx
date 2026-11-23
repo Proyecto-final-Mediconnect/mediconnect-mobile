@@ -81,7 +81,7 @@ describe('Buscar profesionales (ENG-132)', () => {
     fireEvent.change(screen.getByLabelText('Buscar profesional'), {
       target: { value: 'nadie' },
     });
-    expect(await screen.findByText('No hay profesionales con esos filtros')).toBeInTheDocument();
+    expect(await screen.findByText('No hay resultados para “nadie”')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
     expect(await lista().findByText('Martín Olivares')).toBeInTheDocument();
