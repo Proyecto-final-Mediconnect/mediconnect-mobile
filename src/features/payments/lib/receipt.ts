@@ -18,15 +18,19 @@ export function paymentMethodLabel(method: string | null | undefined): string {
   return (method && METHOD_LABELS[method]) ?? 'MercadoPago';
 }
 
-/** Lo que tiene el paciente para pagar desde que reservó (ENG-101). */
-const MINUTOS_PARA_PAGAR = 15;
-
-/** Milisegundos hasta que se libera la reserva, o `null` si no se sabe cuándo se reservó. */
-export function restanteParaPagar(createdAt: string | null | undefined, now: Date): number | null {
-  if (!createdAt) return null;
-  const desde = new Date(createdAt).getTime();
-  if (Number.isNaN(desde)) return null;
-  return Math.max(0, desde + MINUTOS_PARA_PAGAR * 60_000 - now.getTime());
+/**
+ * Milisegundos hasta que se libera la reserva (ENG-101), o `null` si el turno no
+ * tiene plazo de pago. El plazo lo manda el backend en el turno (`paymentDueAt`,
+ * ENG-229): la app no sabe cuántos minutos son.
+ */
+export function restanteParaPagar(
+  paymentDueAt: string | null | undefined,
+  now: Date,
+): number | null {
+  if (!paymentDueAt) return null;
+  const hasta = new Date(paymentDueAt).getTime();
+  if (Number.isNaN(hasta)) return null;
+  return Math.max(0, hasta - now.getTime());
 }
 
 /** `12:05`. */

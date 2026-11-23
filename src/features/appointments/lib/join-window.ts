@@ -14,16 +14,6 @@ import type { Appointment } from '../types';
  */
 
 /**
- * Minutos antes del horario en que se abre la sala. Es el criterio de aceptación
- * de ENG-56. Espeja `JOIN_OPENS_MINUTES_BEFORE` del backend: si cambia una,
- * tiene que cambiar la otra.
- */
-export const JOIN_OPENS_MINUTES_BEFORE = 10;
-
-/** Tolerancia después del final del turno. Espeja `JOIN_GRACE_MINUTES_AFTER`. */
-export const JOIN_GRACE_MINUTES_AFTER = 15;
-
-/**
  * Estados del turno que tienen videoconsulta. Espeja `JOINABLE_STATUSES`.
  *
  * `RESERVADO_SIN_PAGAR` también tiene sala, pero no se entra hasta pagar
@@ -55,15 +45,15 @@ export interface JoinWindow {
   closesAt: Date;
 }
 
+/**
+ * La ventana viene en el turno (`joinOpensAt` y `joinClosesAt`, ENG-229), con
+ * las reglas del backend: la app no las repite. Son instantes ISO-8601, así que
+ * compararlos no depende del huso del teléfono.
+ */
 export function joinWindowFor(appointment: Appointment): JoinWindow {
-  // Se calcula sobre `scheduledAt` (UTC) y no sobre `date` + `startTime`, que ya
-  // son la hora local formateada: comparar instantes no depende del huso del
-  // navegador ni de que el reloj del usuario esté en Argentina.
-  const start = new Date(appointment.scheduledAt).getTime();
-
   return {
-    opensAt: new Date(start - JOIN_OPENS_MINUTES_BEFORE * 60_000),
-    closesAt: new Date(start + (appointment.durationMinutes + JOIN_GRACE_MINUTES_AFTER) * 60_000),
+    opensAt: new Date(appointment.joinOpensAt),
+    closesAt: new Date(appointment.joinClosesAt),
   };
 }
 

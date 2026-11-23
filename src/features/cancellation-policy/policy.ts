@@ -1,5 +1,5 @@
 import { formatPrice } from '../appointments/lib/appointments';
-import type { Appointment, CancellationRefund } from '../appointments/types';
+import type { CancellationRefund } from '../appointments/types';
 
 /**
  * Política de cancelación de un profesional (ENG-67), tal como viaja en
@@ -16,20 +16,6 @@ export interface CancellationPolicy {
 }
 
 const MAX_REFUND_PERCENT = 100;
-
-/**
- * Qué porcentaje se devuelve cancelando en `now` un turno de `scheduledAt`. La
- * misma cuenta que el backend y la web: en el borde exacto gana el paciente, y
- * un turno ya pasado devuelve 0.
- */
-export function refundPercentFor(policy: CancellationPolicy, scheduledAt: Date, now: Date): number {
-  const hoursUntil = (scheduledAt.getTime() - now.getTime()) / 3_600_000;
-
-  if (hoursUntil < 0) return 0;
-  if (hoursUntil >= policy.hoursFullRefund) return MAX_REFUND_PERCENT;
-  if (hoursUntil >= policy.hoursPartialRefund) return policy.partialRefundPercent;
-  return 0;
-}
 
 function horas(n: number): string {
   return n === 1 ? '1 hora' : `${n} horas`;
@@ -70,42 +56,17 @@ export function describePolicy(policy: CancellationPolicy): string {
 }
 
 /**
- * Lo que se le dice al paciente antes de cancelar un turno pagado, a partir de
- * cuánto le corresponde.
- *
- * `automatico` dice si el backend pide la devolución solo (ENG-65). Con un
- * backend anterior no lo hace, y el texto no lo promete.
+ * Lo que se le dice al paciente antes de cancelar un turno pagado, con la
+ * cotización del backend (ENG-65): el porcentaje y el monto los calcula él
+ * (ENG-229: la app no repite la cuenta).
  */
-export function refundQuoteText(percent: number, amount: number, automatico: boolean): string {
+export function refundQuoteText(percent: number, amount: number): string {
   if (percent === 0) {
     return 'Según la política del profesional, si cancelás ahora no te corresponde devolución.';
   }
 
   const cuanto = percent === MAX_REFUND_PERCENT ? 'la devolución total' : `el ${percent} %`;
-  return `Según la política del profesional, te corresponde ${cuanto} (${formatPrice(amount)}). ${
-    automatico
-      ? 'Te lo devolvemos por MercadoPago, al mismo medio con el que pagaste.'
-      : 'Por ahora la devolución no se hace sola: se gestiona aparte.'
-  }`;
-}
-
-/**
- * La cuenta hecha en la app con la política actual del profesional. Es el
- * respaldo para un backend sin la cotización de ENG-65: la cotización usa la
- * política guardada en el turno al reservar, que es la que vale.
- *
- * `null` si el turno no está pagado (no hay nada que devolver) o si no se sabe
- * la política: mejor no decir un porcentaje que decir uno falso.
- */
-export function refundNotice(
-  appointment: Appointment,
-  policy: CancellationPolicy | undefined,
-  now: Date,
-): string | null {
-  if (appointment.status !== 'CONFIRMADO' || !policy) return null;
-
-  const pct = refundPercentFor(policy, new Date(appointment.scheduledAt), now);
-  return refundQuoteText(pct, (appointment.price * pct) / 100, false);
+  return `Según la política del profesional, te corresponde ${cuanto} (${formatPrice(amount)}). Te lo devolvemos por MercadoPago, al mismo medio con el que pagaste.`;
 }
 
 /**

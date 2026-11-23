@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { withDeadlines } from '../../../mocks/deadlines';
 import type { Appointment } from '../types';
 import { canJoin, firstJoinable, joinStateOf, joinWindowFor, timeUntilOpen } from './join-window';
 
@@ -11,7 +12,7 @@ import { canJoin, firstJoinable, joinStateOf, joinWindowFor, timeUntilOpen } fro
 const SCHEDULED_AT = '2026-08-27T15:00:00.000Z';
 
 function appointment(overrides: Partial<Appointment> = {}): Appointment {
-  return {
+  return withDeadlines({
     id: 'a1',
     scheduledAt: SCHEDULED_AT,
     date: '2026-08-27',
@@ -23,7 +24,7 @@ function appointment(overrides: Partial<Appointment> = {}): Appointment {
     professional: { id: 'p1', firstName: 'Ana', lastName: 'Gómez' },
     patient: { id: 'q1', firstName: 'Luis', lastName: 'Pérez' },
     ...overrides,
-  };
+  });
 }
 
 describe('joinWindowFor', () => {
@@ -40,6 +41,19 @@ describe('joinWindowFor', () => {
     const largo = joinWindowFor(appointment({ durationMinutes: 60 })).closesAt.getTime();
 
     expect(largo - corto).toBe(45 * 60_000);
+  });
+
+  it('usa la ventana que manda el backend, no una propia (ENG-229)', () => {
+    // Si el backend cambiara la regla a 20 minutos antes, la app lo sigue sola.
+    const turno = appointment({
+      joinOpensAt: '2026-08-27T14:40:00.000Z',
+      joinClosesAt: '2026-08-27T16:00:00.000Z',
+    });
+    expect(joinWindowFor(turno)).toEqual({
+      opensAt: new Date('2026-08-27T14:40:00.000Z'),
+      closesAt: new Date('2026-08-27T16:00:00.000Z'),
+    });
+    expect(joinStateOf(turno, new Date('2026-08-27T14:45:00.000Z')).kind).toBe('OPEN');
   });
 });
 
@@ -137,7 +151,7 @@ describe('timeUntilOpen', () => {
 describe('firstJoinable', () => {
   /** Turno de las 10:00 del 20/08/2026 (13:00 UTC), 30 minutos. */
   function turno(overrides: Partial<Appointment> & { id: string }): Appointment {
-    return {
+    return withDeadlines({
       scheduledAt: '2026-08-20T13:00:00Z',
       date: '2026-08-20',
       startTime: '10:00',
@@ -148,7 +162,7 @@ describe('firstJoinable', () => {
       professional: null,
       patient: null,
       ...overrides,
-    };
+    });
   }
 
   it('sin turnos abiertos no devuelve ninguno', () => {

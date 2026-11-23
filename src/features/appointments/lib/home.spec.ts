@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { withDeadlines } from '../../../mocks/deadlines';
 
 import type { Appointment } from '../types';
 import { greeting, laterAppointments, pastProfessionals } from './home';
@@ -6,7 +7,7 @@ import { greeting, laterAppointments, pastProfessionals } from './home';
 const NOW = new Date('2026-10-01T15:00:00.000Z');
 
 function turno(id: string, scheduledAt: string, status: string, pro = 'p1'): Appointment {
-  return {
+  return withDeadlines({
     id,
     scheduledAt,
     date: scheduledAt.slice(0, 10),
@@ -17,7 +18,7 @@ function turno(id: string, scheduledAt: string, status: string, pro = 'p1'): App
     status,
     professional: { id: pro, firstName: pro, lastName: 'X' },
     patient: null,
-  };
+  });
 }
 
 describe('greeting', () => {

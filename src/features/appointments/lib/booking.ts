@@ -2,13 +2,6 @@ import { diaArgentino } from '../../../shared/lib/argentina-time';
 import type { AvailabilityDay, AvailabilitySlot } from '../types';
 
 /**
- * Cuántos días se ofrecen para reservar: los mismos 60 que la web y que el
- * horizonte del backend (`BOOKING_HORIZON_DAYS`). Se piden en un solo pedido; la
- * tira muestra los más cercanos y el calendario, el resto.
- */
-export const BOOKING_WINDOW_DAYS = 60;
-
-/**
  * Si `fecha` (`YYYY-MM-DD`) es hoy en Argentina. Se compara con el día real y no
  * con la posición en el arreglo: el rango se fija al montar la pantalla y la
  * respuesta puede quedar en caché, así que pasada la medianoche el primer día
@@ -18,9 +11,13 @@ export function esHoy(fecha: string, ahora: Date = new Date()): boolean {
   return fecha === diaArgentino(ahora);
 }
 
-/** Desde hoy, en Argentina, hasta el final del horizonte. */
-export function bookingRange(now: Date): { from: string; to: string } {
-  return { from: diaArgentino(now), to: diaArgentino(now, BOOKING_WINDOW_DAYS - 1) };
+/**
+ * Desde hoy, en Argentina, hasta el final del horizonte. `horizonDays` es el que
+ * informa el backend (`GET /config`, ENG-229). Se pide todo en un solo pedido; la
+ * tira muestra los días más cercanos y el calendario, el resto.
+ */
+export function bookingRange(now: Date, horizonDays: number): { from: string; to: string } {
+  return { from: diaArgentino(now), to: diaArgentino(now, horizonDays - 1) };
 }
 
 /**

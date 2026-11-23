@@ -1,5 +1,6 @@
 import type { Appointment, AppointmentParty } from '../features/appointments/types';
 import { desdeArgentina, diaArgentino, enArgentina } from '../shared/lib/argentina-time';
+import { withDeadlines } from './deadlines';
 import { PACIENTE_DEMO } from './patient';
 
 /**
@@ -35,7 +36,7 @@ function turno(
   price = 18_500,
 ): Appointment {
   const { date, time } = enArgentina(instante);
-  return {
+  return withDeadlines({
     id,
     scheduledAt: instante.toISOString(),
     date,
@@ -46,7 +47,21 @@ function turno(
     status,
     professional,
     patient: PACIENTE,
-  };
+  });
+}
+
+/** El turno con los plazos recalculados, como los devolvería el backend tras un cambio. */
+function recalcular(turno: Appointment, cambios: Partial<Appointment>): Appointment {
+  // `undefined` hace que `withDeadlines` los vuelva a calcular.
+  return withDeadlines({
+    ...turno,
+    ...cambios,
+    paymentDueAt: undefined,
+    joinOpensAt: undefined,
+    joinClosesAt: undefined,
+    manualCloseUntil: undefined,
+    fullRefundUntil: undefined,
+  });
 }
 
 /** Un día relativo a hoy, a una hora fija de Argentina. */
@@ -77,7 +92,7 @@ export const turnosDemo = {
   cancelar(id: string): Appointment {
     const actual = turnos.find((t) => t.id === id);
     if (!actual) throw new Error('No encontramos ese turno.');
-    const cancelado = { ...actual, status: 'CANCELADO' };
+    const cancelado = recalcular(actual, { status: 'CANCELADO' });
     turnos = turnos.map((t) => (t.id === id ? cancelado : t));
     return cancelado;
   },
@@ -105,13 +120,12 @@ export const turnosDemo = {
     const actual = turnos.find((t) => t.id === id);
     if (!actual || actual.rescheduledAt) return null;
     const instante = desdeArgentina(date, startTime);
-    const movido: Appointment = {
-      ...actual,
+    const movido = recalcular(actual, {
       scheduledAt: instante.toISOString(),
       date,
       startTime,
       rescheduledAt: new Date().toISOString(),
-    };
+    });
     turnos = turnos
       .map((t) => (t.id === id ? movido : t))
       .sort((a, b) => Date.parse(a.scheduledAt) - Date.parse(b.scheduledAt));

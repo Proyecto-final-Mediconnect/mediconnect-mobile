@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { withDeadlines } from '../../../mocks/deadlines';
 
 import { mensajesCapturados } from '../../../../test-stubs/sentry-react-native';
 
@@ -8,7 +9,7 @@ import { appointmentTimeline, refundStep } from './timeline';
 const AHORA = new Date('2026-10-21T15:00:00Z');
 
 function turno(status: string, extra: Partial<Appointment> = {}): Appointment {
-  return {
+  return withDeadlines({
     id: 't',
     scheduledAt: '2026-10-25T13:00:00Z',
     date: '2026-10-25',
@@ -20,7 +21,7 @@ function turno(status: string, extra: Partial<Appointment> = {}): Appointment {
     professional: null,
     patient: null,
     ...extra,
-  };
+  });
 }
 
 const titulos = (t: ReturnType<typeof appointmentTimeline>): string[] => t.map((p) => p.title);

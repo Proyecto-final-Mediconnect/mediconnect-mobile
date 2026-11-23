@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { enArgentina } from '../shared/lib/argentina-time';
 import { reprogramHeadline, showsReason } from '../features/appointments/lib/reprogramCause';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
@@ -29,7 +30,6 @@ import {
   type TimelineStep,
 } from '../features/appointments/lib/timeline';
 import { ProfessionalAvatar } from '../features/catalog/components/ProfessionalAvatar';
-import { usePublicProfile } from '../features/catalog/hooks/use-catalog';
 import { getPaymentStatus } from '../features/payments/api';
 import { AppointmentReview } from '../features/reviews/components/AppointmentReview';
 import { usePendingReviews } from '../features/reviews/hooks/use-reviews';
@@ -37,7 +37,7 @@ import { canPay } from '../features/payments/lib/payment';
 import { DeviceCheckButton } from '../features/video/components/DeviceCheckButton';
 import { JoinConsultationButton } from '../features/video/components/JoinConsultationButton';
 import type { RootStackParamList } from '../navigation/types';
-import { refundOutcomeText, refundPercentFor } from '../features/cancellation-policy/policy';
+import { refundOutcomeText } from '../features/cancellation-policy/policy';
 import { useRefundNotice } from '../features/cancellation-policy/use-refund-notice';
 import { useNow } from '../shared/hooks/use-now';
 import { Button } from '../shared/ui/Button';
@@ -82,21 +82,17 @@ export function AppointmentDetailScreen(): React.JSX.Element {
   // profesional todavía no cerró el turno (ENG-190). Eso lo sabe el backend.
   const pendientes = usePendingReviews(turno !== null);
   const pendiente = pendientes.data?.some((p) => p.appointmentId === params.appointmentId) ?? false;
-  const devolucion = useRefundNotice(confirmando ? turno : null, ahora);
+  const devolucion = useRefundNotice(confirmando ? turno : null);
   /** Qué pasó con la devolución al cancelar desde acá (ENG-65). */
   const [resultadoDevolucion, setResultadoDevolucion] = useState<string | null>(null);
   // Un turno pagado se reprograma solo con la anticipación del reembolso total
-  // (ENG-66): se adelanta el aviso con la política del perfil, como en la web.
+  // (ENG-66). Hasta cuándo lo dice el turno (`fullRefundUntil`, ENG-229), con la
+  // política congelada al reservar; el backend lo revalida igual.
   const reprogramable = turno !== null && canReschedule(turno, ahora);
-  const perfil = usePublicProfile(
-    turno?.professional?.id ?? '',
-    reprogramable && turno?.status === 'CONFIRMADO',
-  );
-  const politica = perfil.data?.cancellationPolicy;
   const reprogramacionCerrada =
     turno?.status === 'CONFIRMADO' &&
-    politica !== undefined &&
-    refundPercentFor(politica, new Date(turno.scheduledAt), ahora) < 100;
+    turno.fullRefundUntil !== null &&
+    ahora.getTime() > new Date(turno.fullRefundUntil).getTime();
   const pago = useQuery({
     queryKey: ['payment', params.appointmentId, 'detalle'],
     queryFn: () => getPaymentStatus(params.appointmentId),
@@ -289,10 +285,10 @@ export function AppointmentDetailScreen(): React.JSX.Element {
             fullWidth
           />
         ) : null}
-        {reprogramable && reprogramacionCerrada && politica ? (
+        {reprogramable && reprogramacionCerrada && turno.fullRefundUntil ? (
           <Text style={styles.nota}>
-            Con menos de {politica.hoursFullRefund} horas ya no se puede reprogramar: si necesitás
-            otro horario, cancelalo y reservá uno nuevo.
+            Se podía reprogramar hasta el {cuandoAR(turno.fullRefundUntil)}: si necesitás otro
+            horario, cancelalo y reservá uno nuevo.
           </Text>
         ) : null}
         {canCancel(turno, ahora) ? (
@@ -460,3 +456,9 @@ const styles = StyleSheet.create({
   pasoCuando: { fontFamily: fonts.medium, fontSize: fontSize.sm, color: colors.muted },
   botones: { gap: spacing.sm, marginTop: spacing.sm },
 });
+
+/** Un instante ISO en hora argentina, para decirlo en una oración (ENG-229). */
+function cuandoAR(iso: string): string {
+  const { date, time } = enArgentina(new Date(iso));
+  return formatSentenceDay(date, time);
+}

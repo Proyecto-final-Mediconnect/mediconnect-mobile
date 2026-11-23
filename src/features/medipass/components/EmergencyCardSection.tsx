@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { usePublicConfig } from '../../../shared/config/public-config';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 
@@ -29,7 +30,8 @@ const FECHA = new Intl.DateTimeFormat('es-AR', {
  *
  * El código rotativo solo sirve si el paciente puede mostrarlo. La tarjeta es un
  * QR **fijo** que se guarda (una captura) o se imprime desde la web, y abre lo
- * mismo que el código: 30 minutos de información vital, con registro y aviso.
+ * mismo que el código: un acceso a la información vital (los minutos los informa
+ * el backend), con registro y aviso.
  *
  * El token sale del backend una sola vez. Vive en el estado de este componente
  * —no en la caché, ver `useCreateEmergencyCard`— y se descarta si la app pasa a
@@ -38,6 +40,8 @@ const FECHA = new Intl.DateTimeFormat('es-AR', {
  * anterior.
  */
 export function EmergencyCardSection({ nombre }: { nombre: string }): React.JSX.Element {
+  // Cuánto dura un acceso lo informa el backend (ENG-229).
+  const sessionMinutes = usePublicConfig()?.medipass.sessionMinutes;
   const estado = useEmergencyCard();
   const crear = useCreateEmergencyCard();
   const desactivar = useDisableEmergencyCard();
@@ -70,7 +74,8 @@ export function EmergencyCardSection({ nombre }: { nombre: string }): React.JSX.
     <View style={styles.seccion}>
       <Text style={styles.ayuda}>
         Para que te atiendan aunque no puedas mostrar el código: si estás inconsciente o sin el
-        celular, un médico escanea la tarjeta y ve tu información vital durante 30 minutos.
+        celular, un médico escanea la tarjeta y ve tu información vital
+        {sessionMinutes ? ` durante ${sessionMinutes} minutos` : ''}.
       </Text>
 
       {recien ? (

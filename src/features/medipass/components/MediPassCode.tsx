@@ -12,7 +12,8 @@ import { Button } from '../../../shared/ui/Button';
 import { ErrorState, LoadingState } from '../../../shared/ui/StatusViews';
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
 import { CODIGO_KEY, useMyMediPassCode } from '../hooks/use-medipass';
-import { cuentaRegresiva, emergencyUrl, formatCodigo, msHasta, ROTACION_MS } from '../lib/medipass';
+import { usePublicConfig } from '../../../shared/config/public-config';
+import { cuentaRegresiva, emergencyUrl, formatCodigo, msHasta } from '../lib/medipass';
 
 /**
  * El código del MediPass: QR grande sobre blanco, el código en texto y cuánto
@@ -34,6 +35,9 @@ import { cuentaRegresiva, emergencyUrl, formatCodigo, msHasta, ROTACION_MS } fro
 const QR_SIZE = 208;
 
 export function MediPassCode(): React.JSX.Element {
+  // Cada cuánto rota el código lo informa el backend (ENG-229): llena la barra.
+  const codeMinutes = usePublicConfig()?.medipass.codeMinutes;
+  const rotacionMs = codeMinutes ? codeMinutes * 60_000 : 0;
   const queryClient = useQueryClient();
   const ahora = useNow(1000);
   const [visible, setVisible] = useState(true);
@@ -136,7 +140,10 @@ export function MediPassCode(): React.JSX.Element {
       </View>
       <View style={styles.barra}>
         <View
-          style={[styles.relleno, { width: `${Math.min(100, (restante / ROTACION_MS) * 100)}%` }]}
+          style={[
+            styles.relleno,
+            { width: `${rotacionMs ? Math.min(100, (restante / rotacionMs) * 100) : 0}%` },
+          ]}
         />
       </View>
       <View style={styles.cuentaFila}>

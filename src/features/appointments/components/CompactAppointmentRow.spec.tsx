@@ -1,10 +1,11 @@
 import { render, screen } from '@testing-library/react';
+import { withDeadlines } from '../../../mocks/deadlines';
 import { describe, expect, it } from 'vitest';
 
 import type { Appointment } from '../types';
 import { CompactAppointmentRow } from './CompactAppointmentRow';
 
-const CANCELADO: Appointment = {
+const CANCELADO: Appointment = withDeadlines({
   id: 'a1',
   scheduledAt: '2026-09-03T12:30:00.000Z',
   date: '2026-09-03',
@@ -15,7 +16,7 @@ const CANCELADO: Appointment = {
   status: 'CANCELADO',
   professional: { id: 'p1', firstName: 'Valeria', lastName: 'Ocampo' },
   patient: { id: 'q1', firstName: 'Marina', lastName: 'Sosa' },
-};
+});
 
 /** ENG-174: lo que se devolvió de un turno caído se ve en la fila, sin abrirlo. */
 describe('CompactAppointmentRow', () => {

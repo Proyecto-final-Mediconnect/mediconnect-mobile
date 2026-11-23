@@ -27,10 +27,17 @@ function dia(date: string, estados: string[], fullyBlocked = false): Availabilit
 
 describe('bookingRange', () => {
   // 23:30 en Argentina ya es el día siguiente en UTC: el rango arranca hoy en Argentina.
-  it('arranca hoy en Argentina y abarca los 60 días del horizonte, como la web', () => {
-    expect(bookingRange(new Date('2026-10-02T02:30:00Z'))).toEqual({
+  it('arranca hoy en Argentina y abarca el horizonte que informa el backend', () => {
+    expect(bookingRange(new Date('2026-10-02T02:30:00Z'), 60)).toEqual({
       from: '2026-10-01',
       to: '2026-11-29',
+    });
+  });
+
+  it('con otro horizonte, otro rango: no hay un número fijo en la app (ENG-229)', () => {
+    expect(bookingRange(new Date('2026-10-02T02:30:00Z'), 14)).toEqual({
+      from: '2026-10-01',
+      to: '2026-10-14',
     });
   });
 });

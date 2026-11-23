@@ -77,7 +77,7 @@ describe('Mis turnos (ENG-115)', () => {
     );
   });
 
-  it('sin la cotización de ENG-65 cuenta con la política del perfil y no promete devolución automática', async () => {
+  it('sin la cotización no calcula nada en la app ni inventa un porcentaje (ENG-229)', async () => {
     await abrirTurnos(
       http.get(`${API_URL}/appointments/:id/cancellation-quote`, () =>
         HttpResponse.json({ message: 'Cannot GET' }, { status: 404 }),
@@ -87,9 +87,8 @@ describe('Mis turnos (ENG-115)', () => {
     fireEvent.click(lista().getByRole('button', { name: 'Cancelar el turno con Martín Olivares' }));
     const hoja = await screen.findByRole('alert');
 
-    expect(
-      await within(hoja).findByText(/te corresponde la devolución total \(\$26\.000\)/),
-    ).toHaveTextContent(/se gestiona aparte/);
+    expect(await within(hoja).findByText(/No pudimos calcular la devolución/)).toBeInTheDocument();
+    expect(within(hoja).queryByText(/te corresponde/)).not.toBeInTheDocument();
   });
 
   it('un error de la cotización que no es un 404 no cae en el respaldo ni promete nada falso', async () => {

@@ -4,7 +4,6 @@ import type { PatientProfile } from '../features/patient-profile/types';
 import { turnosDemo } from '../mocks/appointments';
 import { chatDemo } from '../mocks/chat';
 import { multipartFields } from './multipart';
-import { refundPercentFor } from '../features/cancellation-policy/policy';
 import { matchesSearch } from '../features/catalog/lib/catalog';
 import { disponibilidadDe, ESPECIALIDADES, perfilDe, PROFESIONALES } from '../mocks/catalog';
 import { crearHistoriaDemo } from '../mocks/clinical-record';
@@ -32,13 +31,25 @@ export const FICHA: PatientProfile = {
 /** La política default del backend, que es la que tienen guardada los turnos de ejemplo. */
 const POLITICA_DEMO = { hoursFullRefund: 24, hoursPartialRefund: 6, partialRefundPercent: 50 };
 
+/**
+ * El porcentaje que calcula el backend (`refundPercentFor`): este archivo hace de
+ * backend en los tests, así que repite su cuenta. La app ya no la tiene
+ * (ENG-229): usa la cotización.
+ */
+function porcentajeDelBackend(scheduledAt: Date, now: Date): number {
+  const horas = (scheduledAt.getTime() - now.getTime()) / 3_600_000;
+  if (horas >= POLITICA_DEMO.hoursFullRefund) return 100;
+  if (horas >= POLITICA_DEMO.hoursPartialRefund) return POLITICA_DEMO.partialRefundPercent;
+  return 0;
+}
+
 /** Lo que devolvería el backend al cancelar ahora (ENG-65): solo un turno pagado. */
 function cotizar(id: string): { percent: number; amount: number } | null {
   const turno = turnosDemo.listar().find((t) => t.id === id);
   if (!turno) return null;
   const percent =
     turno.status === 'CONFIRMADO'
-      ? refundPercentFor(POLITICA_DEMO, new Date(turno.scheduledAt), new Date())
+      ? porcentajeDelBackend(new Date(turno.scheduledAt), new Date())
       : 0;
   return { percent, amount: (turno.price * percent) / 100 };
 }

@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { enArgentina } from '../shared/lib/argentina-time';
+import { usePublicConfig } from '../shared/config/public-config';
 import { reprogramLead } from '../features/appointments/lib/reprogramCause';
 import { StackActions, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useMemo, useRef, useState } from 'react';
@@ -39,15 +41,28 @@ import { Screen, ScreenHeader } from '../shared/ui/Screen';
 import { EmptyState, ErrorState, LoadingState } from '../shared/ui/StatusViews';
 import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
 
-/** Lo que dice la app sobre el pago: ENG-101 libera los turnos no pagados a los 15 minutos. */
-const AVISO_PAGO = 'Tenés 15 minutos para pagarlo. Si no, el horario se libera para otro paciente.';
+/**
+ * Lo que dice la app sobre el pago antes de reservar: ENG-101 libera los turnos
+ * no pagados. Los minutos los informa el backend (`GET /config`, ENG-229).
+ */
+function avisoPago(minutos: number | undefined): string {
+  return `${minutos ? `Tenés ${minutos} minutos para pagarlo` : 'Tenés un plazo corto para pagarlo'}. Si no, el horario se libera para otro paciente.`;
+}
+
+/** Lo mismo, ya reservado: con la hora límite que manda el backend en el turno. */
+function avisoPagoHasta(paymentDueAt: string | null, minutos: number | undefined): string {
+  return paymentDueAt
+    ? `Tenés hasta las ${enArgentina(new Date(paymentDueAt)).time} para pagarlo. Si no, el horario se libera para otro paciente.`
+    : avisoPago(minutos);
+}
 
 /**
  * Sacar un turno, paso 2: elegir día y horario y reservar (ENG-133).
  * Equivalente mobile de ENG-54.
  *
  * El turno queda reservado sin pagar y, como ENG-101 libera los turnos no
- * pagados a los 15 minutos, la app lo dice y ofrece pagarlo ahí mismo (ENG-168).
+ * pagados, la app dice hasta cuándo hay para pagar y ofrece pagarlo ahí mismo
+ * (ENG-168).
  *
  * Con `rescheduleId`, la misma grilla mueve ese turno (ENG-66): es el mismo
  * turno, con el mismo pago, y se puede mover una sola vez.
@@ -55,9 +70,22 @@ const AVISO_PAGO = 'Tenés 15 minutos para pagarlo. Si no, el horario se libera 
 export function BookAppointmentScreen(): React.JSX.Element {
   const navigation = useNavigation();
   const { params } = useRoute<RouteProp<RootStackParamList, 'Reservar'>>();
-  // El rango se fija al abrir la pantalla: no se corre mientras el paciente elige.
-  const [rango] = useState(() => bookingRange(new Date()));
-  const disponibilidad = useAvailability(params.professionalId, rango.from, rango.to);
+  // El horizonte lo informa el backend (ENG-229): hasta tenerlo, la
+  // disponibilidad espera. El rango se fija con el horizonte y no se corre
+  // mientras el paciente elige.
+  const config = usePublicConfig();
+  const horizonDays = config?.booking.horizonDays;
+  const [abiertaEl] = useState(() => new Date());
+  const rango = useMemo(
+    () => (horizonDays === undefined ? null : bookingRange(abiertaEl, horizonDays)),
+    [abiertaEl, horizonDays],
+  );
+  const disponibilidad = useAvailability(
+    params.professionalId,
+    rango?.from ?? '',
+    rango?.to ?? '',
+    rango !== null,
+  );
   const reservar = useBookAppointment();
   const reprogramar = useRescheduleAppointment();
   const { rescheduleId } = params;
@@ -123,7 +151,10 @@ export function BookAppointmentScreen(): React.JSX.Element {
             cuando pagás.
           </Text>
         </View>
-        <Notice icon="time-outline" message={AVISO_PAGO} />
+        <Notice
+          icon="time-outline"
+          message={avisoPagoHasta(reservado.paymentDueAt, config?.booking.paymentWindowMinutes)}
+        />
         <Button
           label="Pagar ahora"
           variant="accent"
@@ -372,7 +403,7 @@ export function BookAppointmentScreen(): React.JSX.Element {
             : horario && dia
               ? `Con ${nombre}, el ${formatSentenceDay(dia, horario.startTime)} (${horario.durationMinutes} min)${
                   precio !== null ? `, por ${formatPrice(precio)}` : ''
-                }. ${AVISO_PAGO}${politica ? `\n\n${describePolicy(politica)}` : ''}`
+                }. ${avisoPago(config?.booking.paymentWindowMinutes)}${politica ? `\n\n${describePolicy(politica)}` : ''}`
               : ''
         }
         confirmLabel={aMover ? 'Mover el turno' : 'Reservar turno'}

@@ -7,8 +7,9 @@ export function availabilityKey(professionalId: string, from: string, to: string
   return ['availability', professionalId, from, to] as const;
 }
 
-export function useAvailability(professionalId: string, from: string, to: string) {
+export function useAvailability(professionalId: string, from: string, to: string, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: availabilityKey(professionalId, from, to),
     queryFn: () => fetchAvailability(professionalId, from, to),
   });
