@@ -1,9 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useMutation } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { previewIps } from '../features/patient-profile/api';
+import { IpsImportSheet } from '../features/patient-profile/components/IpsImportSheet';
 import { useMyProfile, useSaveVitalInfo } from '../features/patient-profile/hooks/use-my-profile';
+import { mergeIps, pickIpsFile, type IpsPreview } from '../features/patient-profile/ips';
 import { BLOOD_TYPES, SEXES, type PatientProfile } from '../features/patient-profile/types';
 import {
   EMPTY_ALLERGY,
@@ -68,6 +72,25 @@ function Formulario({
   const [original] = useState(() => JSON.stringify(toForm(perfil)));
   const [errores, setErrores] = useState<Record<string, string>>({});
   const sucio = JSON.stringify(form) !== original;
+  // Importar el resumen de salud IPS (ENG-246): lo elegido se suma al formulario.
+  const leerIps = useMutation({ mutationFn: previewIps });
+  const [ips, setIps] = useState<IpsPreview | null>(null);
+  const [avisoIps, setAvisoIps] = useState<{ error: boolean; texto: string } | null>(null);
+
+  async function importar(): Promise<void> {
+    if (leerIps.isPending) return;
+    setAvisoIps(null);
+    const archivo = await pickIpsFile();
+    if (archivo.status === 'canceled') return;
+    if (archivo.status === 'invalid') {
+      setAvisoIps({ error: true, texto: archivo.message });
+      return;
+    }
+    leerIps.mutate(archivo.documento, {
+      onSuccess: setIps,
+      onError: (e) => setAvisoIps({ error: true, texto: e.message }),
+    });
+  }
 
   function enviar(): void {
     const { input, errors } = toInput(form);
@@ -82,6 +105,36 @@ function Formulario({
         Es lo que ve un médico que no te conoce cuando escanea tu MediPass. Cargá lo que te puede
         salvar la vida.
       </Text>
+
+      <Button
+        label={leerIps.isPending ? 'Leyendo el resumen…' : 'Importar un resumen de salud'}
+        variant="secondary"
+        onPress={() => void importar()}
+        loading={leerIps.isPending}
+        fullWidth
+      />
+      {avisoIps ? (
+        <Text
+          accessibilityRole={avisoIps.error ? 'alert' : undefined}
+          style={[styles.avisoIps, avisoIps.error && styles.avisoIpsError]}
+        >
+          {avisoIps.texto}
+        </Text>
+      ) : null}
+      <IpsImportSheet
+        preview={ips}
+        onDismiss={() => setIps(null)}
+        onAgregar={(seleccion) => {
+          const total =
+            seleccion.allergies.length + seleccion.medications.length + seleccion.conditions.length;
+          setForm(mergeIps(form, seleccion));
+          setIps(null);
+          setAvisoIps({
+            error: false,
+            texto: `Agregamos ${total === 1 ? '1 dato' : `${total} datos`} de tu resumen. Revisalos y tocá "Guardar datos de emergencia".`,
+          });
+        }}
+      />
 
       <Bloque titulo="Grupo sanguíneo">
         <View style={styles.chips}>
@@ -407,4 +460,11 @@ const styles = StyleSheet.create({
   },
   agregarPresionado: { backgroundColor: colors.surfaceTeal, borderColor: colors.brand },
   agregarTexto: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.brandDeep },
+  avisoIps: {
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.sm,
+    lineHeight: 19,
+    color: colors.brandHover,
+  },
+  avisoIpsError: { color: colors.danger },
 });

@@ -1,4 +1,5 @@
 import { apiRequest } from '../../shared/lib/api-client';
+import type { IpsPreview } from './ips';
 import type { PatientProfile, PatientProfileInput, VitalInfoInput } from './types';
 
 /** `GET /patients/me`: la ficha del paciente de la sesión. */
@@ -31,5 +32,17 @@ export function saveMyProfile(input: PatientProfileInput): Promise<PatientProfil
     method: 'PUT',
     body: input,
     fallbackMessage: 'No pudimos guardar tus datos.',
+  });
+}
+
+/**
+ * `POST /patients/me/ips/preview` (ENG-246): manda el resumen de salud IPS que
+ * eligió el paciente y devuelve qué se cargaría en el MediPass. No guarda nada.
+ */
+export function previewIps(documento: unknown): Promise<IpsPreview> {
+  return apiRequest<IpsPreview>('/patients/me/ips/preview', {
+    method: 'POST',
+    body: documento,
+    fallbackMessage: 'No pudimos leer el resumen. Intentá de nuevo.',
   });
 }
