@@ -10,7 +10,7 @@ import { fileNameFor, fileProblem, mimeTypeOf } from './document-file';
  * que no hace falta un build propio para probarlo.
  */
 
-export type PickSource = 'camera' | 'gallery' | 'pdf';
+export type PickSource = 'camera' | 'gallery' | 'pdf' | 'resumen';
 
 export type PickResult =
   | { status: 'picked'; file: PickedFile }
@@ -41,6 +41,7 @@ const SIN_CAMARA =
 
 export async function pickFile(source: PickSource): Promise<PickResult> {
   if (source === 'pdf') return elegirPdf();
+  if (source === 'resumen') return elegirResumen();
 
   if (source === 'camera') {
     // La galería no pide permiso: el selector del sistema (PHPicker, Photo
@@ -81,6 +82,40 @@ async function elegirPdf(): Promise<PickResult> {
     name: pdf.name,
     mimeType: mimeTypeOf(pdf.name, pdf.mimeType),
     sizeBytes: pdf.size ?? null,
+  });
+}
+
+/**
+ * El resumen de salud IPS (ENG-246): el `.json` que dio otro centro. Sin filtro
+ * de tipo, porque Android suele informar un JSON como `application/octet-stream`
+ * y lo escondería: se reconoce por la extensión o por el tipo.
+ */
+async function elegirResumen(): Promise<PickResult> {
+  const resultado = await DocumentPicker.getDocumentAsync({
+    type: '*/*',
+    copyToCacheDirectory: true,
+    multiple: false,
+  });
+  const elegido = resultado.canceled ? undefined : resultado.assets[0];
+  if (!elegido) return { status: 'canceled' };
+
+  const informado = elegido.mimeType?.toLowerCase();
+  const esJson =
+    /\.json$/i.test(elegido.name) ||
+    informado === 'application/json' ||
+    informado === 'application/fhir+json';
+  if (!esJson) {
+    discardPickedFile(elegido.uri);
+    return {
+      status: 'invalid',
+      message: 'Elegí el archivo .json de tu resumen de salud (IPS).',
+    };
+  }
+  return validar({
+    uri: elegido.uri,
+    name: elegido.name,
+    mimeType: 'application/json',
+    sizeBytes: elegido.size ?? null,
   });
 }
 

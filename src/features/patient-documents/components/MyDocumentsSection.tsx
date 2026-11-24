@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -6,7 +7,7 @@ import { Chip } from '../../../shared/ui/Chip';
 import { ConfirmSheet } from '../../../shared/ui/ConfirmSheet';
 import { colors, fonts, fontSize, radius, spacing } from '../../../shared/ui/theme';
 import { useMyDocuments, useOpenDocument, useRetireDocument } from '../hooks/use-patient-documents';
-import { documentSummary, formatSize, isPdf } from '../lib/document-file';
+import { documentSummary, formatSize, isIps, isPdf } from '../lib/document-file';
 import type { PatientDocument } from '../types';
 
 /** Cuántos se ven antes de "Ver todos": que no empujen la historia muy abajo. */
@@ -22,6 +23,7 @@ const VISIBLES = 3;
  * y no los firmó nadie.
  */
 export function MyDocumentsSection({ onUpload }: { onUpload: () => void }): React.JSX.Element {
+  const navigation = useNavigation();
   const documentos = useMyDocuments();
   const retirar = useRetireDocument();
   const abrir = useOpenDocument();
@@ -83,15 +85,19 @@ export function MyDocumentsSection({ onUpload }: { onUpload: () => void }): Reac
         <View>
           {visibles.map((doc) => {
             const pdf = isPdf(doc.mimeType);
+            // El resumen de salud IPS (ENG-246) se ve ordenado, no como archivo.
+            const ips = isIps(doc.mimeType);
             const abriendo = abrir.isPending && abrir.variables === doc.id;
             return (
               <View key={doc.id} style={styles.fila}>
                 <View style={styles.filaCuerpo}>
-                  <View style={[styles.icono, pdf ? styles.iconoPdf : styles.iconoImagen]}>
+                  <View style={[styles.icono, pdf || ips ? styles.iconoPdf : styles.iconoImagen]}>
                     <Ionicons
-                      name={pdf ? 'document-text-outline' : 'image-outline'}
+                      name={
+                        ips ? 'medkit-outline' : pdf ? 'document-text-outline' : 'image-outline'
+                      }
                       size={18}
-                      color={pdf ? colors.tagEstudioInk : colors.brandHover}
+                      color={pdf || ips ? colors.tagEstudioInk : colors.brandHover}
                     />
                   </View>
                   <View style={styles.textos}>
@@ -102,7 +108,8 @@ export function MyDocumentsSection({ onUpload }: { onUpload: () => void }): Reac
                       {documentSummary(doc)}
                     </Text>
                     <Text style={styles.docArchivo}>
-                      {pdf ? 'PDF' : 'Imagen'} · {formatSize(doc.sizeBytes)}
+                      {ips ? 'Resumen de salud' : pdf ? 'PDF' : 'Imagen'} ·{' '}
+                      {formatSize(doc.sizeBytes)}
                     </Text>
                   </View>
                   <Pressable
@@ -111,7 +118,11 @@ export function MyDocumentsSection({ onUpload }: { onUpload: () => void }): Reac
                     aria-busy={abriendo}
                     disabled={abriendo}
                     hitSlop={spacing.xs}
-                    onPress={() => abrir.mutate(doc.id)}
+                    onPress={() =>
+                      ips
+                        ? navigation.navigate('ResumenSalud', { documentId: doc.id })
+                        : abrir.mutate(doc.id)
+                    }
                     style={({ pressed }) => [styles.accion, pressed && styles.presionado]}
                   >
                     {abriendo ? (

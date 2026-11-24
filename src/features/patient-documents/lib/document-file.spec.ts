@@ -19,7 +19,7 @@ describe('fileProblem: lo que se corta antes de subir', () => {
 
   it('rechaza otros tipos', () => {
     expect(fileProblem({ mimeType: 'image/gif', sizeBytes: 1000 })).toBe(
-      'Solo se pueden subir PDF, JPG o PNG.',
+      'Solo se pueden subir PDF, JPG, PNG o un resumen de salud IPS.',
     );
   });
 

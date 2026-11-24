@@ -64,6 +64,8 @@ export type RootStackParamList = {
    * con el primer mensaje.
    */
   Conversacion: { contraparteId: string; nombre: string; conversationId?: string };
+  /** El resumen de salud IPS que aportó el paciente, ordenado (ENG-246). */
+  ResumenSalud: { documentId: string };
   /** Qué es el archivo recién elegido, antes de subirlo (ENG-164). */
   SubirDocumento: { file: PickedFile };
 };

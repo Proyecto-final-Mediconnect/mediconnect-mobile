@@ -17,6 +17,7 @@ import { MediPassHistoryScreen } from '../screens/MediPassHistoryScreen';
 import { MediPassVisibleScreen } from '../screens/MediPassVisibleScreen';
 import { PrivacyScreen } from '../screens/PrivacyScreen';
 import { EntryDetailScreen } from '../screens/EntryDetailScreen';
+import { HealthSummaryScreen } from '../screens/HealthSummaryScreen';
 import { LegalConsentScreen } from '../screens/LegalConsentScreen';
 import { AppointmentDetailScreen } from '../screens/AppointmentDetailScreen';
 import { ConsultationClosingScreen } from '../screens/ConsultationClosingScreen';
@@ -151,6 +152,7 @@ function RootStack(): React.JSX.Element {
             <Stack.Screen name="CierreConsulta" component={ConsultationClosingScreen} />
             <Stack.Screen name="Mensajes" component={MessagesScreen} />
             <Stack.Screen name="Conversacion" component={ConversationScreen} />
+            <Stack.Screen name="ResumenSalud" component={HealthSummaryScreen} />
             {/* El formulario de un documento se abre como modal, igual que el
                 diálogo de la web (ENG-164). */}
             <Stack.Screen

@@ -1,5 +1,6 @@
 import { apiRequest, ApiError } from '../../shared/lib/api-client';
 import { MENSAJE_TAMANO } from './lib/document-file';
+import type { IpsResumen } from '../patient-profile/ips';
 import type { DocumentDownload, PatientDocument, UploadDocumentInput } from './types';
 
 /**
@@ -11,7 +12,7 @@ const TIMEOUT_SUBIDA_MS = 3 * 60_000;
 const SIN_DETALLE = 'No pudimos subir el documento.';
 
 const MENSAJES_SUBIDA: Record<400 | 422, string> = {
-  400: 'Solo se pueden subir PDF, JPG o PNG.',
+  400: 'Solo se pueden subir PDF, JPG, PNG o un resumen de salud IPS.',
   422: 'Llegaste al máximo de documentos. Retirá alguno para subir otro.',
 };
 
@@ -94,6 +95,16 @@ export async function retireDocument(id: string): Promise<void> {
     if (err instanceof ApiError && err.status === 404) return;
     throw err;
   }
+}
+
+/**
+ * `GET /patient-documents/:id/ips` (ENG-246): el resumen de salud IPS de un
+ * documento, ordenado. Queda auditado como una apertura.
+ */
+export function fetchIpsSummary(id: string): Promise<IpsResumen> {
+  return apiRequest<IpsResumen>(`/patient-documents/${encodeURIComponent(id)}/ips`, {
+    fallbackMessage: 'No pudimos abrir el resumen de salud.',
+  });
 }
 
 /** `GET /patient-documents/:id/download`: la URL firmada, que vence a los 5 minutos. */

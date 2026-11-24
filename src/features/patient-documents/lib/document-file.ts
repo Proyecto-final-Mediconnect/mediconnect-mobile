@@ -14,11 +14,25 @@ export const MENSAJE_TAMANO = 'El archivo no puede pasar los 10 MB.';
 
 const TIPOS_ACEPTADOS = ['application/pdf', 'image/jpeg', 'image/png'];
 
+/**
+ * El resumen de salud IPS (ENG-246): un JSON que da otro centro. Se manda como
+ * `application/json` y el backend lo guarda como `application/fhir+json`.
+ */
+export const IPS_MIME = 'application/fhir+json';
+export const JSON_MIME = 'application/json';
+/** El tope del backend para un resumen: es texto, no un estudio escaneado. */
+export const MAX_IPS_BYTES = 1024 * 1024;
+
+export function isIps(mimeType: string): boolean {
+  return mimeType === IPS_MIME;
+}
+
 const POR_EXTENSION: Record<string, string> = {
   pdf: 'application/pdf',
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   png: 'image/png',
+  json: JSON_MIME,
   heic: 'image/heic',
   heif: 'image/heif',
 };
@@ -68,8 +82,14 @@ export function fileProblem(file: { mimeType: string; sizeBytes: number | null }
   if (file.mimeType === 'image/heic' || file.mimeType === 'image/heif') {
     return 'Esa foto está en formato HEIC y no se puede subir. Sacala desde acá con la cámara o elegí una en JPG o PNG.';
   }
+  if (file.mimeType === JSON_MIME || file.mimeType === IPS_MIME) {
+    if (file.sizeBytes !== null && file.sizeBytes > MAX_IPS_BYTES) {
+      return 'El resumen de salud no puede pasar 1 MB.';
+    }
+    return null;
+  }
   if (!TIPOS_ACEPTADOS.includes(file.mimeType)) {
-    return 'Solo se pueden subir PDF, JPG o PNG.';
+    return 'Solo se pueden subir PDF, JPG, PNG o un resumen de salud IPS.';
   }
   if (file.sizeBytes !== null && file.sizeBytes > MAX_BYTES) return MENSAJE_TAMANO;
   return null;

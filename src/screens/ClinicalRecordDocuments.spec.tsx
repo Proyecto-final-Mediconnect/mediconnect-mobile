@@ -248,7 +248,9 @@ describe('Mis documentos en la historia clínica (ENG-164)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Subir documento' }));
     fireEvent.click(screen.getByRole('button', { name: 'Elegir de la galería' }));
 
-    expect(await screen.findByText('Solo se pueden subir PDF, JPG o PNG.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Solo se pueden subir PDF, JPG, PNG o un resumen de salud IPS.'),
+    ).toBeInTheDocument();
   });
 
   it('sin permiso de cámara explica cómo habilitarla', async () => {
@@ -337,7 +339,9 @@ describe('Mis documentos en la historia clínica (ENG-164)', () => {
     fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Radiografía' } });
     fireEvent.click(screen.getByRole('button', { name: 'Subir' }));
 
-    expect(await screen.findByText('Solo se pueden subir PDF, JPG o PNG.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Solo se pueden subir PDF, JPG, PNG o un resumen de salud IPS.'),
+    ).toBeInTheDocument();
   });
 
   it('una subida se puede cancelar y deja volver a intentar', async () => {
