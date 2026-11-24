@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState, type ComponentProps } from 'react';
 import {
@@ -23,6 +24,7 @@ import { validateLogin, type LoginErrors } from '../features/auth/validation';
 import { useKeyboardHeight } from '../shared/hooks/use-keyboard-height';
 import { ApiError } from '../shared/lib/api-client';
 import { WEB_URL } from '../shared/lib/web-url';
+import type { RootStackParamList } from '../navigation/types';
 import { Button } from '../shared/ui/Button';
 import { Desborde } from '../shared/ui/Screen';
 import { TextField } from '../shared/ui/TextField';
@@ -57,10 +59,14 @@ const LO_QUE_HAY: { icono: ComponentProps<typeof Ionicons>['name']; texto: strin
  */
 export function LoginScreen(): React.JSX.Element {
   const { state, signIn, signInWithCode } = useSession();
+  const navigation = useNavigation();
+  /** Viene de crear la cuenta (ENG-235): con el email y sin sesión hasta que lo confirme. */
+  const { params } = useRoute<RouteProp<RootStackParamList, 'Ingresar'>>();
+  const recienRegistrado = params?.email;
   /** ENG-88: la contraseña estuvo bien y falta el código de la app autenticadora. */
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [codigo, setCodigo] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(recienRegistrado ?? '');
   const [password, setPassword] = useState('');
   const [errores, setErrores] = useState<LoginErrors>({});
   const [falla, setFalla] = useState<string | null>(null);
@@ -81,7 +87,18 @@ export function LoginScreen(): React.JSX.Element {
     return () => listo.remove();
   }, []);
 
-  const aviso = state.status === 'signedOut' ? state.notice : undefined;
+  // `popTo` vuelve a esta misma pantalla con el email: el estado ya estaba armado.
+  useEffect(() => {
+    if (recienRegistrado) setEmail(recienRegistrado);
+  }, [recienRegistrado]);
+
+  // Hasta confirmar el email el ingreso da el mismo error que una contraseña
+  // equivocada (a propósito): el aviso le dice qué falta antes de que choque con eso.
+  const aviso =
+    (state.status === 'signedOut' ? state.notice : undefined) ??
+    (recienRegistrado
+      ? 'Confirmá tu email con el enlace que te mandamos y después ingresá acá.'
+      : undefined);
 
   async function ingresar(): Promise<void> {
     if (enviando) return;
@@ -314,11 +331,18 @@ export function LoginScreen(): React.JSX.Element {
             )}
           </View>
 
-          {teclado ? null : (
-            <Text style={[styles.pie, { paddingBottom: insets.bottom }]}>
-              ¿Todavía no tenés cuenta? Registrate desde la web de MediConnect y volvé a ingresar
-              acá.
-            </Text>
+          {teclado || mfaToken ? null : (
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="Crear una cuenta"
+              hitSlop={spacing.sm}
+              onPress={() => navigation.navigate('Registro')}
+              style={[styles.pieBoton, { marginBottom: insets.bottom }]}
+            >
+              <Text style={styles.pie}>
+                ¿Todavía no tenés cuenta? <Text style={styles.pieEnlace}>Creá una gratis</Text>
+              </Text>
+            </Pressable>
           )}
         </View>
       </ScrollView>
@@ -408,6 +432,8 @@ const styles = StyleSheet.create({
   bannerErrorTexto: { color: colors.danger },
   olvido: { alignSelf: 'center', paddingVertical: spacing.xs },
   olvidoTexto: { fontFamily: fonts.bold, fontSize: fontSize.sm, color: colors.brandHover },
+  pieBoton: { alignSelf: 'center' },
+  pieEnlace: { fontFamily: fonts.bold, color: colors.brandHover },
   pie: {
     fontFamily: fonts.medium,
     fontSize: fontSize.sm,

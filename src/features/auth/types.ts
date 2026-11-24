@@ -26,6 +26,14 @@ export interface LoginInput {
   password: string;
 }
 
+/** El formulario de registro de paciente (ENG-235), igual que el de la web. */
+export interface RegisterInput {
+  email: string;
+  password: string;
+  passwordConfirmation: string;
+  acceptedLegal: boolean;
+}
+
 /** Respuesta de `POST /auth/mobile/login` y `/auth/mobile/refresh`. */
 export interface MobileSession {
   user: { id: string; email?: string };

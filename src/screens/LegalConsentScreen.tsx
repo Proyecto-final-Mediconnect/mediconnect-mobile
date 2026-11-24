@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useSession } from '../features/auth/session';
+import { ConsentCheckbox } from '../features/legal/ConsentCheckbox';
 import { LEGAL_URL } from '../features/legal/legal';
 import { ApiError } from '../shared/lib/api-client';
 import { Button } from '../shared/ui/Button';
@@ -91,22 +92,7 @@ export function LegalConsentScreen(): React.JSX.Element {
         </Pressable>
       </View>
 
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: tildado }}
-        aria-checked={tildado}
-        accessibilityLabel="Leí y acepto los términos y condiciones, la política de privacidad y el tratamiento de mis datos de salud."
-        onPress={() => setTildado((v) => !v)}
-        style={styles.casilla}
-      >
-        <View style={[styles.caja, tildado && styles.cajaTildada]}>
-          {tildado ? <Ionicons name="checkmark" size={16} color={colors.white} /> : null}
-        </View>
-        <Text style={styles.casillaTexto}>
-          Leí y acepto los términos y condiciones, la política de privacidad y el tratamiento de mis
-          datos de salud.
-        </Text>
-      </Pressable>
+      <ConsentCheckbox checked={tildado} onChange={setTildado} />
 
       {falla ? (
         <Text accessibilityRole="alert" style={styles.falla}>
@@ -153,32 +139,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.brandHover,
     textDecorationLine: 'underline',
-  },
-  casilla: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    backgroundColor: colors.surfaceTeal,
-    borderRadius: radius.field,
-    padding: spacing.lg,
-  },
-  caja: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: colors.lineStrong,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cajaTildada: { backgroundColor: colors.brandDeep, borderColor: colors.brandDeep },
-  casillaTexto: {
-    flex: 1,
-    fontFamily: fonts.medium,
-    fontSize: fontSize.sm,
-    lineHeight: 19,
-    color: colors.ink,
   },
   falla: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.danger },
   acciones: { gap: spacing.sm },

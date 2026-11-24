@@ -22,6 +22,7 @@ import { ConsultationClosingScreen } from '../screens/ConsultationClosingScreen'
 import { PaymentScreen } from '../screens/PaymentScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { MessagesScreen } from '../screens/MessagesScreen';
+import { RegisterScreen } from '../screens/RegisterScreen';
 import { ProfessionalProfileScreen } from '../screens/ProfessionalProfileScreen';
 import { UploadDocumentScreen } from '../screens/UploadDocumentScreen';
 import { ErrorState, LoadingState } from '../shared/ui/StatusViews';
@@ -157,13 +158,16 @@ function RootStack(): React.JSX.Element {
             />
           </Stack.Group>
         ) : (
-          <Stack.Screen
-            name="Ingresar"
-            component={LoginScreen}
-            // Al cerrar sesión, la animación de "volver" sugeriría que se puede
-            // ir para adelante de nuevo.
-            options={{ animationTypeForReplace: 'pop' }}
-          />
+          <Stack.Group>
+            <Stack.Screen
+              name="Ingresar"
+              component={LoginScreen}
+              // Al cerrar sesión, la animación de "volver" sugeriría que se puede
+              // ir para adelante de nuevo.
+              options={{ animationTypeForReplace: 'pop' }}
+            />
+            <Stack.Screen name="Registro" component={RegisterScreen} />
+          </Stack.Group>
         )}
       </Stack.Navigator>
     </NavigationContainer>
