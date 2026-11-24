@@ -9,7 +9,13 @@ import {
 } from '../features/patient-documents/hooks/use-patient-documents';
 import { IpsImportSheet } from '../features/patient-profile/components/IpsImportSheet';
 import { useMyProfile, useSaveVitalInfo } from '../features/patient-profile/hooks/use-my-profile';
-import { fechaDelDocumento, mergeIps, type IpsSeleccion } from '../features/patient-profile/ips';
+import {
+  cantidadDeItems,
+  fechaDelDocumento,
+  mergeIps,
+  yaEnMediPass,
+  type IpsSeleccion,
+} from '../features/patient-profile/ips';
 import { toForm, toInput } from '../features/patient-profile/vital-info';
 import type { RootStackParamList } from '../navigation/types';
 import { Button } from '../shared/ui/Button';
@@ -56,7 +62,10 @@ export function HealthSummaryScreen(): React.JSX.Element {
   const datos = resumen.data;
   const { allergies, medications, conditions } = datos.propuesta;
   const fecha = fechaDelDocumento(datos.documento.fecha);
-  const hayParaMediPass = allergies.length + medications.length + conditions.length > 0;
+  // Lo que ya está en el MediPass no se vuelve a ofrecer; si ya está todo, se dice.
+  const yaEsta = yaEnMediPass(perfil.data, datos);
+  const total = cantidadDeItems(datos);
+  const todoEnMediPass = total > 0 && perfil.data !== undefined && yaEsta.size === total;
 
   async function sumar(seleccion: IpsSeleccion): Promise<void> {
     if (guardando) return;
@@ -143,7 +152,9 @@ export function HealthSummaryScreen(): React.JSX.Element {
         </Text>
       ) : null}
 
-      {hayParaMediPass ? (
+      {todoEnMediPass ? (
+        <Text style={styles.todoEsta}>Ya está todo en tu MediPass.</Text>
+      ) : total > 0 ? (
         <Button
           label="Sumar a mi MediPass"
           onPress={() => {
@@ -169,6 +180,7 @@ export function HealthSummaryScreen(): React.JSX.Element {
 
       <IpsImportSheet
         resumen={datos}
+        yaEsta={yaEsta}
         visible={sumando}
         guardando={guardando}
         error={error}
@@ -263,4 +275,10 @@ const styles = StyleSheet.create({
   itemDetalle: { fontFamily: fonts.regular, color: colors.muted },
   vacio: { fontFamily: fonts.regular, fontSize: fontSize.sm, color: colors.mutedSoft },
   error: { fontFamily: fonts.semibold, fontSize: fontSize.sm, color: colors.danger },
+  todoEsta: {
+    fontFamily: fonts.semibold,
+    fontSize: fontSize.sm,
+    color: colors.brandHover,
+    textAlign: 'center',
+  },
 });
