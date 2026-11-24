@@ -1,5 +1,12 @@
 import { apiRequest } from '../../shared/lib/api-client';
-import type { LoginInput, MobileMfaRequired, MobileSession, SessionUser } from './types';
+import { LEGAL_VERSION } from '../legal/legal';
+import type {
+  LoginInput,
+  MobileMfaRequired,
+  MobileSession,
+  RegisterInput,
+  SessionUser,
+} from './types';
 
 /**
  * `POST /auth/mobile/login`: la ruta de login de la app, que devuelve los tokens
@@ -49,5 +56,28 @@ export function acceptLegal(version: string): Promise<SessionUser> {
     method: 'POST',
     body: { version },
     fallbackMessage: 'No pudimos registrar tu aceptación. Intentá de nuevo.',
+  });
+}
+
+/**
+ * `POST /auth/register` (ENG-235): la misma ruta que el registro de la web, que
+ * no deja cookies ni sesión —la cuenta queda esperando que confirme el email—.
+ *
+ * Responde lo mismo exista o no el email, para no revelar qué cuentas hay. Al
+ * backend va la **versión** de los textos aceptados, que es lo que queda
+ * registrado; el booleano de la casilla no viaja (el backend rechaza campos de
+ * más).
+ */
+export function registerPatient(input: RegisterInput): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>('/auth/register', {
+    method: 'POST',
+    body: {
+      email: input.email.trim(),
+      password: input.password,
+      passwordConfirmation: input.passwordConfirmation,
+      acceptedLegalVersion: LEGAL_VERSION,
+    },
+    auth: false,
+    fallbackMessage: 'No pudimos crear tu cuenta. Intentá de nuevo.',
   });
 }

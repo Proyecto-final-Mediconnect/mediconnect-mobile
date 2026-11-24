@@ -12,3 +12,7 @@ export const LEGAL_VERSION = '2026-10-13';
  * los duplica, así hay una sola copia que mantener.
  */
 export const LEGAL_URL = `${WEB_URL}/legales`;
+
+/** Lo que se le dice a quien quiere registrarse sin aceptar: el mismo texto que la web. */
+export const LEGAL_REQUIRED_MESSAGE =
+  'Para usar MediConnect tenés que aceptar los términos y condiciones, la política de privacidad y el consentimiento para el tratamiento de tus datos de salud.';

@@ -23,7 +23,10 @@ export type PatientTabParamList = {
  * (ENG-114). `RootNavigator` monta solo uno de los dos lados.
  */
 export type RootStackParamList = {
-  Ingresar: undefined;
+  /** Con `email`, vuelve del registro (ENG-235): el campo ya viene completo. */
+  Ingresar: { email?: string } | undefined;
+  /** Crear la cuenta de paciente (ENG-235). */
+  Registro: undefined;
   /** El pedido de consentimiento, antes de la app, si no aceptó (ENG-140). */
   Consentimiento: undefined;
   Paciente: NavigatorScreenParams<PatientTabParamList>;
