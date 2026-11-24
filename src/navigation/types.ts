@@ -40,6 +40,8 @@ export type RootStackParamList = {
   TarjetaEmergencia: undefined;
   /** Cargar y editar los datos de emergencia del MediPass (ENG-136). */
   DatosEmergencia: undefined;
+  /** Completar y editar los datos personales (ENG-236). */
+  DatosPersonales: undefined;
   /** Los derechos ARCO de la Ley 25.326 (ENG-86). */
   Privacidad: undefined;
   /** Perfil público de un profesional (ENG-132). */

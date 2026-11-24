@@ -18,7 +18,8 @@ import { colors, fonts, fontSize, radius, spacing } from '../shared/ui/theme';
  * Mi perfil: quién es, sus datos y qué pasa con su información.
  *
  * El canvas nombra esta tab pero no la dibuja. Quién es sale de la sesión; sus
- * datos, de la ficha (`GET /patients/me`), que se carga y se edita en la web.
+ * datos, de la ficha (`GET /patients/me`), que se completa y se edita en
+ * "Mis datos personales" (ENG-236).
  * Cerrar sesión, después de confirmarlo, borra los tokens del dispositivo y la
  * app vuelve al ingreso (ENG-114).
  */
@@ -71,7 +72,7 @@ export function ProfileScreen(): React.JSX.Element {
           {ficha.data.completed ? null : (
             <Notice
               icon="create-outline"
-              message="Todavía no completaste tus datos. Podés cargarlos desde MediConnect en la web."
+              message="Todavía no completaste tus datos. Los necesitás para sacar turnos y usar tu MediPass."
             />
           )}
           <View style={styles.grupo}>
@@ -88,6 +89,12 @@ export function ProfileScreen(): React.JSX.Element {
               ultima
             />
           </View>
+          <Button
+            label={ficha.data.completed ? 'Editar mis datos' : 'Completar mis datos'}
+            variant={ficha.data.completed ? 'secondary' : 'accent'}
+            onPress={() => navigation.navigate('DatosPersonales')}
+            fullWidth
+          />
         </>
       )}
 

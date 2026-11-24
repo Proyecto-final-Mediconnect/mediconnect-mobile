@@ -53,6 +53,11 @@ interface SessionContextValue {
    * sesión. Tira `ApiError`; la pantalla decide el mensaje.
    */
   acceptLegal: () => Promise<void>;
+  /**
+   * Cambia el nombre del usuario de la sesión cuando lo edita en su perfil
+   * (ENG-236). `GET /me` lo lee de la misma ficha, así que no hace falta pedirlo.
+   */
+  updateUser: (cambios: Pick<SessionUser, 'firstName' | 'lastName'>) => void;
   /** Vuelve a intentar verificar la sesión guardada (desde `unreachable`). */
   retry: () => void;
 }
@@ -200,14 +205,20 @@ export function SessionProvider({ children }: { children: ReactNode }): React.JS
     setState({ status: 'signedIn', user });
   }, []);
 
+  const updateUser = useCallback((cambios: Pick<SessionUser, 'firstName' | 'lastName'>) => {
+    setState((prev) =>
+      prev.status === 'signedIn' ? { ...prev, user: { ...prev.user, ...cambios } } : prev,
+    );
+  }, []);
+
   const retry = useCallback(() => {
     setState({ status: 'restoring' });
     setIntento((n) => n + 1);
   }, []);
 
   const value = useMemo(
-    () => ({ state, signIn, signInWithCode, signOut, acceptLegal, retry }),
-    [state, signIn, signInWithCode, signOut, acceptLegal, retry],
+    () => ({ state, signIn, signInWithCode, signOut, acceptLegal, updateUser, retry }),
+    [state, signIn, signInWithCode, signOut, acceptLegal, updateUser, retry],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

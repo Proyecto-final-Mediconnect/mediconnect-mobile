@@ -23,8 +23,8 @@ describe('Mi perfil', () => {
     expect(screen.getByText('30.418.992')).toBeInTheDocument();
   });
 
-  // La ficha se carga en la web; mientras tanto, la app no inventa datos.
-  it('con la ficha sin completar lo dice y explica dónde cargarla', async () => {
+  // Sin la ficha, la app no inventa datos: lo dice y lleva a completarla (ENG-236).
+  it('con la ficha sin completar lo dice y ofrece completarla', async () => {
     await renderApp();
     server.use(
       http.get(`${API_URL}/patients/me`, () =>
@@ -35,5 +35,7 @@ describe('Mi perfil', () => {
 
     expect(await screen.findByText(/Todavía no completaste tus datos/)).toBeInTheDocument();
     expect(screen.getAllByText('Sin cargar')).toHaveLength(3);
+    expect(screen.getByRole('button', { name: 'Completar mis datos' })).toBeVisible();
+    expect(screen.queryByText(/en la web/)).not.toBeInTheDocument();
   });
 });

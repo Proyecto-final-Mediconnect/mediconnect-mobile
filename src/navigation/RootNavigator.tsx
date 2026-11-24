@@ -12,6 +12,7 @@ import { ClinicalRecordScreen } from '../screens/ClinicalRecordScreen';
 import { ConversationScreen } from '../screens/ConversationScreen';
 import { EmergencyCardScreen } from '../screens/EmergencyCardScreen';
 import { EmergencyDataScreen } from '../screens/EmergencyDataScreen';
+import { PersonalDataScreen } from '../screens/PersonalDataScreen';
 import { MediPassHistoryScreen } from '../screens/MediPassHistoryScreen';
 import { MediPassVisibleScreen } from '../screens/MediPassVisibleScreen';
 import { PrivacyScreen } from '../screens/PrivacyScreen';
@@ -141,6 +142,7 @@ function RootStack(): React.JSX.Element {
             <Stack.Screen name="MediPassVisible" component={MediPassVisibleScreen} />
             <Stack.Screen name="TarjetaEmergencia" component={EmergencyCardScreen} />
             <Stack.Screen name="DatosEmergencia" component={EmergencyDataScreen} />
+            <Stack.Screen name="DatosPersonales" component={PersonalDataScreen} />
             <Stack.Screen name="Privacidad" component={PrivacyScreen} />
             <Stack.Screen name="Profesional" component={ProfessionalProfileScreen} />
             <Stack.Screen name="Reservar" component={BookAppointmentScreen} />
