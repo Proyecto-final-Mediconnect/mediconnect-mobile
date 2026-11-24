@@ -206,6 +206,12 @@ export function servirDatosDelPaciente(): void {
       HttpResponse.json(crearHistoriaDemo()),
     ),
     http.get(`${API_URL}/patients/me`, () => HttpResponse.json(ficha)),
+    // Los datos personales (ENG-236): la primera vez completan la ficha.
+    http.put(`${API_URL}/patients/me`, async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>;
+      ficha = { ...ficha, ...body, completed: true };
+      return HttpResponse.json(ficha);
+    }),
     // Reemplaza el bloque vital entero, como el backend (ENG-136).
     http.put(`${API_URL}/patients/me/vital`, async ({ request }) => {
       const body = (await request.json()) as Record<string, unknown>;

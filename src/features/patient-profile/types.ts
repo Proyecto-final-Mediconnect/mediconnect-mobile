@@ -7,7 +7,7 @@ export interface PatientProfile {
   birthDate: string | null;
   dni: string | null;
   phone: string | null;
-  /** `false` mientras el paciente no cargó su ficha desde la web. */
+  /** `false` mientras el paciente no cargó sus datos personales: la fila nace con el primer guardado. */
   completed: boolean;
   /* Datos de emergencia del MediPass (ENG-134, ENG-136). */
   sex?: string | null;
@@ -49,3 +49,14 @@ export interface VitalInfoInput {
 
 export const BLOOD_TYPES = ['0+', '0-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'] as const;
 export const SEXES = ['Femenino', 'Masculino', 'Otro'] as const;
+
+/** `PUT /patients/me` (ENG-236): los cinco datos personales, todos obligatorios. */
+export interface PatientProfileInput {
+  firstName: string;
+  lastName: string;
+  /** `AAAA-MM-DD`. */
+  birthDate: string;
+  /** Solo los dígitos. */
+  dni: string;
+  phone: string;
+}
