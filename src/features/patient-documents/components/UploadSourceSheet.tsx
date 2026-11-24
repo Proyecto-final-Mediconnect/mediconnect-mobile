@@ -30,6 +30,12 @@ const OPCIONES: {
     title: 'Elegir un PDF',
     caption: 'El que te mandó el laboratorio o la clínica',
   },
+  {
+    source: 'resumen',
+    icon: 'medkit-outline',
+    title: 'Resumen de salud (IPS)',
+    caption: 'El archivo .json que te dio otro centro de salud',
+  },
 ];
 
 /**

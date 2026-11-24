@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { mergeIps } from './ips';
+import { fechaDelDocumento, mergeIps } from './ips';
 import type { VitalForm } from './vital-info';
 
 const FORM: VitalForm = {
@@ -37,5 +37,12 @@ describe('mergeIps (ENG-246)', () => {
     expect(
       mergeIps(FORM, { allergies: muchas, medications: [], conditions: [] }).allergies,
     ).toHaveLength(30);
+  });
+});
+
+describe('fechaDelDocumento', () => {
+  it('muestra el día del documento, sin correrse por la zona horaria', () => {
+    expect(fechaDelDocumento('2018-01-26T14:30:00-03:00')).toBe('26 de enero de 2018');
+    expect(fechaDelDocumento(null)).toBeNull();
   });
 });

@@ -6,7 +6,9 @@ import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, View } from '
 import { useUploadDocument } from '../features/patient-documents/hooks/use-patient-documents';
 import {
   formatSize,
+  isIps,
   isPdf,
+  JSON_MIME,
   MAX_TEXTO,
   toIsoDate,
   validateUploadForm,
@@ -52,10 +54,15 @@ export function UploadDocumentScreen(): React.JSX.Element {
   const { file } = useRoute<RouteProp<RootStackParamList, 'SubirDocumento'>>().params;
   const subir = useUploadDocument();
   const pdf = isPdf(file.mimeType);
+  // El resumen de salud de otro centro (ENG-246) es un informe, y su nombre de
+  // archivo suele ser un código: se propone uno que se entienda.
+  const resumen = file.mimeType === JSON_MIME;
   const { margen: margenTeclado, onLayout } = useKeyboardHeight();
 
-  const [tipo, setTipo] = useState<PatientDocumentType>('ESTUDIO');
-  const [titulo, setTitulo] = useState(() => tituloSugerido(file.name, pdf));
+  const [tipo, setTipo] = useState<PatientDocumentType>(resumen ? 'INFORME' : 'ESTUDIO');
+  const [titulo, setTitulo] = useState(() =>
+    resumen ? 'Resumen de salud' : tituloSugerido(file.name, pdf),
+  );
   const [fecha, setFecha] = useState('');
   const [institucion, setInstitucion] = useState('');
   const [errores, setErrores] = useState<UploadFormErrors>({});
@@ -88,10 +95,15 @@ export function UploadDocumentScreen(): React.JSX.Element {
       // El paciente escribe DD/MM/AAAA; el backend espera la fecha ISO.
       { file, type: tipo, ...form, documentDate: toIsoDate(fecha) ?? '' },
       {
-        onSettled: (_doc, error) => {
+        onSettled: (doc, error) => {
           enviando.current = false;
+          if (error) return;
           // La lista ya se invalidó: al volver aparece el documento nuevo arriba.
-          if (!error) navigation.goBack();
+          navigation.goBack();
+          // Un resumen de salud se abre ordenado, con la opción de sumarlo al MediPass.
+          if (doc && isIps(doc.mimeType)) {
+            navigation.navigate('ResumenSalud', { documentId: doc.id });
+          }
         },
       },
     );
@@ -111,7 +123,11 @@ export function UploadDocumentScreen(): React.JSX.Element {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.archivo}>
-            {pdf ? (
+            {resumen ? (
+              <View style={[styles.miniatura, styles.miniaturaPdf]}>
+                <Ionicons name="medkit-outline" size={26} color={colors.tagEstudioInk} />
+              </View>
+            ) : pdf ? (
               <View style={[styles.miniatura, styles.miniaturaPdf]}>
                 <Ionicons name="document-text-outline" size={26} color={colors.tagEstudioInk} />
               </View>
@@ -127,7 +143,7 @@ export function UploadDocumentScreen(): React.JSX.Element {
                 {file.name}
               </Text>
               <Text style={styles.archivoDetalle}>
-                {pdf ? 'PDF' : 'Imagen'}
+                {resumen ? 'Resumen de salud' : pdf ? 'PDF' : 'Imagen'}
                 {file.sizeBytes !== null ? ` · ${formatSize(file.sizeBytes)}` : ''}
               </Text>
             </View>

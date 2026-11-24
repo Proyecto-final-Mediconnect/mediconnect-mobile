@@ -4,7 +4,13 @@ import * as WebBrowser from 'expo-web-browser';
 import { Linking } from 'react-native';
 
 import { useSessionUser } from '../../auth/session';
-import { fetchDocumentDownload, fetchMyDocuments, retireDocument, uploadDocument } from '../api';
+import {
+  fetchDocumentDownload,
+  fetchIpsSummary,
+  fetchMyDocuments,
+  retireDocument,
+  uploadDocument,
+} from '../api';
 import type { UploadDocumentInput } from '../types';
 
 /** Con el id de la sesión, como el resto: el próximo que ingrese no hereda la lista. */
@@ -23,6 +29,15 @@ export function useMyDocuments() {
  * refresca pase lo que pase: un corte (o un timeout) puede llegar cuando el
  * servidor ya guardó el archivo.
  */
+/** El resumen de salud IPS de un documento, ordenado (ENG-246). */
+export function useIpsSummary(id: string) {
+  const { id: userId } = useSessionUser();
+  return useQuery({
+    queryKey: ['patient-documents', userId, 'ips', id],
+    queryFn: () => fetchIpsSummary(id),
+  });
+}
+
 export function useUploadDocument() {
   const queryClient = useQueryClient();
   const queryKey = useDocumentsKey();
