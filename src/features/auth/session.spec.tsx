@@ -102,10 +102,24 @@ describe('sesión del paciente', () => {
       completarYEnviar(PROFESIONAL.email, 'Password1');
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'La app de MediConnect es para pacientes. Si sos profesional, ingresá desde la web.',
+        'La app de MediConnect es para pacientes. Si sos profesional o administrás la plataforma, ingresá desde la web.',
       );
       expect(__secureStore.items.size).toBe(0);
       expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    });
+
+    // ENG-240: el administrador tampoco usa la app.
+    it('a un administrador le da el mismo aviso, sin guardar su sesión', async () => {
+      const admin: SessionUser = { ...PROFESIONAL, id: 'adm-1', role: 'ADMINISTRADOR' };
+      loginQueResponde(admin);
+      await abrirApp();
+
+      completarYEnviar(admin.email, 'Password1');
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Si sos profesional o administrás la plataforma, ingresá desde la web.',
+      );
+      expect(__secureStore.items.size).toBe(0);
     });
 
     it('valida el formulario antes de mandarlo', async () => {
