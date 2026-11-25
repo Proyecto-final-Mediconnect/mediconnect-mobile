@@ -6,6 +6,7 @@ import type { IpsResumen } from '../features/patient-profile/ips';
 import type { PatientDocument } from '../features/patient-documents/types';
 import { API_URL } from '../test/msw-server';
 import { multipartFields } from '../test/multipart';
+import { FICHA } from '../test/patient-api';
 import { renderApp } from '../test/render-app';
 import { __documentos } from '../../test-stubs/expo-document-picker';
 
@@ -104,6 +105,43 @@ describe('Resumen de salud (ENG-246)', () => {
       allergies: [{ que: 'alergia a la penicilina', gravedad: 'Grave' }],
       conditions: [{ nombre: 'asma', codigo: 'SNOMED 195967001' }],
     });
+  });
+
+  it('lo que ya está en el MediPass se marca y no se vuelve a ofrecer', async () => {
+    const { recibido, handlers } = servir();
+    await abrirHistoria([
+      ...handlers,
+      http.get(`${API_URL}/patients/me`, () =>
+        HttpResponse.json({ ...FICHA, conditions: [{ nombre: 'ASMA' }] }),
+      ),
+    ]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver Resumen de salud' }));
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sumar a mi MediPass' }));
+    expect(await screen.findByText(/Ya está en tu MediPass/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Sumar 2 datos a mi MediPass' }));
+
+    await screen.findByText('Listo: ya se ve en tu MediPass.');
+    expect((recibido.vital as { conditions: unknown }).conditions).toEqual([{ nombre: 'ASMA' }]);
+  });
+
+  it('si ya está todo en el MediPass, lo dice en lugar de ofrecer sumarlo', async () => {
+    const { handlers } = servir();
+    await abrirHistoria([
+      ...handlers,
+      http.get(`${API_URL}/patients/me`, () =>
+        HttpResponse.json({
+          ...FICHA,
+          allergies: [{ que: 'Alergia a la penicilina' }],
+          medications: [{ droga: 'Salbutamol 200 mcg' }],
+          conditions: [{ nombre: 'asma' }],
+        }),
+      ),
+    ]);
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver Resumen de salud' }));
+
+    expect(await screen.findByText('Ya está todo en tu MediPass.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Sumar a mi MediPass' })).not.toBeInTheDocument();
   });
 
   it('se sube desde "Subir documento" como informe y se abre ordenado', async () => {

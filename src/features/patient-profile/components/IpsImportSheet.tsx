@@ -52,6 +52,7 @@ function itemsDe(resumen: IpsResumen): Item[] {
  */
 export function IpsImportSheet({
   resumen,
+  yaEsta,
   visible,
   guardando,
   error,
@@ -59,6 +60,8 @@ export function IpsImportSheet({
   onSumar,
 }: {
   resumen: IpsResumen;
+  /** Lo que ya está en el MediPass: se muestra, pero no se vuelve a ofrecer. */
+  yaEsta: Set<string>;
   visible: boolean;
   guardando: boolean;
   error: string | null;
@@ -68,10 +71,22 @@ export function IpsImportSheet({
   const items = itemsDe(resumen);
   const [elegidos, setElegidos] = useState<Set<string>>(new Set());
 
-  // Cada vez que se abre, todo tildado de nuevo.
+  // Cada vez que se abre, tildado de nuevo todo lo que falta.
   useEffect(() => {
-    if (visible) setElegidos(new Set(itemsDe(resumen).map((i) => i.id)));
+    if (visible) {
+      setElegidos(
+        new Set(
+          itemsDe(resumen)
+            .map((i) => i.id)
+            .filter((id) => !yaEsta.has(id)),
+        ),
+      );
+    }
+    // `yaEsta` es un Set nuevo en cada render: se recalcula solo al abrir.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, resumen]);
+  // Si el perfil llegó después de abrir, lo que ya estaba no cuenta.
+  const aSumar = new Set([...elegidos].filter((id) => !yaEsta.has(id)));
 
   function alternar(id: string): void {
     setElegidos((actual) => {
@@ -84,9 +99,9 @@ export function IpsImportSheet({
 
   function sumar(): void {
     onSumar({
-      allergies: resumen.propuesta.allergies.filter((_, i) => elegidos.has(`allergies.${i}`)),
-      medications: resumen.propuesta.medications.filter((_, i) => elegidos.has(`medications.${i}`)),
-      conditions: resumen.propuesta.conditions.filter((_, i) => elegidos.has(`conditions.${i}`)),
+      allergies: resumen.propuesta.allergies.filter((_, i) => aSumar.has(`allergies.${i}`)),
+      medications: resumen.propuesta.medications.filter((_, i) => aSumar.has(`medications.${i}`)),
+      conditions: resumen.propuesta.conditions.filter((_, i) => aSumar.has(`conditions.${i}`)),
     });
   }
 
@@ -105,12 +120,14 @@ export function IpsImportSheet({
             <View key={clave} style={styles.grupo}>
               <Text style={styles.grupoTitulo}>{titulo}</Text>
               {delGrupo.map((item) => {
-                const tildado = elegidos.has(item.id);
+                const ya = yaEsta.has(item.id);
+                const tildado = ya || elegidos.has(item.id);
                 return (
                   <Pressable
                     key={item.id}
                     accessibilityRole="checkbox"
-                    accessibilityState={{ checked: tildado }}
+                    accessibilityState={{ checked: tildado, disabled: ya }}
+                    disabled={ya}
                     aria-checked={tildado}
                     accessibilityLabel={
                       item.detalle ? `${item.texto}, ${item.detalle}` : item.texto
@@ -118,16 +135,17 @@ export function IpsImportSheet({
                     onPress={() => alternar(item.id)}
                     style={styles.fila}
                   >
-                    <View style={[styles.caja, tildado && styles.cajaTildada]}>
+                    <View style={[styles.caja, tildado && styles.cajaTildada, ya && styles.cajaYa]}>
                       {tildado ? (
                         <Ionicons name="checkmark" size={15} color={colors.white} />
                       ) : null}
                     </View>
-                    <Text style={styles.filaTexto}>
+                    <Text style={[styles.filaTexto, ya && styles.filaYa]}>
                       {item.texto}
                       {item.detalle ? (
                         <Text style={styles.filaDetalle}> · {item.detalle}</Text>
                       ) : null}
+                      {ya ? <Text style={styles.yaEsta}> · Ya está en tu MediPass</Text> : null}
                     </Text>
                   </Pressable>
                 );
@@ -144,13 +162,13 @@ export function IpsImportSheet({
 
         <Button
           label={
-            elegidos.size === 1
+            aSumar.size === 1
               ? 'Sumar 1 dato a mi MediPass'
-              : `Sumar ${elegidos.size} datos a mi MediPass`
+              : `Sumar ${aSumar.size} datos a mi MediPass`
           }
           onPress={sumar}
           loading={guardando}
-          disabled={elegidos.size === 0}
+          disabled={aSumar.size === 0}
           fullWidth
         />
         <Button label="Cancelar" variant="ghost" onPress={onDismiss} fullWidth />
@@ -182,6 +200,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cajaTildada: { backgroundColor: colors.brandDeep, borderColor: colors.brandDeep },
+  cajaYa: { opacity: 0.45 },
+  filaYa: { color: colors.muted },
+  yaEsta: { fontFamily: fonts.semibold, color: colors.brandHover },
   filaTexto: {
     flex: 1,
     fontFamily: fonts.medium,
